@@ -1,4 +1,28 @@
 import { useState, useEffect } from 'react';
+import {
+    Box,
+    Container,
+    Heading,
+    Text,
+    SimpleGrid,
+    Card,
+    CardBody,
+    Button,
+    Badge,
+    HStack,
+    VStack,
+    Progress,
+    Flex,
+    Wrap,
+    WrapItem,
+    Spinner,
+    Center,
+    Alert,
+    AlertIcon,
+    Divider,
+    useToast,
+} from '@chakra-ui/react';
+import { Package, Zap, Wind, Target, ShoppingCart } from 'lucide-react';
 import partesService from '../services/partes.service';
 
 function Catalogo() {
@@ -7,21 +31,20 @@ function Catalogo() {
     const [categoriaActiva, setCategoriaActiva] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const toast = useToast();
 
-    // Cargar categorías al inicio
     useEffect(() => {
         const fetchCategorias = async () => {
             try {
                 const data = await partesService.getCategorias();
                 setCategorias(data);
             } catch (err) {
-                console.error('Error al cargar categorías:', err);
+                console.error('Error al cargar categorias:', err);
             }
         };
         fetchCategorias();
     }, []);
 
-    // Cargar partes (todas o por categoría)
     useEffect(() => {
         const fetchPartes = async () => {
             setLoading(true);
@@ -46,260 +69,163 @@ function Catalogo() {
         }).format(precio);
     };
 
-    const getStatColor = (value) => {
-        if (value >= 7) return '#22c55e'; // verde
-        if (value >= 4) return '#eab308'; // amarillo
-        return '#ef4444'; // rojo
+    const getStatColorScheme = (value) => {
+        if (value >= 7) return 'green';
+        if (value >= 4) return 'yellow';
+        return 'red';
     };
 
-    const StatBar = ({ label, value, icon }) => (
-        <div style={styles.statRow}>
-            <span style={styles.statLabel}>{icon} {label}</span>
-            <div style={styles.statBarContainer}>
-                <div 
-                    style={{
-                        ...styles.statBarFill,
-                        width: `${(value / 9) * 100}%`,
-                        backgroundColor: getStatColor(value)
-                    }}
-                />
-            </div>
-            <span style={styles.statValue}>{value}</span>
-        </div>
+    const StatBar = ({ label, value, icon: IconComponent }) => (
+        <HStack spacing={3} w="full">
+            <HStack w="90px" spacing={2}>
+                <IconComponent size={14} color="#718096" />
+                <Text fontSize="xs" color="gray.500">{label}</Text>
+            </HStack>
+            <Progress 
+                value={(value / 9) * 100} 
+                colorScheme={getStatColorScheme(value)}
+                bg="brand.700"
+                borderRadius="full"
+                size="sm"
+                flex={1}
+            />
+            <Text fontSize="xs" fontWeight="bold" color="white" w="20px" textAlign="right">
+                {value}
+            </Text>
+        </HStack>
     );
 
     const handleComprar = async (parteId) => {
-        // TODO: Implementar cuando tengas BD
-        alert('Función de compra - Se implementará con la base de datos');
+        toast({
+            title: 'Funcion de compra',
+            description: 'Se implementara con la base de datos',
+            status: 'info',
+            duration: 3000,
+        });
+    };
+
+    const getCategoriaIcon = (catId) => {
+        const icons = {
+            'Motor': Zap,
+            'Aerodinamica': Wind,
+            'Transmision': Target,
+        };
+        return icons[catId] || Package;
     };
 
     return (
-        <div style={styles.container}>
-            <header style={styles.header}>
-                <h1>🛒 Catálogo de Partes F1</h1>
-                <p style={styles.subtitle}>Selecciona las mejores partes para tu carro</p>
-            </header>
+        <Container maxW="container.xl" py={8}>
+            <Box mb={6}>
+                <Heading size="lg" color="white">Catalogo de Partes F1</Heading>
+                <Text color="gray.400" mt={1}>Selecciona las mejores partes para tu carro</Text>
+            </Box>
 
-            {/* Filtros por categoría */}
-            <div style={styles.filtros}>
-                <button 
-                    style={categoriaActiva === null ? styles.filtroActivo : styles.filtroBtn}
-                    onClick={() => setCategoriaActiva(null)}
-                >
-                    📦 Todas
-                </button>
-                {categorias.map(cat => (
-                    <button
-                        key={cat.id}
-                        style={categoriaActiva === cat.id ? styles.filtroActivo : styles.filtroBtn}
-                        onClick={() => setCategoriaActiva(cat.id)}
+            {/* Filtros por categoria */}
+            <Wrap spacing={3} mb={6}>
+                <WrapItem>
+                    <Button
+                        leftIcon={<Package size={16} />}
+                        variant={categoriaActiva === null ? 'solid' : 'outline'}
+                        size="sm"
+                        borderRadius="full"
+                        onClick={() => setCategoriaActiva(null)}
                     >
-                        {cat.icono} {cat.nombre}
-                    </button>
+                        Todas
+                    </Button>
+                </WrapItem>
+                {categorias.map(cat => (
+                    <WrapItem key={cat.id}>
+                        <Button
+                            variant={categoriaActiva === cat.id ? 'solid' : 'outline'}
+                            size="sm"
+                            borderRadius="full"
+                            onClick={() => setCategoriaActiva(cat.id)}
+                        >
+                            {cat.nombre}
+                        </Button>
+                    </WrapItem>
                 ))}
-            </div>
+            </Wrap>
 
             {/* Mensaje de error */}
-            {error && <div style={styles.error}>{error}</div>}
+            {error && (
+                <Alert status="error" bg="red.900" color="red.200" borderRadius="md" mb={6}>
+                    <AlertIcon color="red.400" />
+                    {error}
+                </Alert>
+            )}
 
             {/* Loading */}
-            {loading && <div style={styles.loading}>Cargando partes...</div>}
+            {loading && (
+                <Center py={12}>
+                    <VStack spacing={4}>
+                        <Spinner size="xl" color="accent.600" thickness="4px" />
+                        <Text color="gray.500">Cargando partes...</Text>
+                    </VStack>
+                </Center>
+            )}
 
             {/* Grid de partes */}
             {!loading && (
-                <div style={styles.grid}>
+                <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={5}>
                     {partes.map(parte => (
-                        <div key={parte.id} style={styles.card}>
-                            <div style={styles.cardHeader}>
-                                <span style={styles.categoria}>
-                                    {categorias.find(c => c.id === parte.categoria)?.icono} {parte.categoria}
-                                </span>
-                                <span style={{
-                                    ...styles.stock,
-                                    color: parte.stock > 5 ? '#22c55e' : '#ef4444'
-                                }}>
-                                    Stock: {parte.stock}
-                                </span>
-                            </div>
-                            
-                            <h3 style={styles.cardTitle}>{parte.nombre}</h3>
-                            <p style={styles.cardDesc}>{parte.descripcion}</p>
+                        <Card 
+                            key={parte.id} 
+                            bg="brand.800" 
+                            borderColor="brand.700"
+                            _hover={{ borderColor: 'brand.600', transform: 'translateY(-2px)' }}
+                            transition="all 0.2s"
+                        >
+                            <CardBody>
+                                <Flex justify="space-between" mb={2}>
+                                    <Text fontSize="xs" color="gray.500" textTransform="uppercase">
+                                        {parte.categoria}
+                                    </Text>
+                                    <Badge 
+                                        colorScheme={parte.stock > 5 ? 'green' : 'red'} 
+                                        variant="subtle"
+                                        fontSize="xs"
+                                    >
+                                        Stock: {parte.stock}
+                                    </Badge>
+                                </Flex>
+                                
+                                <Heading size="sm" color="white" mb={1}>{parte.nombre}</Heading>
+                                <Text fontSize="sm" color="gray.500" mb={4}>{parte.descripcion}</Text>
 
-                            <div style={styles.stats}>
-                                <StatBar label="Potencia" value={parte.potencia} icon="⚡" />
-                                <StatBar label="Aerodinámica" value={parte.aerodinamica} icon="💨" />
-                                <StatBar label="Manejo" value={parte.manejo} icon="🎯" />
-                            </div>
+                                <VStack spacing={2} mb={4}>
+                                    <StatBar label="Potencia" value={parte.potencia} icon={Zap} />
+                                    <StatBar label="Aero" value={parte.aerodinamica} icon={Wind} />
+                                    <StatBar label="Manejo" value={parte.manejo} icon={Target} />
+                                </VStack>
 
-                            <div style={styles.cardFooter}>
-                                <span style={styles.precio}>{formatPrecio(parte.precio)}</span>
-                                <button 
-                                    style={styles.btnComprar}
-                                    onClick={() => handleComprar(parte.id)}
-                                >
-                                    Comprar
-                                </button>
-                            </div>
-                        </div>
+                                <Divider borderColor="brand.700" mb={4} />
+
+                                <Flex justify="space-between" align="center">
+                                    <Text fontSize="lg" fontWeight="bold" color="green.400">
+                                        {formatPrecio(parte.precio)}
+                                    </Text>
+                                    <Button 
+                                        size="sm" 
+                                        leftIcon={<ShoppingCart size={14} />}
+                                        onClick={() => handleComprar(parte.id)}
+                                    >
+                                        Comprar
+                                    </Button>
+                                </Flex>
+                            </CardBody>
+                        </Card>
                     ))}
-                </div>
+                </SimpleGrid>
             )}
 
             {/* Resumen */}
-            <div style={styles.resumen}>
-                Mostrando {partes.length} partes 
+            <Text textAlign="center" mt={8} color="gray.600" fontSize="sm">
+                Mostrando {partes.length} partes
                 {categoriaActiva && ` en ${categorias.find(c => c.id === categoriaActiva)?.nombre}`}
-            </div>
-        </div>
+            </Text>
+        </Container>
     );
 }
-
-const styles = {
-    container: {
-        maxWidth: '1200px',
-        margin: '0 auto',
-        padding: '30px',
-        color: '#fff'
-    },
-    header: {
-        marginBottom: '30px'
-    },
-    subtitle: {
-        color: '#888',
-        marginTop: '8px'
-    },
-    filtros: {
-        display: 'flex',
-        gap: '10px',
-        flexWrap: 'wrap',
-        marginBottom: '20px'
-    },
-    filtroBtn: {
-        padding: '10px 16px',
-        border: '1px solid #333',
-        backgroundColor: '#1a1a1a',
-        color: '#fff',
-        borderRadius: '20px',
-        cursor: 'pointer',
-        fontSize: '14px',
-        transition: 'all 0.2s'
-    },
-    filtroActivo: {
-        padding: '10px 16px',
-        border: '1px solid #e10600',
-        backgroundColor: '#e10600',
-        color: '#fff',
-        borderRadius: '20px',
-        cursor: 'pointer',
-        fontSize: '14px'
-    },
-    grid: {
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-        gap: '20px'
-    },
-    card: {
-        backgroundColor: '#1a1a1a',
-        borderRadius: '12px',
-        padding: '20px',
-        border: '1px solid #333',
-        transition: 'transform 0.2s, border-color 0.2s'
-    },
-    cardHeader: {
-        display: 'flex',
-        justifyContent: 'space-between',
-        marginBottom: '10px',
-        fontSize: '12px'
-    },
-    categoria: {
-        color: '#888',
-        textTransform: 'uppercase'
-    },
-    stock: {
-        fontWeight: 'bold'
-    },
-    cardTitle: {
-        margin: '0 0 8px 0',
-        fontSize: '18px',
-        color: '#fff'
-    },
-    cardDesc: {
-        color: '#888',
-        fontSize: '13px',
-        marginBottom: '15px'
-    },
-    stats: {
-        marginBottom: '15px'
-    },
-    statRow: {
-        display: 'flex',
-        alignItems: 'center',
-        marginBottom: '8px',
-        gap: '10px'
-    },
-    statLabel: {
-        width: '100px',
-        fontSize: '12px',
-        color: '#aaa'
-    },
-    statBarContainer: {
-        flex: 1,
-        height: '8px',
-        backgroundColor: '#333',
-        borderRadius: '4px',
-        overflow: 'hidden'
-    },
-    statBarFill: {
-        height: '100%',
-        borderRadius: '4px',
-        transition: 'width 0.3s'
-    },
-    statValue: {
-        width: '20px',
-        textAlign: 'right',
-        fontSize: '12px',
-        fontWeight: 'bold'
-    },
-    cardFooter: {
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        borderTop: '1px solid #333',
-        paddingTop: '15px'
-    },
-    precio: {
-        fontSize: '18px',
-        fontWeight: 'bold',
-        color: '#22c55e'
-    },
-    btnComprar: {
-        padding: '8px 20px',
-        backgroundColor: '#e10600',
-        color: '#fff',
-        border: 'none',
-        borderRadius: '6px',
-        cursor: 'pointer',
-        fontWeight: 'bold'
-    },
-    error: {
-        padding: '15px',
-        backgroundColor: 'rgba(239, 68, 68, 0.1)',
-        border: '1px solid #ef4444',
-        color: '#ef4444',
-        borderRadius: '8px',
-        marginBottom: '20px'
-    },
-    loading: {
-        textAlign: 'center',
-        padding: '40px',
-        color: '#888'
-    },
-    resumen: {
-        textAlign: 'center',
-        marginTop: '30px',
-        color: '#666',
-        fontSize: '14px'
-    }
-};
 
 export default Catalogo;

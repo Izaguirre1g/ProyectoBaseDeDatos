@@ -1,9 +1,42 @@
 import { useAuth } from '../context/AuthContext';
+import {
+    Box,
+    Container,
+    Heading,
+    Text,
+    SimpleGrid,
+    Card,
+    CardBody,
+    VStack,
+    HStack,
+    Flex,
+    Button,
+    Badge,
+    Progress,
+    Avatar,
+    Divider,
+    Icon,
+} from '@chakra-ui/react';
+import {
+    Users,
+    Building2,
+    Car,
+    Flag,
+    Plus,
+    BarChart3,
+    ShoppingCart,
+    Wrench,
+    Package,
+    Trophy,
+    Medal,
+    Star,
+    DollarSign,
+    Clock,
+} from 'lucide-react';
 
 function Dashboard() {
     const { usuario } = useAuth();
 
-    // Renderizar dashboard según rol
     const renderContent = () => {
         switch (usuario?.rol) {
             case 'Admin':
@@ -13,79 +46,115 @@ function Dashboard() {
             case 'Driver':
                 return <DriverDashboard />;
             default:
-                return <div>Rol no reconocido</div>;
+                return <Box>Rol no reconocido</Box>;
         }
     };
 
     return (
-        <div style={styles.container}>
+        <Container maxW="container.xl" py={8}>
             {renderContent()}
-        </div>
+        </Container>
     );
 }
 
-// Dashboard para Admin
+function StatCard({ icon: IconComponent, label, value, color }) {
+    return (
+        <Card bg="brand.800" borderColor="brand.700">
+            <CardBody>
+                <HStack spacing={4}>
+                    <Flex
+                        w={12}
+                        h={12}
+                        bg={color}
+                        borderRadius="xl"
+                        align="center"
+                        justify="center"
+                    >
+                        <Icon as={IconComponent} boxSize={6} color="white" />
+                    </Flex>
+                    <VStack align="start" spacing={0}>
+                        <Text fontSize="2xl" fontWeight="bold" color="white">
+                            {value}
+                        </Text>
+                        <Text fontSize="sm" color="gray.400">
+                            {label}
+                        </Text>
+                    </VStack>
+                </HStack>
+            </CardBody>
+        </Card>
+    );
+}
+
 function AdminDashboard() {
     const stats = [
-        { label: 'Usuarios', value: 3, icon: '👥', color: '#3b82f6' },
-        { label: 'Equipos', value: 5, icon: '🏢', color: '#22c55e' },
-        { label: 'Conductores', value: 10, icon: '🏎️', color: '#eab308' },
-        { label: 'Simulaciones', value: 12, icon: '🏁', color: '#e10600' },
+        { label: 'Usuarios', value: 3, icon: Users, color: 'blue.500' },
+        { label: 'Equipos', value: 5, icon: Building2, color: 'green.500' },
+        { label: 'Conductores', value: 10, icon: Car, color: 'yellow.500' },
+        { label: 'Simulaciones', value: 12, icon: Flag, color: 'accent.600' },
+    ];
+
+    const activities = [
+        { time: 'Hace 2h', text: 'Simulacion #12 completada - Circuito de Monaco' },
+        { time: 'Hace 5h', text: 'Red Bull Racing compro Power Unit Honda' },
+        { time: 'Ayer', text: 'Ferrari agrego nuevo patrocinador: Shell' },
     ];
 
     return (
-        <>
-            <header style={styles.header}>
-                <h1>Panel de Administración</h1>
-                <p style={styles.subtitle}>Vista general del sistema</p>
-            </header>
+        <VStack spacing={6} align="stretch">
+            <Box>
+                <Heading size="lg" color="white">Panel de Administracion</Heading>
+                <Text color="gray.400" mt={1}>Vista general del sistema</Text>
+            </Box>
 
-            <div style={styles.statsGrid}>
+            <SimpleGrid columns={{ base: 1, sm: 2, lg: 4 }} spacing={4}>
                 {stats.map((stat, index) => (
-                    <div key={index} style={styles.statCard}>
-                        <div style={{ ...styles.statIcon, backgroundColor: stat.color }}>
-                            {stat.icon}
-                        </div>
-                        <div style={styles.statInfo}>
-                            <span style={styles.statValue}>{stat.value}</span>
-                            <span style={styles.statLabel}>{stat.label}</span>
-                        </div>
-                    </div>
+                    <StatCard key={index} {...stat} />
                 ))}
-            </div>
+            </SimpleGrid>
 
-            <div style={styles.section}>
-                <h2>Acciones Rápidas</h2>
-                <div style={styles.actionsGrid}>
-                    <button style={styles.actionBtn}>➕ Nuevo Usuario</button>
-                    <button style={styles.actionBtn}>➕ Nuevo Equipo</button>
-                    <button style={styles.actionBtn}>🏁 Nueva Simulación</button>
-                    <button style={styles.actionBtn}>📊 Ver Grafana</button>
-                </div>
-            </div>
+            <Card bg="brand.800" borderColor="brand.700">
+                <CardBody>
+                    <Heading size="md" color="white" mb={4}>Acciones Rapidas</Heading>
+                    <Flex gap={3} flexWrap="wrap">
+                        <Button leftIcon={<Plus size={16} />} variant="outline" size="sm">
+                            Nuevo Usuario
+                        </Button>
+                        <Button leftIcon={<Plus size={16} />} variant="outline" size="sm">
+                            Nuevo Equipo
+                        </Button>
+                        <Button leftIcon={<Flag size={16} />} variant="outline" size="sm">
+                            Nueva Simulacion
+                        </Button>
+                        <Button leftIcon={<BarChart3 size={16} />} variant="outline" size="sm">
+                            Ver Grafana
+                        </Button>
+                    </Flex>
+                </CardBody>
+            </Card>
 
-            <div style={styles.section}>
-                <h2>Actividad Reciente</h2>
-                <div style={styles.activityList}>
-                    <div style={styles.activityItem}>
-                        <span style={styles.activityTime}>Hace 2h</span>
-                        <span>Simulación #12 completada - Circuito de Mónaco</span>
-                    </div>
-                    <div style={styles.activityItem}>
-                        <span style={styles.activityTime}>Hace 5h</span>
-                        <span>Red Bull Racing compró Power Unit Honda</span>
-                    </div>
-                    <div style={styles.activityItem}>
-                        <span style={styles.activityTime}>Ayer</span>
-                        <span>Ferrari agregó nuevo patrocinador: Shell</span>
-                    </div>
-                </div>
-            </div>
-        </>
+            <Card bg="brand.800" borderColor="brand.700">
+                <CardBody>
+                    <Heading size="md" color="white" mb={4}>Actividad Reciente</Heading>
+                    <VStack spacing={0} align="stretch" divider={<Divider borderColor="brand.700" />}>
+                        {activities.map((activity, index) => (
+                            <HStack key={index} py={3} spacing={4}>
+                                <HStack spacing={2}>
+                                    <Clock size={14} color="#718096" />
+                                    <Text fontSize="sm" color="gray.500" minW="70px">
+                                        {activity.time}
+                                    </Text>
+                                </HStack>
+                                <Text color="gray.300">{activity.text}</Text>
+                            </HStack>
+                        ))}
+                    </VStack>
+                </CardBody>
+            </Card>
+        </VStack>
     );
 }
 
-// Dashboard para Engineer
 function EngineerDashboard() {
     const equipo = {
         nombre: 'Red Bull Racing',
@@ -94,76 +163,92 @@ function EngineerDashboard() {
         partes: 24
     };
 
+    const carros = [
+        { numero: 1, modelo: 'RB20', conductor: 'Max Verstappen', p: 42, a: 38, m: 35 },
+        { numero: 11, modelo: 'RB20', conductor: 'Sergio Perez', p: 40, a: 36, m: 33 },
+    ];
+
     return (
-        <>
-            <header style={styles.header}>
-                <h1>Panel de Ingeniero</h1>
-                <p style={styles.subtitle}>Equipo: {equipo.nombre}</p>
-            </header>
+        <VStack spacing={6} align="stretch">
+            <Box>
+                <Heading size="lg" color="white">Panel de Ingeniero</Heading>
+                <Text color="gray.400" mt={1}>Equipo: {equipo.nombre}</Text>
+            </Box>
 
-            <div style={styles.statsGrid}>
-                <div style={styles.statCard}>
-                    <div style={{ ...styles.statIcon, backgroundColor: '#22c55e' }}>💰</div>
-                    <div style={styles.statInfo}>
-                        <span style={styles.statValue}>${(equipo.presupuesto / 1000000).toFixed(0)}M</span>
-                        <span style={styles.statLabel}>Presupuesto</span>
-                    </div>
-                </div>
-                <div style={styles.statCard}>
-                    <div style={{ ...styles.statIcon, backgroundColor: '#3b82f6' }}>🏎️</div>
-                    <div style={styles.statInfo}>
-                        <span style={styles.statValue}>{equipo.carros}/2</span>
-                        <span style={styles.statLabel}>Carros</span>
-                    </div>
-                </div>
-                <div style={styles.statCard}>
-                    <div style={{ ...styles.statIcon, backgroundColor: '#eab308' }}>📦</div>
-                    <div style={styles.statInfo}>
-                        <span style={styles.statValue}>{equipo.partes}</span>
-                        <span style={styles.statLabel}>Partes en Inventario</span>
-                    </div>
-                </div>
-            </div>
+            <SimpleGrid columns={{ base: 1, sm: 3 }} spacing={4}>
+                <StatCard 
+                    icon={DollarSign} 
+                    label="Presupuesto" 
+                    value={`$${(equipo.presupuesto / 1000000).toFixed(0)}M`} 
+                    color="green.500" 
+                />
+                <StatCard 
+                    icon={Car} 
+                    label="Carros" 
+                    value={`${equipo.carros}/2`} 
+                    color="blue.500" 
+                />
+                <StatCard 
+                    icon={Package} 
+                    label="Partes en Inventario" 
+                    value={equipo.partes} 
+                    color="yellow.500" 
+                />
+            </SimpleGrid>
 
-            <div style={styles.section}>
-                <h2>Carros del Equipo</h2>
-                <div style={styles.carrosGrid}>
-                    <div style={styles.carroCard}>
-                        <h3>#1 RB20</h3>
-                        <p>Conductor: Max Verstappen</p>
-                        <div style={styles.carroStats}>
-                            <span>P: 42</span>
-                            <span>A: 38</span>
-                            <span>M: 35</span>
-                        </div>
-                        <span style={styles.badge}>✅ Finalizado</span>
-                    </div>
-                    <div style={styles.carroCard}>
-                        <h3>#11 RB20</h3>
-                        <p>Conductor: Sergio Pérez</p>
-                        <div style={styles.carroStats}>
-                            <span>P: 40</span>
-                            <span>A: 36</span>
-                            <span>M: 33</span>
-                        </div>
-                        <span style={styles.badge}>✅ Finalizado</span>
-                    </div>
-                </div>
-            </div>
+            <Card bg="brand.800" borderColor="brand.700">
+                <CardBody>
+                    <Heading size="md" color="white" mb={4}>Carros del Equipo</Heading>
+                    <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
+                        {carros.map((carro) => (
+                            <Box 
+                                key={carro.numero}
+                                bg="brand.900" 
+                                p={5} 
+                                borderRadius="lg"
+                                borderWidth="1px"
+                                borderColor="brand.700"
+                            >
+                                <HStack justify="space-between" mb={2}>
+                                    <Heading size="sm" color="white">
+                                        #{carro.numero} {carro.modelo}
+                                    </Heading>
+                                    <Badge colorScheme="green" variant="subtle">Finalizado</Badge>
+                                </HStack>
+                                <Text color="gray.400" fontSize="sm" mb={3}>
+                                    Conductor: {carro.conductor}
+                                </Text>
+                                <HStack spacing={4} color="gray.500" fontSize="sm">
+                                    <Text>P: {carro.p}</Text>
+                                    <Text>A: {carro.a}</Text>
+                                    <Text>M: {carro.m}</Text>
+                                </HStack>
+                            </Box>
+                        ))}
+                    </SimpleGrid>
+                </CardBody>
+            </Card>
 
-            <div style={styles.section}>
-                <h2>Acciones</h2>
-                <div style={styles.actionsGrid}>
-                    <button style={styles.actionBtn}>🛒 Comprar Partes</button>
-                    <button style={styles.actionBtn}>🔧 Configurar Carro</button>
-                    <button style={styles.actionBtn}>📦 Ver Inventario</button>
-                </div>
-            </div>
-        </>
+            <Card bg="brand.800" borderColor="brand.700">
+                <CardBody>
+                    <Heading size="md" color="white" mb={4}>Acciones</Heading>
+                    <Flex gap={3} flexWrap="wrap">
+                        <Button leftIcon={<ShoppingCart size={16} />} variant="outline" size="sm">
+                            Comprar Partes
+                        </Button>
+                        <Button leftIcon={<Wrench size={16} />} variant="outline" size="sm">
+                            Configurar Carro
+                        </Button>
+                        <Button leftIcon={<Package size={16} />} variant="outline" size="sm">
+                            Ver Inventario
+                        </Button>
+                    </Flex>
+                </CardBody>
+            </Card>
+        </VStack>
     );
 }
 
-// Dashboard para Driver
 function DriverDashboard() {
     const driver = {
         nombre: 'Carlos Sainz',
@@ -175,232 +260,92 @@ function DriverDashboard() {
         puntos: 245
     };
 
+    const races = [
+        { position: 'P2', name: 'GP de Espana - Barcelona' },
+        { position: 'P1', name: 'GP de Monaco - Monte Carlo' },
+        { position: 'P4', name: 'GP de Miami - Hard Rock Stadium' },
+    ];
+
     return (
-        <>
-            <header style={styles.header}>
-                <h1>Mi Perfil</h1>
-                <p style={styles.subtitle}>#{driver.numero} - {driver.equipo}</p>
-            </header>
+        <VStack spacing={6} align="stretch">
+            <Box>
+                <Heading size="lg" color="white">Mi Perfil</Heading>
+                <Text color="gray.400" mt={1}>#{driver.numero} - {driver.equipo}</Text>
+            </Box>
 
-            <div style={styles.driverProfile}>
-                <div style={styles.driverAvatar}>
-                    🏎️
-                </div>
-                <div style={styles.driverInfo}>
-                    <h2>{driver.nombre}</h2>
-                    <div style={styles.habilidadBar}>
-                        <span>Habilidad: {driver.habilidad}/100</span>
-                        <div style={styles.barContainer}>
-                            <div style={{ ...styles.barFill, width: `${driver.habilidad}%` }}></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <Card bg="brand.800" borderColor="brand.700">
+                <CardBody>
+                    <HStack spacing={6} align="center">
+                        <Avatar 
+                            size="xl" 
+                            bg="accent.600" 
+                            icon={<Car size={40} color="white" />} 
+                        />
+                        <Box flex={1}>
+                            <Heading size="md" color="white">{driver.nombre}</Heading>
+                            <Box mt={3}>
+                                <HStack justify="space-between" mb={1}>
+                                    <Text fontSize="sm" color="gray.400">Habilidad</Text>
+                                    <Text fontSize="sm" color="gray.400">{driver.habilidad}/100</Text>
+                                </HStack>
+                                <Progress 
+                                    value={driver.habilidad} 
+                                    colorScheme="green" 
+                                    bg="brand.700"
+                                    borderRadius="full"
+                                    size="sm"
+                                />
+                            </Box>
+                        </Box>
+                    </HStack>
+                </CardBody>
+            </Card>
 
-            <div style={styles.statsGrid}>
-                <div style={styles.statCard}>
-                    <div style={{ ...styles.statIcon, backgroundColor: '#eab308' }}>🏆</div>
-                    <div style={styles.statInfo}>
-                        <span style={styles.statValue}>{driver.victorias}</span>
-                        <span style={styles.statLabel}>Victorias</span>
-                    </div>
-                </div>
-                <div style={styles.statCard}>
-                    <div style={{ ...styles.statIcon, backgroundColor: '#a855f7' }}>🥇</div>
-                    <div style={styles.statInfo}>
-                        <span style={styles.statValue}>{driver.podios}</span>
-                        <span style={styles.statLabel}>Podios</span>
-                    </div>
-                </div>
-                <div style={styles.statCard}>
-                    <div style={{ ...styles.statIcon, backgroundColor: '#22c55e' }}>⭐</div>
-                    <div style={styles.statInfo}>
-                        <span style={styles.statValue}>{driver.puntos}</span>
-                        <span style={styles.statLabel}>Puntos</span>
-                    </div>
-                </div>
-            </div>
+            <SimpleGrid columns={{ base: 1, sm: 3 }} spacing={4}>
+                <StatCard 
+                    icon={Trophy} 
+                    label="Victorias" 
+                    value={driver.victorias} 
+                    color="yellow.500" 
+                />
+                <StatCard 
+                    icon={Medal} 
+                    label="Podios" 
+                    value={driver.podios} 
+                    color="purple.500" 
+                />
+                <StatCard 
+                    icon={Star} 
+                    label="Puntos" 
+                    value={driver.puntos} 
+                    color="green.500" 
+                />
+            </SimpleGrid>
 
-            <div style={styles.section}>
-                <h2>Últimas Carreras</h2>
-                <div style={styles.activityList}>
-                    <div style={styles.activityItem}>
-                        <span style={styles.posicion}>P2</span>
-                        <span>GP de España - Barcelona</span>
-                    </div>
-                    <div style={styles.activityItem}>
-                        <span style={styles.posicion}>P1</span>
-                        <span>GP de Mónaco - Monte Carlo</span>
-                    </div>
-                    <div style={styles.activityItem}>
-                        <span style={styles.posicion}>P4</span>
-                        <span>GP de Miami - Hard Rock Stadium</span>
-                    </div>
-                </div>
-            </div>
-        </>
+            <Card bg="brand.800" borderColor="brand.700">
+                <CardBody>
+                    <Heading size="md" color="white" mb={4}>Ultimas Carreras</Heading>
+                    <VStack spacing={0} align="stretch" divider={<Divider borderColor="brand.700" />}>
+                        {races.map((race, index) => (
+                            <HStack key={index} py={3} spacing={4}>
+                                <Badge 
+                                    bg="accent.600" 
+                                    color="white" 
+                                    px={2} 
+                                    py={1}
+                                    borderRadius="md"
+                                    fontWeight="bold"
+                                >
+                                    {race.position}
+                                </Badge>
+                                <Text color="gray.300">{race.name}</Text>
+                            </HStack>
+                        ))}
+                    </VStack>
+                </CardBody>
+            </Card>
+        </VStack>
     );
 }
-
-const styles = {
-    container: {
-        padding: '30px',
-        maxWidth: '1200px',
-        margin: '0 auto',
-        color: '#fff'
-    },
-    header: {
-        marginBottom: '30px'
-    },
-    subtitle: {
-        color: '#888',
-        margin: '8px 0 0 0'
-    },
-    statsGrid: {
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-        gap: '20px',
-        marginBottom: '30px'
-    },
-    statCard: {
-        backgroundColor: '#1a1a1a',
-        borderRadius: '12px',
-        padding: '20px',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '16px',
-        border: '1px solid #333'
-    },
-    statIcon: {
-        width: '50px',
-        height: '50px',
-        borderRadius: '12px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        fontSize: '24px'
-    },
-    statInfo: {
-        display: 'flex',
-        flexDirection: 'column'
-    },
-    statValue: {
-        fontSize: '24px',
-        fontWeight: 'bold'
-    },
-    statLabel: {
-        color: '#888',
-        fontSize: '14px'
-    },
-    section: {
-        backgroundColor: '#1a1a1a',
-        borderRadius: '12px',
-        padding: '24px',
-        marginBottom: '20px',
-        border: '1px solid #333'
-    },
-    actionsGrid: {
-        display: 'flex',
-        gap: '12px',
-        flexWrap: 'wrap',
-        marginTop: '16px'
-    },
-    actionBtn: {
-        padding: '12px 24px',
-        backgroundColor: '#0f0f0f',
-        border: '1px solid #333',
-        color: '#fff',
-        borderRadius: '8px',
-        cursor: 'pointer',
-        fontSize: '14px'
-    },
-    activityList: {
-        marginTop: '16px'
-    },
-    activityItem: {
-        padding: '12px 0',
-        borderBottom: '1px solid #333',
-        display: 'flex',
-        gap: '16px',
-        color: '#ccc'
-    },
-    activityTime: {
-        color: '#888',
-        minWidth: '80px',
-        fontSize: '13px'
-    },
-    carrosGrid: {
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-        gap: '16px',
-        marginTop: '16px'
-    },
-    carroCard: {
-        backgroundColor: '#0f0f0f',
-        borderRadius: '8px',
-        padding: '20px',
-        border: '1px solid #333'
-    },
-    carroStats: {
-        display: 'flex',
-        gap: '16px',
-        color: '#888',
-        margin: '12px 0',
-        fontSize: '14px'
-    },
-    badge: {
-        display: 'inline-block',
-        padding: '4px 12px',
-        backgroundColor: 'rgba(34, 197, 94, 0.2)',
-        color: '#22c55e',
-        borderRadius: '20px',
-        fontSize: '12px'
-    },
-    driverProfile: {
-        display: 'flex',
-        gap: '24px',
-        alignItems: 'center',
-        backgroundColor: '#1a1a1a',
-        padding: '24px',
-        borderRadius: '12px',
-        marginBottom: '30px',
-        border: '1px solid #333'
-    },
-    driverAvatar: {
-        width: '100px',
-        height: '100px',
-        borderRadius: '50%',
-        backgroundColor: '#e10600',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        fontSize: '48px'
-    },
-    driverInfo: {
-        flex: 1
-    },
-    habilidadBar: {
-        marginTop: '12px'
-    },
-    barContainer: {
-        height: '8px',
-        backgroundColor: '#333',
-        borderRadius: '4px',
-        marginTop: '8px',
-        overflow: 'hidden'
-    },
-    barFill: {
-        height: '100%',
-        backgroundColor: '#22c55e',
-        borderRadius: '4px'
-    },
-    posicion: {
-        backgroundColor: '#e10600',
-        padding: '4px 8px',
-        borderRadius: '4px',
-        fontSize: '12px',
-        fontWeight: 'bold'
-    }
-};
 
 export default Dashboard;

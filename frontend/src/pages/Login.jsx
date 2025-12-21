@@ -1,10 +1,34 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import {
+    Box,
+    Button,
+    Card,
+    CardBody,
+    Center,
+    FormControl,
+    FormLabel,
+    Heading,
+    Input,
+    InputGroup,
+    InputLeftElement,
+    InputRightElement,
+    Text,
+    VStack,
+    Alert,
+    AlertIcon,
+    Divider,
+    HStack,
+    Badge,
+    IconButton,
+} from '@chakra-ui/react';
+import { Mail, Lock, Eye, EyeOff, User } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 function Login() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     
@@ -28,181 +52,129 @@ function Login() {
     };
 
     return (
-        <div style={styles.container}>
-            <div style={styles.card}>
-                <div style={styles.header}>
-                    <h1 style={styles.title}>🏎️ F1 Database</h1>
-                    <p style={styles.subtitle}>Sistema de Gestión de Fórmula 1</p>
-                </div>
+        <Center minH="100vh" bg="brand.900" p={4}>
+            <Card maxW="420px" w="full" bg="brand.800" borderColor="brand.600">
+                <CardBody p={8}>
+                    <VStack spacing={6}>
+                        {/* Header */}
+                        <VStack spacing={2}>
+                            <Heading size="lg" color="white">
+                                F1 Database
+                            </Heading>
+                            <Text color="gray.400" fontSize="sm">
+                                Sistema de Gestion de Formula 1
+                            </Text>
+                        </VStack>
 
-                <form onSubmit={handleSubmit} style={styles.form}>
-                    <div style={styles.inputGroup}>
-                        <label style={styles.label}>Email</label>
-                        <input
-                            type="email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            placeholder="admin@f1.com"
-                            style={styles.input}
-                            required
-                            disabled={loading}
-                        />
-                    </div>
+                        {/* Form */}
+                        <Box as="form" onSubmit={handleSubmit} w="full">
+                            <VStack spacing={4}>
+                                <FormControl>
+                                    <FormLabel color="gray.400" fontSize="sm">
+                                        Email
+                                    </FormLabel>
+                                    <InputGroup>
+                                        <InputLeftElement pointerEvents="none">
+                                            <Mail size={18} color="#718096" />
+                                        </InputLeftElement>
+                                        <Input
+                                            type="email"
+                                            value={email}
+                                            onChange={(e) => setEmail(e.target.value)}
+                                            placeholder="admin@f1.com"
+                                            required
+                                            disabled={loading}
+                                        />
+                                    </InputGroup>
+                                </FormControl>
 
-                    <div style={styles.inputGroup}>
-                        <label style={styles.label}>Contraseña</label>
-                        <input
-                            type="password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            placeholder="••••••"
-                            style={styles.input}
-                            required
-                            disabled={loading}
-                        />
-                    </div>
+                                <FormControl>
+                                    <FormLabel color="gray.400" fontSize="sm">
+                                        Contrasena
+                                    </FormLabel>
+                                    <InputGroup>
+                                        <InputLeftElement pointerEvents="none">
+                                            <Lock size={18} color="#718096" />
+                                        </InputLeftElement>
+                                        <Input
+                                            type={showPassword ? 'text' : 'password'}
+                                            value={password}
+                                            onChange={(e) => setPassword(e.target.value)}
+                                            placeholder="Ingresa tu contrasena"
+                                            required
+                                            disabled={loading}
+                                        />
+                                        <InputRightElement>
+                                            <IconButton
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => setShowPassword(!showPassword)}
+                                                icon={showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                                aria-label={showPassword ? 'Ocultar' : 'Mostrar'}
+                                            />
+                                        </InputRightElement>
+                                    </InputGroup>
+                                </FormControl>
 
-                    {error && (
-                        <div style={styles.error}>
-                            ❌ {error}
-                        </div>
-                    )}
+                                {error && (
+                                    <Alert status="error" borderRadius="md" bg="red.900" color="red.200">
+                                        <AlertIcon color="red.400" />
+                                        {error}
+                                    </Alert>
+                                )}
 
-                    <button 
-                        type="submit" 
-                        style={styles.button}
-                        disabled={loading}
-                    >
-                        {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
-                    </button>
-                </form>
+                                <Button
+                                    type="submit"
+                                    w="full"
+                                    size="lg"
+                                    isLoading={loading}
+                                    loadingText="Iniciando sesion..."
+                                    mt={2}
+                                >
+                                    Iniciar Sesion
+                                </Button>
+                            </VStack>
+                        </Box>
 
-                <div style={styles.testUsers}>
-                    <h4 style={styles.testTitle}>Usuarios de prueba:</h4>
-                    <div style={styles.testUser}>
-                        <span>👤 admin@f1.com</span>
-                        <span style={styles.testRole}>Admin</span>
-                    </div>
-                    <div style={styles.testUser}>
-                        <span>👤 engineer@f1.com</span>
-                        <span style={styles.testRole}>Engineer</span>
-                    </div>
-                    <div style={styles.testUser}>
-                        <span>👤 driver@f1.com</span>
-                        <span style={styles.testRole}>Driver</span>
-                    </div>
-                    <p style={styles.testPassword}>Contraseña: 123456</p>
-                </div>
-            </div>
-        </div>
+                        <Divider borderColor="brand.600" />
+
+                        {/* Test Users */}
+                        <Box w="full" p={4} bg="brand.900" borderRadius="md" borderWidth="1px" borderColor="brand.700">
+                            <Text fontSize="xs" color="gray.500" textTransform="uppercase" fontWeight="600" mb={3}>
+                                Usuarios de prueba
+                            </Text>
+                            <VStack spacing={2} align="stretch">
+                                <HStack justify="space-between">
+                                    <HStack>
+                                        <User size={14} color="#718096" />
+                                        <Text fontSize="sm" color="gray.400">admin@f1.com</Text>
+                                    </HStack>
+                                    <Badge colorScheme="red" variant="subtle">Admin</Badge>
+                                </HStack>
+                                <HStack justify="space-between">
+                                    <HStack>
+                                        <User size={14} color="#718096" />
+                                        <Text fontSize="sm" color="gray.400">engineer@f1.com</Text>
+                                    </HStack>
+                                    <Badge colorScheme="blue" variant="subtle">Engineer</Badge>
+                                </HStack>
+                                <HStack justify="space-between">
+                                    <HStack>
+                                        <User size={14} color="#718096" />
+                                        <Text fontSize="sm" color="gray.400">driver@f1.com</Text>
+                                    </HStack>
+                                    <Badge colorScheme="green" variant="subtle">Driver</Badge>
+                                </HStack>
+                            </VStack>
+                            <Text fontSize="xs" color="gray.600" textAlign="center" mt={3}>
+                                Contrasena: 123456
+                            </Text>
+                        </Box>
+                    </VStack>
+                </CardBody>
+            </Card>
+        </Center>
     );
 }
-
-const styles = {
-    container: {
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: '#0f0f0f',
-        padding: '20px'
-    },
-    card: {
-        backgroundColor: '#1a1a1a',
-        borderRadius: '16px',
-        padding: '40px',
-        width: '100%',
-        maxWidth: '400px',
-        border: '1px solid #333'
-    },
-    header: {
-        textAlign: 'center',
-        marginBottom: '30px'
-    },
-    title: {
-        color: '#fff',
-        fontSize: '28px',
-        margin: '0 0 8px 0'
-    },
-    subtitle: {
-        color: '#888',
-        fontSize: '14px',
-        margin: 0
-    },
-    form: {
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '20px'
-    },
-    inputGroup: {
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '8px'
-    },
-    label: {
-        color: '#aaa',
-        fontSize: '14px'
-    },
-    input: {
-        padding: '14px 16px',
-        fontSize: '16px',
-        backgroundColor: '#0f0f0f',
-        border: '1px solid #333',
-        borderRadius: '8px',
-        color: '#fff',
-        outline: 'none',
-        transition: 'border-color 0.2s'
-    },
-    button: {
-        padding: '14px',
-        fontSize: '16px',
-        fontWeight: '600',
-        backgroundColor: '#e10600',
-        color: '#fff',
-        border: 'none',
-        borderRadius: '8px',
-        cursor: 'pointer',
-        transition: 'background-color 0.2s',
-        marginTop: '10px'
-    },
-    error: {
-        padding: '12px',
-        backgroundColor: 'rgba(239, 68, 68, 0.1)',
-        border: '1px solid #ef4444',
-        borderRadius: '8px',
-        color: '#ef4444',
-        fontSize: '14px'
-    },
-    testUsers: {
-        marginTop: '30px',
-        padding: '20px',
-        backgroundColor: '#0f0f0f',
-        borderRadius: '8px',
-        border: '1px solid #333'
-    },
-    testTitle: {
-        color: '#888',
-        fontSize: '12px',
-        textTransform: 'uppercase',
-        margin: '0 0 12px 0'
-    },
-    testUser: {
-        display: 'flex',
-        justifyContent: 'space-between',
-        color: '#aaa',
-        fontSize: '13px',
-        padding: '6px 0'
-    },
-    testRole: {
-        color: '#e10600',
-        fontSize: '12px'
-    },
-    testPassword: {
-        color: '#666',
-        fontSize: '12px',
-        margin: '12px 0 0 0',
-        textAlign: 'center'
-    }
-};
 
 export default Login;

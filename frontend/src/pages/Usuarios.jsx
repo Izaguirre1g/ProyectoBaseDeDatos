@@ -1,7 +1,40 @@
 import { useState } from 'react';
+import {
+    Box,
+    Container,
+    Heading,
+    Text,
+    Button,
+    Table,
+    Thead,
+    Tbody,
+    Tr,
+    Th,
+    Td,
+    Badge,
+    HStack,
+    IconButton,
+    Card,
+    CardBody,
+    Modal,
+    ModalOverlay,
+    ModalContent,
+    ModalHeader,
+    ModalBody,
+    ModalCloseButton,
+    FormControl,
+    FormLabel,
+    Input,
+    Select,
+    VStack,
+    useDisclosure,
+    Flex,
+    useToast,
+} from '@chakra-ui/react';
+import { Plus, Pencil, Trash2 } from 'lucide-react';
 
 /**
- * Vista de gestión de usuarios (Admin)
+ * Vista de gestion de usuarios (Admin)
  * Datos dummy - preparado para integrar con BD
  */
 function Usuarios() {
@@ -13,287 +46,169 @@ function Usuarios() {
         { id: 5, nombre: 'Max Verstappen', email: 'max@f1.com', rol: 'Driver', equipo: 'Red Bull Racing' },
     ]);
 
-    const [showModal, setShowModal] = useState(false);
+    const { isOpen, onOpen, onClose } = useDisclosure();
     const [editingUser, setEditingUser] = useState(null);
+    const toast = useToast();
 
     const handleEdit = (usuario) => {
         setEditingUser(usuario);
-        setShowModal(true);
+        onOpen();
     };
 
     const handleDelete = (id) => {
-        if (confirm('¿Estás seguro de eliminar este usuario?')) {
+        if (confirm('Estas seguro de eliminar este usuario?')) {
             setUsuarios(usuarios.filter(u => u.id !== id));
+            toast({
+                title: 'Usuario eliminado',
+                status: 'success',
+                duration: 3000,
+            });
         }
     };
 
     const handleNew = () => {
         setEditingUser(null);
-        setShowModal(true);
+        onOpen();
     };
 
-    const getRolColor = (rol) => {
+    const getRolColorScheme = (rol) => {
         switch (rol) {
-            case 'Admin': return '#e10600';
-            case 'Engineer': return '#3b82f6';
-            case 'Driver': return '#22c55e';
-            default: return '#888';
+            case 'Admin': return 'red';
+            case 'Engineer': return 'blue';
+            case 'Driver': return 'green';
+            default: return 'gray';
         }
     };
 
     return (
-        <div style={styles.container}>
-            <header style={styles.header}>
-                <div>
-                    <h1>Gestión de Usuarios</h1>
-                    <p style={styles.subtitle}>{usuarios.length} usuarios registrados</p>
-                </div>
-                <button style={styles.btnPrimary} onClick={handleNew}>
-                    ➕ Nuevo Usuario
-                </button>
-            </header>
+        <Container maxW="container.xl" py={8}>
+            <Flex justify="space-between" align="center" mb={6}>
+                <Box>
+                    <Heading size="lg" color="white">Gestion de Usuarios</Heading>
+                    <Text color="gray.400" mt={1}>{usuarios.length} usuarios registrados</Text>
+                </Box>
+                <Button leftIcon={<Plus size={16} />} onClick={handleNew}>
+                    Nuevo Usuario
+                </Button>
+            </Flex>
 
-            <div style={styles.tableContainer}>
-                <table style={styles.table}>
-                    <thead>
-                        <tr>
-                            <th style={styles.th}>ID</th>
-                            <th style={styles.th}>Nombre</th>
-                            <th style={styles.th}>Email</th>
-                            <th style={styles.th}>Rol</th>
-                            <th style={styles.th}>Equipo</th>
-                            <th style={styles.th}>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {usuarios.map(usuario => (
-                            <tr key={usuario.id} style={styles.tr}>
-                                <td style={styles.td}>{usuario.id}</td>
-                                <td style={styles.td}>{usuario.nombre}</td>
-                                <td style={styles.td}>{usuario.email}</td>
-                                <td style={styles.td}>
-                                    <span style={{
-                                        ...styles.rolBadge,
-                                        backgroundColor: getRolColor(usuario.rol)
-                                    }}>
-                                        {usuario.rol}
-                                    </span>
-                                </td>
-                                <td style={styles.td}>{usuario.equipo || '-'}</td>
-                                <td style={styles.td}>
-                                    <button 
-                                        style={styles.btnEdit}
-                                        onClick={() => handleEdit(usuario)}
-                                    >
-                                        ✏️
-                                    </button>
-                                    <button 
-                                        style={styles.btnDelete}
-                                        onClick={() => handleDelete(usuario.id)}
-                                    >
-                                        🗑️
-                                    </button>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
+            <Card bg="brand.800" borderColor="brand.700">
+                <CardBody p={0}>
+                    <Box overflowX="auto">
+                        <Table variant="simple">
+                            <Thead bg="brand.900">
+                                <Tr>
+                                    <Th color="gray.500" borderColor="brand.700">ID</Th>
+                                    <Th color="gray.500" borderColor="brand.700">Nombre</Th>
+                                    <Th color="gray.500" borderColor="brand.700">Email</Th>
+                                    <Th color="gray.500" borderColor="brand.700">Rol</Th>
+                                    <Th color="gray.500" borderColor="brand.700">Equipo</Th>
+                                    <Th color="gray.500" borderColor="brand.700">Acciones</Th>
+                                </Tr>
+                            </Thead>
+                            <Tbody>
+                                {usuarios.map(usuario => (
+                                    <Tr key={usuario.id} _hover={{ bg: 'brand.700' }}>
+                                        <Td color="gray.400" borderColor="brand.700">{usuario.id}</Td>
+                                        <Td color="white" borderColor="brand.700">{usuario.nombre}</Td>
+                                        <Td color="gray.300" borderColor="brand.700">{usuario.email}</Td>
+                                        <Td borderColor="brand.700">
+                                            <Badge colorScheme={getRolColorScheme(usuario.rol)} variant="subtle">
+                                                {usuario.rol}
+                                            </Badge>
+                                        </Td>
+                                        <Td color="gray.400" borderColor="brand.700">{usuario.equipo || '-'}</Td>
+                                        <Td borderColor="brand.700">
+                                            <HStack spacing={2}>
+                                                <IconButton
+                                                    icon={<Pencil size={16} />}
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    aria-label="Editar"
+                                                    onClick={() => handleEdit(usuario)}
+                                                />
+                                                <IconButton
+                                                    icon={<Trash2 size={16} />}
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    colorScheme="red"
+                                                    aria-label="Eliminar"
+                                                    onClick={() => handleDelete(usuario.id)}
+                                                />
+                                            </HStack>
+                                        </Td>
+                                    </Tr>
+                                ))}
+                            </Tbody>
+                        </Table>
+                    </Box>
+                </CardBody>
+            </Card>
 
             {/* Modal para crear/editar */}
-            {showModal && (
-                <div style={styles.modalOverlay}>
-                    <div style={styles.modal}>
-                        <h2>{editingUser ? 'Editar Usuario' : 'Nuevo Usuario'}</h2>
-                        <form style={styles.form}>
-                            <div style={styles.formGroup}>
-                                <label>Nombre</label>
-                                <input 
-                                    type="text" 
-                                    style={styles.input}
+            <Modal isOpen={isOpen} onClose={onClose} isCentered>
+                <ModalOverlay bg="blackAlpha.800" />
+                <ModalContent bg="brand.800" borderColor="brand.700">
+                    <ModalHeader color="white">
+                        {editingUser ? 'Editar Usuario' : 'Nuevo Usuario'}
+                    </ModalHeader>
+                    <ModalCloseButton />
+                    <ModalBody pb={6}>
+                        <VStack spacing={4}>
+                            <FormControl>
+                                <FormLabel color="gray.400" fontSize="sm">Nombre</FormLabel>
+                                <Input 
                                     defaultValue={editingUser?.nombre || ''}
                                     placeholder="Nombre completo"
                                 />
-                            </div>
-                            <div style={styles.formGroup}>
-                                <label>Email</label>
-                                <input 
-                                    type="email" 
-                                    style={styles.input}
+                            </FormControl>
+                            <FormControl>
+                                <FormLabel color="gray.400" fontSize="sm">Email</FormLabel>
+                                <Input 
+                                    type="email"
                                     defaultValue={editingUser?.email || ''}
                                     placeholder="email@f1.com"
                                 />
-                            </div>
-                            <div style={styles.formGroup}>
-                                <label>Contraseña</label>
-                                <input 
-                                    type="password" 
-                                    style={styles.input}
-                                    placeholder={editingUser ? '••••••• (dejar vacío para mantener)' : 'Contraseña'}
+                            </FormControl>
+                            <FormControl>
+                                <FormLabel color="gray.400" fontSize="sm">Contrasena</FormLabel>
+                                <Input 
+                                    type="password"
+                                    placeholder={editingUser ? '(dejar vacio para mantener)' : 'Contrasena'}
                                 />
-                            </div>
-                            <div style={styles.formGroup}>
-                                <label>Rol</label>
-                                <select style={styles.input} defaultValue={editingUser?.rol || 'Driver'}>
+                            </FormControl>
+                            <FormControl>
+                                <FormLabel color="gray.400" fontSize="sm">Rol</FormLabel>
+                                <Select defaultValue={editingUser?.rol || 'Driver'}>
                                     <option value="Admin">Admin</option>
                                     <option value="Engineer">Engineer</option>
                                     <option value="Driver">Driver</option>
-                                </select>
-                            </div>
-                            <div style={styles.formGroup}>
-                                <label>Equipo (opcional)</label>
-                                <select style={styles.input} defaultValue={editingUser?.equipo || ''}>
+                                </Select>
+                            </FormControl>
+                            <FormControl>
+                                <FormLabel color="gray.400" fontSize="sm">Equipo (opcional)</FormLabel>
+                                <Select defaultValue={editingUser?.equipo || ''}>
                                     <option value="">Sin equipo</option>
                                     <option value="Ferrari">Ferrari</option>
                                     <option value="Red Bull Racing">Red Bull Racing</option>
                                     <option value="Mercedes">Mercedes</option>
                                     <option value="McLaren">McLaren</option>
-                                </select>
-                            </div>
-                            <div style={styles.modalActions}>
-                                <button 
-                                    type="button" 
-                                    style={styles.btnCancel}
-                                    onClick={() => setShowModal(false)}
-                                >
+                                </Select>
+                            </FormControl>
+                            <HStack w="full" justify="flex-end" spacing={3} pt={4}>
+                                <Button variant="ghost" onClick={onClose}>
                                     Cancelar
-                                </button>
-                                <button type="submit" style={styles.btnPrimary}>
+                                </Button>
+                                <Button type="submit">
                                     {editingUser ? 'Guardar Cambios' : 'Crear Usuario'}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
-        </div>
+                                </Button>
+                            </HStack>
+                        </VStack>
+                    </ModalBody>
+                </ModalContent>
+            </Modal>
+        </Container>
     );
 }
-
-const styles = {
-    container: {
-        padding: '30px',
-        maxWidth: '1200px',
-        margin: '0 auto',
-        color: '#fff'
-    },
-    header: {
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: '30px'
-    },
-    subtitle: {
-        color: '#888',
-        margin: '8px 0 0 0'
-    },
-    btnPrimary: {
-        padding: '12px 24px',
-        backgroundColor: '#e10600',
-        color: '#fff',
-        border: 'none',
-        borderRadius: '8px',
-        cursor: 'pointer',
-        fontSize: '14px',
-        fontWeight: '600'
-    },
-    tableContainer: {
-        backgroundColor: '#1a1a1a',
-        borderRadius: '12px',
-        overflow: 'hidden',
-        border: '1px solid #333'
-    },
-    table: {
-        width: '100%',
-        borderCollapse: 'collapse'
-    },
-    th: {
-        textAlign: 'left',
-        padding: '16px',
-        backgroundColor: '#0f0f0f',
-        color: '#888',
-        fontSize: '13px',
-        textTransform: 'uppercase',
-        borderBottom: '1px solid #333'
-    },
-    tr: {
-        borderBottom: '1px solid #333'
-    },
-    td: {
-        padding: '16px',
-        color: '#fff'
-    },
-    rolBadge: {
-        padding: '4px 12px',
-        borderRadius: '20px',
-        fontSize: '12px',
-        fontWeight: '500'
-    },
-    btnEdit: {
-        padding: '8px 12px',
-        backgroundColor: 'transparent',
-        border: 'none',
-        cursor: 'pointer',
-        fontSize: '16px'
-    },
-    btnDelete: {
-        padding: '8px 12px',
-        backgroundColor: 'transparent',
-        border: 'none',
-        cursor: 'pointer',
-        fontSize: '16px'
-    },
-    modalOverlay: {
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 1000
-    },
-    modal: {
-        backgroundColor: '#1a1a1a',
-        borderRadius: '16px',
-        padding: '30px',
-        width: '100%',
-        maxWidth: '450px',
-        border: '1px solid #333'
-    },
-    form: {
-        marginTop: '20px'
-    },
-    formGroup: {
-        marginBottom: '16px'
-    },
-    input: {
-        width: '100%',
-        padding: '12px',
-        backgroundColor: '#0f0f0f',
-        border: '1px solid #333',
-        borderRadius: '8px',
-        color: '#fff',
-        fontSize: '14px',
-        marginTop: '6px',
-        boxSizing: 'border-box'
-    },
-    modalActions: {
-        display: 'flex',
-        gap: '12px',
-        justifyContent: 'flex-end',
-        marginTop: '24px'
-    },
-    btnCancel: {
-        padding: '12px 24px',
-        backgroundColor: 'transparent',
-        border: '1px solid #333',
-        color: '#fff',
-        borderRadius: '8px',
-        cursor: 'pointer'
-    }
-};
 
 export default Usuarios;

@@ -1,5 +1,47 @@
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link as RouterLink, useNavigate, useLocation } from 'react-router-dom';
+import {
+    Box,
+    Flex,
+    HStack,
+    Button,
+    Text,
+    Menu,
+    MenuButton,
+    MenuList,
+    MenuItem,
+    Avatar,
+    Divider,
+    Icon,
+} from '@chakra-ui/react';
+import {
+    LayoutDashboard,
+    Users,
+    Building2,
+    Flag,
+    Package,
+    ShoppingCart,
+    Wrench,
+    LogOut,
+    ChevronDown,
+    User,
+} from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+
+function NavLink({ to, icon, children, isActive }) {
+    return (
+        <Button
+            as={RouterLink}
+            to={to}
+            variant={isActive ? 'solid' : 'ghost'}
+            size="sm"
+            leftIcon={<Icon as={icon} boxSize={4} />}
+            bg={isActive ? 'accent.600' : 'transparent'}
+            _hover={{ bg: isActive ? 'accent.500' : 'brand.700' }}
+        >
+            {children}
+        </Button>
+    );
+}
 
 function Navbar() {
     const { usuario, logout, isAuthenticated } = useAuth();
@@ -11,7 +53,6 @@ function Navbar() {
         navigate('/login');
     };
 
-    // No mostrar navbar en login
     if (location.pathname === '/login') {
         return null;
     }
@@ -19,162 +60,148 @@ function Navbar() {
     const isActive = (path) => location.pathname === path;
 
     return (
-        <nav style={styles.nav}>
-            <div style={styles.brand}>
-                <Link to="/" style={styles.brandLink}>🏎️ F1 Database</Link>
-            </div>
+        <Box
+            as="nav"
+            bg="brand.800"
+            borderBottom="1px"
+            borderColor="brand.600"
+            position="sticky"
+            top={0}
+            zIndex={1000}
+            px={6}
+            py={3}
+        >
+            <Flex justify="space-between" align="center" maxW="1400px" mx="auto">
+                {/* Logo */}
+                <Text
+                    as={RouterLink}
+                    to="/"
+                    fontSize="lg"
+                    fontWeight="bold"
+                    color="white"
+                    _hover={{ textDecoration: 'none', color: 'gray.200' }}
+                >
+                    F1 Database
+                </Text>
 
-            {isAuthenticated() && (
-                <>
-                    <div style={styles.links}>
-                        <Link 
-                            to="/" 
-                            style={isActive('/') ? styles.linkActive : styles.link}
-                        >
-                            Dashboard
-                        </Link>
-                        
-                        {/* Links para Admin */}
-                        {usuario?.rol === 'Admin' && (
-                            <>
-                                <Link 
-                                    to="/usuarios" 
-                                    style={isActive('/usuarios') ? styles.linkActive : styles.link}
-                                >
-                                    👥 Usuarios
-                                </Link>
-                                <Link 
-                                    to="/equipos" 
-                                    style={isActive('/equipos') ? styles.linkActive : styles.link}
-                                >
-                                    🏢 Equipos
-                                </Link>
-                                <Link 
-                                    to="/simulaciones" 
-                                    style={isActive('/simulaciones') ? styles.linkActive : styles.link}
-                                >
-                                    🏁 Simulaciones
-                                </Link>
-                            </>
-                        )}
+                {isAuthenticated() && (
+                    <>
+                        {/* Navigation Links */}
+                        <HStack spacing={1}>
+                            <NavLink 
+                                to="/" 
+                                icon={LayoutDashboard} 
+                                isActive={isActive('/')}
+                            >
+                                Dashboard
+                            </NavLink>
 
-                        {/* Links para Engineer */}
-                        {usuario?.rol === 'Engineer' && (
-                            <>
-                                <Link 
-                                    to="/mi-equipo" 
-                                    style={isActive('/mi-equipo') ? styles.linkActive : styles.link}
-                                >
-                                    🏢 Mi Equipo
-                                </Link>
-                                <Link 
-                                    to="/inventario" 
-                                    style={isActive('/inventario') ? styles.linkActive : styles.link}
-                                >
-                                    📦 Inventario
-                                </Link>
-                                <Link 
-                                    to="/armado" 
-                                    style={isActive('/armado') ? styles.linkActive : styles.link}
-                                >
-                                    🔧 Armado
-                                </Link>
-                            </>
-                        )}
+                            {usuario?.rol === 'Admin' && (
+                                <>
+                                    <NavLink 
+                                        to="/usuarios" 
+                                        icon={Users} 
+                                        isActive={isActive('/usuarios')}
+                                    >
+                                        Usuarios
+                                    </NavLink>
+                                    <NavLink 
+                                        to="/equipos" 
+                                        icon={Building2} 
+                                        isActive={isActive('/equipos')}
+                                    >
+                                        Equipos
+                                    </NavLink>
+                                    <NavLink 
+                                        to="/simulaciones" 
+                                        icon={Flag} 
+                                        isActive={isActive('/simulaciones')}
+                                    >
+                                        Simulaciones
+                                    </NavLink>
+                                </>
+                            )}
 
-                        {/* Links para todos los autenticados */}
-                        <Link 
-                            to="/catalogo" 
-                            style={isActive('/catalogo') ? styles.linkActive : styles.link}
-                        >
-                            🛒 Catálogo
-                        </Link>
-                    </div>
+                            {usuario?.rol === 'Engineer' && (
+                                <>
+                                    <NavLink 
+                                        to="/mi-equipo" 
+                                        icon={Building2} 
+                                        isActive={isActive('/mi-equipo')}
+                                    >
+                                        Mi Equipo
+                                    </NavLink>
+                                    <NavLink 
+                                        to="/inventario" 
+                                        icon={Package} 
+                                        isActive={isActive('/inventario')}
+                                    >
+                                        Inventario
+                                    </NavLink>
+                                    <NavLink 
+                                        to="/armado" 
+                                        icon={Wrench} 
+                                        isActive={isActive('/armado')}
+                                    >
+                                        Armado
+                                    </NavLink>
+                                </>
+                            )}
 
-                    <div style={styles.userSection}>
-                        <div style={styles.userInfo}>
-                            <span style={styles.userName}>{usuario?.nombre}</span>
-                            <span style={styles.userRole}>{usuario?.rol}</span>
-                        </div>
-                        <button onClick={handleLogout} style={styles.logoutBtn}>
-                            Salir
-                        </button>
-                    </div>
-                </>
-            )}
-        </nav>
+                            <NavLink 
+                                to="/catalogo" 
+                                icon={ShoppingCart} 
+                                isActive={isActive('/catalogo')}
+                            >
+                                Catalogo
+                            </NavLink>
+                        </HStack>
+
+                        {/* User Menu */}
+                        <Menu>
+                            <MenuButton
+                                as={Button}
+                                variant="ghost"
+                                rightIcon={<ChevronDown size={16} />}
+                                _hover={{ bg: 'brand.700' }}
+                            >
+                                <HStack spacing={3}>
+                                    <Avatar size="sm" name={usuario?.nombre} bg="accent.600" />
+                                    <Box textAlign="left" display={{ base: 'none', md: 'block' }}>
+                                        <Text fontSize="sm" fontWeight="500">
+                                            {usuario?.nombre}
+                                        </Text>
+                                        <Text fontSize="xs" color="gray.400">
+                                            {usuario?.rol}
+                                        </Text>
+                                    </Box>
+                                </HStack>
+                            </MenuButton>
+                            <MenuList bg="brand.800" borderColor="brand.600">
+                                <MenuItem 
+                                    icon={<User size={16} />}
+                                    bg="brand.800"
+                                    _hover={{ bg: 'brand.700' }}
+                                >
+                                    Mi Perfil
+                                </MenuItem>
+                                <Divider borderColor="brand.600" />
+                                <MenuItem
+                                    icon={<LogOut size={16} />}
+                                    onClick={handleLogout}
+                                    bg="brand.800"
+                                    _hover={{ bg: 'brand.700' }}
+                                    color="red.400"
+                                >
+                                    Cerrar Sesion
+                                </MenuItem>
+                            </MenuList>
+                        </Menu>
+                    </>
+                )}
+            </Flex>
+        </Box>
     );
 }
-
-const styles = {
-    nav: {
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: '12px 24px',
-        backgroundColor: '#1a1a1a',
-        borderBottom: '2px solid #e10600',
-        position: 'sticky',
-        top: 0,
-        zIndex: 1000
-    },
-    brand: {
-        fontSize: '20px',
-        fontWeight: 'bold'
-    },
-    brandLink: {
-        color: '#fff',
-        textDecoration: 'none'
-    },
-    links: {
-        display: 'flex',
-        gap: '8px'
-    },
-    link: {
-        color: '#aaa',
-        textDecoration: 'none',
-        padding: '8px 16px',
-        borderRadius: '6px',
-        fontSize: '14px',
-        transition: 'all 0.2s'
-    },
-    linkActive: {
-        color: '#fff',
-        textDecoration: 'none',
-        padding: '8px 16px',
-        borderRadius: '6px',
-        fontSize: '14px',
-        backgroundColor: '#e10600'
-    },
-    userSection: {
-        display: 'flex',
-        alignItems: 'center',
-        gap: '16px'
-    },
-    userInfo: {
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'flex-end'
-    },
-    userName: {
-        color: '#fff',
-        fontSize: '14px',
-        fontWeight: '500'
-    },
-    userRole: {
-        color: '#888',
-        fontSize: '12px'
-    },
-    logoutBtn: {
-        padding: '8px 16px',
-        backgroundColor: 'transparent',
-        border: '1px solid #444',
-        color: '#fff',
-        borderRadius: '6px',
-        cursor: 'pointer',
-        fontSize: '14px',
-        transition: 'all 0.2s'
-    }
-};
 
 export default Navbar;

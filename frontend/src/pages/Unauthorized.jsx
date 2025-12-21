@@ -1,46 +1,45 @@
-import { Link } from 'react-router-dom';
+import { Link as RouterLink } from 'react-router-dom';
+import {
+    Box,
+    Center,
+    VStack,
+    Heading,
+    Text,
+    Link,
+    Icon,
+} from '@chakra-ui/react';
+import { ShieldX, ArrowLeft } from 'lucide-react';
 
 function Unauthorized() {
     return (
-        <div style={styles.container}>
-            <div style={styles.content}>
-                <span style={styles.icon}>🚫</span>
-                <h1>Acceso Denegado</h1>
-                <p style={styles.text}>
-                    No tienes permisos para acceder a esta página.
-                </p>
-                <Link to="/" style={styles.link}>
-                    ← Volver al Dashboard
+        <Center minH="80vh">
+            <VStack spacing={6} textAlign="center">
+                <Box
+                    p={6}
+                    borderRadius="full"
+                    bg="red.900"
+                >
+                    <Icon as={ShieldX} boxSize={16} color="red.400" />
+                </Box>
+                <Heading color="white">Acceso Denegado</Heading>
+                <Text color="gray.500">
+                    No tienes permisos para acceder a esta pagina.
+                </Text>
+                <Link
+                    as={RouterLink}
+                    to="/"
+                    color="accent.500"
+                    display="flex"
+                    alignItems="center"
+                    gap={2}
+                    _hover={{ color: 'accent.400' }}
+                >
+                    <ArrowLeft size={16} />
+                    Volver al Dashboard
                 </Link>
-            </div>
-        </div>
+            </VStack>
+        </Center>
     );
 }
-
-const styles = {
-    container: {
-        minHeight: '80vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        color: '#fff'
-    },
-    content: {
-        textAlign: 'center'
-    },
-    icon: {
-        fontSize: '80px',
-        display: 'block',
-        marginBottom: '20px'
-    },
-    text: {
-        color: '#888',
-        marginBottom: '30px'
-    },
-    link: {
-        color: '#e10600',
-        textDecoration: 'none'
-    }
-};
 
 export default Unauthorized;
