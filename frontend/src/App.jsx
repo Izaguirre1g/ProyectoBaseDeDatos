@@ -1,8 +1,94 @@
-import Login from './pages/Login'
-import './App.css'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import ProtectedRoute from './components/ProtectedRoute';
+import Navbar from './components/Navbar';
+import Login from './pages/Login';
+import Dashboard from './pages/Dashboard';
+import Usuarios from './pages/Usuarios';
+import Catalogo from './pages/Catalogo';
+import Unauthorized from './pages/Unauthorized';
+import './App.css';
 
-function App() {
-  return <Login />
+// Componente para redirigir si ya está autenticado
+function PublicRoute({ children }) {
+    const { isAuthenticated, loading } = useAuth();
+    
+    if (loading) {
+        return <div style={{ color: '#fff', textAlign: 'center', padding: '50px' }}>Cargando...</div>;
+    }
+    
+    if (isAuthenticated()) {
+        return <Navigate to="/" replace />;
+    }
+    
+    return children;
 }
 
-export default App
+function AppRoutes() {
+    return (
+        <>
+            <Navbar />
+            <Routes>
+                {/* Ruta pública - Login */}
+                <Route 
+                    path="/login" 
+                    element={
+                        <PublicRoute>
+                            <Login />
+                        </PublicRoute>
+                    } 
+                />
+
+                {/* Dashboard - todos los autenticados */}
+                <Route 
+                    path="/" 
+                    element={
+                        <ProtectedRoute>
+                            <Dashboard />
+                        </ProtectedRoute>
+                    } 
+                />
+
+                {/* Usuarios - solo Admin */}
+                <Route 
+                    path="/usuarios" 
+                    element={
+                        <ProtectedRoute allowedRoles={['Admin']}>
+                            <Usuarios />
+                        </ProtectedRoute>
+                    } 
+                />
+
+                {/* Catálogo - todos los autenticados */}
+                <Route 
+                    path="/catalogo" 
+                    element={
+                        <ProtectedRoute>
+                            <Catalogo />
+                        </ProtectedRoute>
+                    } 
+                />
+
+                {/* Página de acceso denegado */}
+                <Route path="/unauthorized" element={<Unauthorized />} />
+
+                {/* Ruta por defecto - redirigir al dashboard o login */}
+                <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+        </>
+    );
+}
+
+function App() {
+    return (
+        <BrowserRouter>
+            <AuthProvider>
+                <div style={{ backgroundColor: '#0f0f0f', minHeight: '100vh' }}>
+                    <AppRoutes />
+                </div>
+            </AuthProvider>
+        </BrowserRouter>
+    );
+}
+
+export default App;

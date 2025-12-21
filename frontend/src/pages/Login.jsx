@@ -1,188 +1,207 @@
 import { useState } from 'react';
-import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 function Login() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [mensaje, setMensaje] = useState('');
-    const [usuario, setUsuario] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
+    
+    const { login } = useAuth();
+    const navigate = useNavigate();
 
-    const handleLogin = async (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        setMensaje('');
+        setLoading(true);
+        setError('');
 
-        try {
-            const response = await axios.post('http://localhost:3000/api/auth/login', {
-                email,
-                password
-            }, {
-                withCredentials: true  // Importante para enviar cookies
-            });
-
-            if (response.data.success) {
-                setUsuario(response.data.usuario);
-                setMensaje(`✅ Bienvenido ${response.data.usuario.nombre}!`);
-            }
-        } catch (error) {
-            setMensaje('❌ ' + (error.response?.data?.error || 'Error al conectar'));
+        const result = await login(email, password);
+        
+        if (result.success) {
+            navigate('/');
+        } else {
+            setError(result.error);
         }
-    };
-
-    const handleLogout = async () => {
-        try {
-            await axios.post('http://localhost:3000/api/auth/logout', {}, {
-                withCredentials: true
-            });
-            setUsuario(null);
-            setMensaje('Sesión cerrada');
-        } catch (error) {
-            setMensaje('Error al cerrar sesión');
-        }
-    };
-
-    const verificarSesion = async () => {
-        try {
-            const response = await axios.get('http://localhost:3000/api/auth/me', {
-                withCredentials: true
-            });
-            if (response.data.loggedIn) {
-                setUsuario(response.data.usuario);
-                setMensaje('✅ Sesión activa');
-            } else {
-                setMensaje('No hay sesión activa');
-            }
-        } catch (error) {
-            setMensaje('Error al verificar sesión');
-        }
+        
+        setLoading(false);
     };
 
     return (
         <div style={styles.container}>
-            <h1>🏎️ F1 Database - Login</h1>
-            
-            {!usuario ? (
-                <form onSubmit={handleLogin} style={styles.form}>
+            <div style={styles.card}>
+                <div style={styles.header}>
+                    <h1 style={styles.title}>🏎️ F1 Database</h1>
+                    <p style={styles.subtitle}>Sistema de Gestión de Fórmula 1</p>
+                </div>
+
+                <form onSubmit={handleSubmit} style={styles.form}>
                     <div style={styles.inputGroup}>
-                        <label>Email:</label>
+                        <label style={styles.label}>Email</label>
                         <input
                             type="email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             placeholder="admin@f1.com"
                             style={styles.input}
+                            required
+                            disabled={loading}
                         />
                     </div>
-                    
+
                     <div style={styles.inputGroup}>
-                        <label>Contraseña:</label>
+                        <label style={styles.label}>Contraseña</label>
                         <input
                             type="password"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                            placeholder="123456"
+                            placeholder="••••••"
                             style={styles.input}
+                            required
+                            disabled={loading}
                         />
                     </div>
-                    
-                    <button type="submit" style={styles.button}>
-                        Iniciar Sesión
+
+                    {error && (
+                        <div style={styles.error}>
+                            ❌ {error}
+                        </div>
+                    )}
+
+                    <button 
+                        type="submit" 
+                        style={styles.button}
+                        disabled={loading}
+                    >
+                        {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
                     </button>
                 </form>
-            ) : (
-                <div style={styles.userInfo}>
-                    <h2>Usuario Autenticado</h2>
-                    <p><strong>Nombre:</strong> {usuario.nombre}</p>
-                    <p><strong>Email:</strong> {usuario.email}</p>
-                    <p><strong>Rol:</strong> {usuario.rol}</p>
-                    <button onClick={handleLogout} style={styles.buttonLogout}>
-                        Cerrar Sesión
-                    </button>
-                </div>
-            )}
-            
-            {mensaje && <p style={styles.mensaje}>{mensaje}</p>}
-            
-            <div style={styles.credenciales}>
-                <h3>Usuarios de prueba:</h3>
-                <p>👤 admin@f1.com / 123456 (Admin)</p>
-                <p>👤 engineer@f1.com / 123456 (Engineer)</p>
-                <p>👤 driver@f1.com / 123456 (Driver)</p>
-            </div>
 
-            <button onClick={verificarSesion} style={styles.buttonSecondary}>
-                Verificar Sesión Activa
-            </button>
+                <div style={styles.testUsers}>
+                    <h4 style={styles.testTitle}>Usuarios de prueba:</h4>
+                    <div style={styles.testUser}>
+                        <span>👤 admin@f1.com</span>
+                        <span style={styles.testRole}>Admin</span>
+                    </div>
+                    <div style={styles.testUser}>
+                        <span>👤 engineer@f1.com</span>
+                        <span style={styles.testRole}>Engineer</span>
+                    </div>
+                    <div style={styles.testUser}>
+                        <span>👤 driver@f1.com</span>
+                        <span style={styles.testRole}>Driver</span>
+                    </div>
+                    <p style={styles.testPassword}>Contraseña: 123456</p>
+                </div>
+            </div>
         </div>
     );
 }
 
 const styles = {
     container: {
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#0f0f0f',
+        padding: '20px'
+    },
+    card: {
+        backgroundColor: '#1a1a1a',
+        borderRadius: '16px',
+        padding: '40px',
+        width: '100%',
         maxWidth: '400px',
-        margin: '50px auto',
-        padding: '20px',
-        fontFamily: 'Arial, sans-serif'
+        border: '1px solid #333'
+    },
+    header: {
+        textAlign: 'center',
+        marginBottom: '30px'
+    },
+    title: {
+        color: '#fff',
+        fontSize: '28px',
+        margin: '0 0 8px 0'
+    },
+    subtitle: {
+        color: '#888',
+        fontSize: '14px',
+        margin: 0
     },
     form: {
         display: 'flex',
         flexDirection: 'column',
-        gap: '15px'
+        gap: '20px'
     },
     inputGroup: {
         display: 'flex',
         flexDirection: 'column',
-        gap: '5px'
+        gap: '8px'
+    },
+    label: {
+        color: '#aaa',
+        fontSize: '14px'
     },
     input: {
-        padding: '10px',
+        padding: '14px 16px',
         fontSize: '16px',
-        border: '1px solid #ccc',
-        borderRadius: '4px'
+        backgroundColor: '#0f0f0f',
+        border: '1px solid #333',
+        borderRadius: '8px',
+        color: '#fff',
+        outline: 'none',
+        transition: 'border-color 0.2s'
     },
     button: {
-        padding: '12px',
+        padding: '14px',
         fontSize: '16px',
+        fontWeight: '600',
         backgroundColor: '#e10600',
-        color: 'white',
+        color: '#fff',
         border: 'none',
-        borderRadius: '4px',
-        cursor: 'pointer'
-    },
-    buttonLogout: {
-        padding: '10px 20px',
-        backgroundColor: '#333',
-        color: 'white',
-        border: 'none',
-        borderRadius: '4px',
-        cursor: 'pointer'
-    },
-    buttonSecondary: {
-        marginTop: '20px',
-        padding: '10px',
-        backgroundColor: '#666',
-        color: 'white',
-        border: 'none',
-        borderRadius: '4px',
-        cursor: 'pointer',
-        width: '100%'
-    },
-    mensaje: {
-        padding: '10px',
-        backgroundColor: '#f0f0f0',
-        borderRadius: '4px',
-        marginTop: '15px'
-    },
-    userInfo: {
-        padding: '20px',
-        backgroundColor: '#e8f5e9',
-        borderRadius: '8px'
-    },
-    credenciales: {
-        marginTop: '30px',
-        padding: '15px',
-        backgroundColor: '#fff3e0',
         borderRadius: '8px',
+        cursor: 'pointer',
+        transition: 'background-color 0.2s',
+        marginTop: '10px'
+    },
+    error: {
+        padding: '12px',
+        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+        border: '1px solid #ef4444',
+        borderRadius: '8px',
+        color: '#ef4444',
         fontSize: '14px'
+    },
+    testUsers: {
+        marginTop: '30px',
+        padding: '20px',
+        backgroundColor: '#0f0f0f',
+        borderRadius: '8px',
+        border: '1px solid #333'
+    },
+    testTitle: {
+        color: '#888',
+        fontSize: '12px',
+        textTransform: 'uppercase',
+        margin: '0 0 12px 0'
+    },
+    testUser: {
+        display: 'flex',
+        justifyContent: 'space-between',
+        color: '#aaa',
+        fontSize: '13px',
+        padding: '6px 0'
+    },
+    testRole: {
+        color: '#e10600',
+        fontSize: '12px'
+    },
+    testPassword: {
+        color: '#666',
+        fontSize: '12px',
+        margin: '12px 0 0 0',
+        textAlign: 'center'
     }
 };
 
