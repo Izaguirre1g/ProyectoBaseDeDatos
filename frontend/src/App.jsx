@@ -6,6 +6,8 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Usuarios from './pages/Usuarios';
 import Catalogo from './pages/Catalogo';
+import Carros from './pages/Carros';
+import ArmadoCarro from './pages/ArmadoCarro';
 import Unauthorized from './pages/Unauthorized';
 import './App.css';
 
@@ -65,6 +67,26 @@ function AppRoutes() {
                     element={
                         <ProtectedRoute>
                             <Catalogo />
+                        </ProtectedRoute>
+                    } 
+                />
+
+                {/* Carros - Admin y Engineer */}
+                <Route 
+                    path="/carros" 
+                    element={
+                        <ProtectedRoute allowedRoles={['Admin', 'Engineer']}>
+                            <Carros />
+                        </ProtectedRoute>
+                    } 
+                />
+
+                {/* Armado de carro individual */}
+                <Route 
+                    path="/carros/:id" 
+                    element={
+                        <ProtectedRoute allowedRoles={['Admin', 'Engineer']}>
+                            <ArmadoCarro />
                         </ProtectedRoute>
                     } 
                 />

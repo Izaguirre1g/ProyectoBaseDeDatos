@@ -106,18 +106,18 @@ function Navbar() {
                                         Usuarios
                                     </NavLink>
                                     <NavLink 
-                                        to="/equipos" 
-                                        icon={Building2} 
-                                        isActive={isActive('/equipos')}
+                                        to="/carros" 
+                                        icon={Wrench} 
+                                        isActive={isActive('/carros') || location.pathname.startsWith('/carros/')}
                                     >
-                                        Equipos
+                                        Carros
                                     </NavLink>
                                     <NavLink 
-                                        to="/simulaciones" 
-                                        icon={Flag} 
-                                        isActive={isActive('/simulaciones')}
+                                        to="/catalogo" 
+                                        icon={ShoppingCart} 
+                                        isActive={isActive('/catalogo')}
                                     >
-                                        Simulaciones
+                                        Catalogo
                                     </NavLink>
                                 </>
                             )}
@@ -125,25 +125,18 @@ function Navbar() {
                             {usuario?.rol === 'Engineer' && (
                                 <>
                                     <NavLink 
-                                        to="/mi-equipo" 
-                                        icon={Building2} 
-                                        isActive={isActive('/mi-equipo')}
-                                    >
-                                        Mi Equipo
-                                    </NavLink>
-                                    <NavLink 
-                                        to="/inventario" 
-                                        icon={Package} 
-                                        isActive={isActive('/inventario')}
-                                    >
-                                        Inventario
-                                    </NavLink>
-                                    <NavLink 
-                                        to="/armado" 
+                                        to="/carros" 
                                         icon={Wrench} 
-                                        isActive={isActive('/armado')}
+                                        isActive={isActive('/carros') || location.pathname.startsWith('/carros/')}
                                     >
                                         Armado
+                                    </NavLink>
+                                    <NavLink 
+                                        to="/catalogo" 
+                                        icon={ShoppingCart} 
+                                        isActive={isActive('/catalogo')}
+                                    >
+                                        Catalogo
                                     </NavLink>
                                 </>
                             )}

@@ -6,6 +6,8 @@ require('dotenv').config();
 
 // Rutas
 const authRoutes = require('./routes/auth.routes');
+const partesRoutes = require('./routes/partes.routes');
+const carrosRoutes = require('./routes/carros.routes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -45,6 +47,8 @@ app.get('/', (req, res) => {
 
 // Rutas de la API
 app.use('/api/auth', authRoutes);
+app.use('/api/partes', partesRoutes);
+app.use('/api/carros', carrosRoutes);
 
 // Manejo de errores global
 app.use((err, req, res, next) => {
