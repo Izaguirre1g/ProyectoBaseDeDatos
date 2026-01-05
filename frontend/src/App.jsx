@@ -6,8 +6,9 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Usuarios from './pages/Usuarios';
 import Catalogo from './pages/Catalogo';
-import Carros from './pages/Carros';
+import Equipos from './pages/Equipos';
 import ArmadoCarro from './pages/ArmadoCarro';
+import Simulaciones from './pages/Simulaciones';
 import Unauthorized from './pages/Unauthorized';
 import './App.css';
 
@@ -61,29 +62,39 @@ function AppRoutes() {
                     } 
                 />
 
-                {/* Catálogo - todos los autenticados */}
+                {/* Catálogo - Admin y Engineer */}
                 <Route 
                     path="/catalogo" 
                     element={
-                        <ProtectedRoute>
+                        <ProtectedRoute allowedRoles={['Admin', 'Engineer']}>
                             <Catalogo />
                         </ProtectedRoute>
                     } 
                 />
 
-                {/* Carros - Admin y Engineer */}
+                {/* Simulaciones - Solo Driver */}
                 <Route 
-                    path="/carros" 
+                    path="/simulaciones" 
                     element={
-                        <ProtectedRoute allowedRoles={['Admin', 'Engineer']}>
-                            <Carros />
+                        <ProtectedRoute allowedRoles={['Driver']}>
+                            <Simulaciones />
                         </ProtectedRoute>
                     } 
                 />
 
-                {/* Armado de carro individual */}
+                {/* Equipos - Admin y Engineer */}
                 <Route 
-                    path="/carros/:id" 
+                    path="/equipos" 
+                    element={
+                        <ProtectedRoute allowedRoles={['Admin', 'Engineer']}>
+                            <Equipos />
+                        </ProtectedRoute>
+                    } 
+                />
+
+                {/* Armado de carro individual (desde equipos) */}
+                <Route 
+                    path="/equipos/:equipoId/carros/:carroId" 
                     element={
                         <ProtectedRoute allowedRoles={['Admin', 'Engineer']}>
                             <ArmadoCarro />

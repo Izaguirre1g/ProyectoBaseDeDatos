@@ -26,9 +26,10 @@ import {
     Spinner,
     Center,
     IconButton,
+    Divider,
 } from '@chakra-ui/react';
 import { ArrowLeft, Check, Zap, Wind, Target, AlertCircle } from 'lucide-react';
-import carrosService from '../services/carros.service';
+import { equiposService } from '../services/equipos.service';
 
 // Configuración de slots
 const SLOTS_CONFIG = {
@@ -65,13 +66,13 @@ const SLOTS_CONFIG = {
 };
 
 function ArmadoCarro() {
-    const { id } = useParams();
+    const { equipoId, carroId } = useParams();
     const navigate = useNavigate();
     const toast = useToast();
     const { isOpen, onOpen, onClose } = useDisclosure();
     
     const [carro, setCarro] = useState(null);
-    const [inventario, setInventario] = useState({});
+    const [inventario, setInventario] = useState([]);
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
     const [slotActivo, setSlotActivo] = useState(null);
@@ -79,19 +80,38 @@ function ArmadoCarro() {
 
     useEffect(() => {
         cargarDatos();
-    }, [id]);
+    }, [equipoId, carroId]);
 
     const cargarDatos = async () => {
         try {
             setLoading(true);
-            const [carroData, inventarioData, statsData] = await Promise.all([
-                carrosService.getById(id),
-                carrosService.getInventario(id),
-                carrosService.getStats(id)
+            const [carroData, inventarioData] = await Promise.all([
+                equiposService.getCarro(equipoId, carroId),
+                equiposService.getInventario(equipoId)
             ]);
-            setCarro(carroData);
+            
+            // Asignar valores p, a, m a partes que no los tengan
+            const configConStats = {};
+            if (carroData.configuracion) {
+                Object.entries(carroData.configuracion).forEach(([slot, parte]) => {
+                    if (parte) {
+                        configConStats[slot] = {
+                            ...parte,
+                            p: parte.p ?? Math.floor(Math.random() * 10),
+                            a: parte.a ?? Math.floor(Math.random() * 10),
+                            m: parte.m ?? Math.floor(Math.random() * 10)
+                        };
+                    } else {
+                        configConStats[slot] = null;
+                    }
+                });
+            }
+            
+            const carroConStats = { ...carroData, configuracion: configConStats };
+            setCarro(carroConStats);
             setInventario(inventarioData);
-            setStats(statsData);
+            // Calcular stats P, A, M basados en configuración
+            calcularTotales(configConStats);
         } catch (error) {
             console.error('Error cargando datos:', error);
             toast({
@@ -104,28 +124,51 @@ function ArmadoCarro() {
         }
     };
 
+    // Función para calcular totales P, A, M del carro
+    const calcularTotales = (config) => {
+        if (!config) {
+            setStats({ P: 0, A: 0, M: 0 });
+            return;
+        }
+        
+        let P = 0, A = 0, M = 0;
+        Object.values(config).forEach(parte => {
+            if (parte) {
+                P += parte.p || 0;
+                A += parte.a || 0;
+                M += parte.m || 0;
+            }
+        });
+        setStats({ P, A, M });
+    };
+
     const handleSlotClick = (slot) => {
         setSlotActivo(slot);
         onOpen();
     };
 
     const handleSeleccionarParte = async (parte) => {
-        try {
-            await carrosService.updateConfiguracion(id, slotActivo, parte?.id || null);
-            await cargarDatos();
-            onClose();
-            toast({
-                title: parte ? `${parte.nombre} instalado` : 'Parte removida',
-                status: 'success',
-                duration: 2000,
-            });
-        } catch (error) {
-            toast({
-                title: 'Error al actualizar',
-                status: 'error',
-                duration: 3000,
-            });
+        // Por ahora solo actualiza localmente (sin backend real)
+        if (carro && slotActivo) {
+            const newConfig = { ...carro.configuracion };
+            newConfig[slotActivo] = parte ? { 
+                id: parte.id || Date.now(), 
+                nombre: parte.nombre,
+                p: parte.p ?? Math.floor(Math.random() * 10),
+                a: parte.a ?? Math.floor(Math.random() * 10),
+                m: parte.m ?? Math.floor(Math.random() * 10)
+            } : null;
+            setCarro({ ...carro, configuracion: newConfig });
+            
+            // Recalcular totales P, A, M
+            calcularTotales(newConfig);
         }
+        onClose();
+        toast({
+            title: parte ? `${parte.nombre} instalado` : 'Parte removida',
+            status: 'success',
+            duration: 2000,
+        });
     };
 
     if (loading) {
@@ -145,6 +188,8 @@ function ArmadoCarro() {
     }
 
     const parteInstalada = slotActivo ? carro.configuracion[slotActivo] : null;
+    const partsCount = Object.values(carro.configuracion || {}).filter(Boolean).length;
+    const isComplete = partsCount === 5;
 
     return (
         <Container maxW="container.xl" py={6}>
@@ -153,25 +198,25 @@ function ArmadoCarro() {
                 <IconButton
                     icon={<ArrowLeft size={20} />}
                     variant="ghost"
-                    onClick={() => navigate('/carros')}
+                    onClick={() => navigate('/equipos')}
                     aria-label="Volver"
                 />
                 <Box>
                     <Heading size="lg" color="white">
-                        {carro.modelo} #{carro.numero}
+                        {carro.nombre}
                     </Heading>
                     <Text color="gray.400">
-                        {carro.conductor} - {carro.equipo}
+                        {carro.piloto} - {carro.equipo?.nombre}
                     </Text>
                 </Box>
                 <Badge 
-                    colorScheme={stats?.completo ? 'green' : 'orange'} 
+                    colorScheme={isComplete ? 'green' : 'orange'} 
                     fontSize="sm"
                     px={3}
                     py={1}
                     ml="auto"
                 >
-                    {stats?.completo ? 'Completo' : `${stats?.partesInstaladas}/${stats?.partesTotales} partes`}
+                    {isComplete ? 'Completo' : `${partsCount}/5 partes`}
                 </Badge>
             </HStack>
 
@@ -410,41 +455,54 @@ function ArmadoCarro() {
 
                 {/* Panel de stats y partes */}
                 <VStack flex={1} spacing={4} align="stretch">
-                    {/* Estadísticas */}
+                    {/* Totales del carro P, A, M */}
                     <Card bg="brand.800" borderColor="brand.700">
                         <CardBody>
-                            <Heading size="sm" color="white" mb={4}>Estadisticas Totales</Heading>
-                            <VStack spacing={3}>
+                            <Heading size="sm" color="white" mb={4}>Totales del Vehículo</Heading>
+                            <VStack spacing={4}>
                                 <Box w="full">
                                     <HStack justify="space-between" mb={1}>
                                         <HStack>
+                                            <Box w="8px" h="8px" bg="yellow.400" borderRadius="full"/>
                                             <Zap size={14} color="#eab308"/>
-                                            <Text fontSize="sm" color="gray.400">Potencia</Text>
+                                            <Text fontSize="sm" color="gray.400">Potencia (P)</Text>
                                         </HStack>
-                                        <Text fontSize="sm" color="white" fontWeight="bold">{stats?.potencia || 0}/45</Text>
+                                        <Text fontSize="sm" color="white" fontWeight="bold">{stats?.P || 0}</Text>
                                     </HStack>
-                                    <Progress value={(stats?.potencia || 0) / 45 * 100} colorScheme="yellow" bg="brand.700" size="sm" borderRadius="full"/>
+                                    <Progress value={Math.min((stats?.P || 0), 100)} colorScheme="yellow" bg="brand.700" size="sm" borderRadius="full"/>
                                 </Box>
                                 <Box w="full">
                                     <HStack justify="space-between" mb={1}>
                                         <HStack>
+                                            <Box w="8px" h="8px" bg="blue.400" borderRadius="full"/>
                                             <Wind size={14} color="#3b82f6"/>
-                                            <Text fontSize="sm" color="gray.400">Aerodinamica</Text>
+                                            <Text fontSize="sm" color="gray.400">Aerodinámica (A)</Text>
                                         </HStack>
-                                        <Text fontSize="sm" color="white" fontWeight="bold">{stats?.aerodinamica || 0}/45</Text>
+                                        <Text fontSize="sm" color="white" fontWeight="bold">{stats?.A || 0}</Text>
                                     </HStack>
-                                    <Progress value={(stats?.aerodinamica || 0) / 45 * 100} colorScheme="blue" bg="brand.700" size="sm" borderRadius="full"/>
+                                    <Progress value={Math.min((stats?.A || 0), 100)} colorScheme="blue" bg="brand.700" size="sm" borderRadius="full"/>
                                 </Box>
                                 <Box w="full">
                                     <HStack justify="space-between" mb={1}>
                                         <HStack>
+                                            <Box w="8px" h="8px" bg="green.400" borderRadius="full"/>
                                             <Target size={14} color="#22c55e"/>
-                                            <Text fontSize="sm" color="gray.400">Manejo</Text>
+                                            <Text fontSize="sm" color="gray.400">Manejo (M)</Text>
                                         </HStack>
-                                        <Text fontSize="sm" color="white" fontWeight="bold">{stats?.manejo || 0}/45</Text>
+                                        <Text fontSize="sm" color="white" fontWeight="bold">{stats?.M || 0}</Text>
                                     </HStack>
-                                    <Progress value={(stats?.manejo || 0) / 45 * 100} colorScheme="green" bg="brand.700" size="sm" borderRadius="full"/>
+                                    <Progress value={Math.min((stats?.M || 0), 100)} colorScheme="green" bg="brand.700" size="sm" borderRadius="full"/>
                                 </Box>
+                                
+                                <Divider borderColor="brand.700" />
+                                
+                                {/* Suma total */}
+                                <HStack justify="space-between" w="full" p={2} bg="brand.900" borderRadius="md">
+                                    <Text fontSize="sm" color="gray.400">Total (P+A+M)</Text>
+                                    <Text fontSize="lg" fontWeight="bold" color="accent.400">
+                                        {(stats?.P || 0) + (stats?.A || 0) + (stats?.M || 0)}
+                                    </Text>
+                                </HStack>
                             </VStack>
                         </CardBody>
                     </Card>
@@ -452,12 +510,12 @@ function ArmadoCarro() {
                     {/* Partes instaladas */}
                     <Card bg="brand.800" borderColor="brand.700">
                         <CardBody>
-                            <Heading size="sm" color="white" mb={4}>Configuracion Actual</Heading>
+                            <Heading size="sm" color="white" mb={4}>Configuración Actual</Heading>
                             <VStack spacing={2} align="stretch">
                                 {Object.entries(SLOTS_CONFIG).map(([slot, config]) => {
                                     const parte = carro.configuracion[slot];
                                     return (
-                                        <HStack 
+                                        <Box 
                                             key={slot} 
                                             p={2} 
                                             bg="brand.900" 
@@ -468,21 +526,34 @@ function ArmadoCarro() {
                                             _hover={{ borderColor: config.color }}
                                             onClick={() => handleSlotClick(slot)}
                                         >
-                                            <Text fontSize="lg">{config.icon}</Text>
-                                            <Box flex={1}>
-                                                <Text fontSize="xs" color="gray.500">{config.nombre}</Text>
-                                                <Text fontSize="sm" color={parte ? 'white' : 'red.400'} noOfLines={1}>
-                                                    {parte?.nombre || 'Sin instalar'}
-                                                </Text>
-                                            </Box>
+                                            <HStack>
+                                                <Text fontSize="lg">{config.icon}</Text>
+                                                <Box flex={1}>
+                                                    <Text fontSize="xs" color="gray.500">{config.nombre}</Text>
+                                                    <Text fontSize="sm" color={parte ? 'white' : 'red.400'} noOfLines={1}>
+                                                        {parte?.nombre || 'Sin instalar'}
+                                                    </Text>
+                                                </Box>
+                                                {parte && (
+                                                    <Badge size="sm" colorScheme="green" variant="subtle">
+                                                        <Check size={12} />
+                                                    </Badge>
+                                                )}
+                                            </HStack>
                                             {parte && (
-                                                <HStack spacing={1}>
-                                                    <Badge size="sm" colorScheme="yellow" variant="subtle">P:{parte.potencia}</Badge>
-                                                    <Badge size="sm" colorScheme="blue" variant="subtle">A:{parte.aerodinamica}</Badge>
-                                                    <Badge size="sm" colorScheme="green" variant="subtle">M:{parte.manejo}</Badge>
+                                                <HStack mt={2} spacing={2} pl={8}>
+                                                    <Badge size="sm" colorScheme="yellow" variant="subtle">
+                                                        P:{parte.p || 0}
+                                                    </Badge>
+                                                    <Badge size="sm" colorScheme="blue" variant="subtle">
+                                                        A:{parte.a || 0}
+                                                    </Badge>
+                                                    <Badge size="sm" colorScheme="green" variant="subtle">
+                                                        M:{parte.m || 0}
+                                                    </Badge>
                                                 </HStack>
                                             )}
-                                        </HStack>
+                                        </Box>
                                     );
                                 })}
                             </VStack>
@@ -524,53 +595,86 @@ function ArmadoCarro() {
                                 </Card>
                             )}
                             
-                            {/* Partes disponibles */}
-                            {slotActivo && inventario[slotActivo]?.map(parte => {
-                                const isInstalada = parteInstalada?.id === parte.id;
-                                return (
-                                    <Card 
-                                        key={parte.id}
-                                        bg="brand.900" 
-                                        borderColor={isInstalada ? 'green.500' : 'brand.700'}
-                                        cursor="pointer"
-                                        _hover={{ borderColor: SLOTS_CONFIG[slotActivo]?.color }}
-                                        onClick={() => !isInstalada && handleSeleccionarParte(parte)}
-                                        opacity={isInstalada ? 0.7 : 1}
-                                    >
-                                        <CardBody py={3}>
-                                            <HStack justify="space-between">
-                                                <Box>
-                                                    <HStack>
-                                                        <Text color="white" fontWeight="500">{parte.nombre}</Text>
-                                                        {isInstalada && <Check size={16} color="#22c55e"/>}
+                            {/* Partes disponibles del inventario del equipo */}
+                            {slotActivo && inventario
+                                .filter(item => {
+                                    // Mapear slot a categoría
+                                    const categoriaMap = {
+                                        powerUnit: 'Power Unit',
+                                        aerodinamica: 'Aerodinámica',
+                                        cajaCambios: 'Caja de Cambios',
+                                        suspension: 'Suspensión',
+                                        neumaticos: 'Neumáticos'
+                                    };
+                                    return item.categoria === categoriaMap[slotActivo];
+                                })
+                                .map((parte, idx) => {
+                                    const isInstalada = parteInstalada?.nombre === parte.nombre;
+                                    // Generar valores P, A, M para la parte si no existen (rango 0-9)
+                                    const p = parte.p ?? Math.floor(Math.random() * 10);
+                                    const a = parte.a ?? Math.floor(Math.random() * 10);
+                                    const m = parte.m ?? Math.floor(Math.random() * 10);
+                                    return (
+                                        <Card 
+                                            key={idx}
+                                            bg="brand.900" 
+                                            borderColor={isInstalada ? 'green.500' : 'brand.700'}
+                                            cursor="pointer"
+                                            _hover={{ borderColor: SLOTS_CONFIG[slotActivo]?.color }}
+                                            onClick={() => !isInstalada && handleSeleccionarParte({...parte, p, a, m})}
+                                            opacity={isInstalada ? 0.7 : 1}
+                                        >
+                                            <CardBody py={3}>
+                                                <VStack align="stretch" spacing={2}>
+                                                    <HStack justify="space-between">
+                                                        <Box>
+                                                            <HStack>
+                                                                <Text color="white" fontWeight="500">{parte.nombre}</Text>
+                                                                {isInstalada && <Check size={16} color="#22c55e"/>}
+                                                            </HStack>
+                                                            <HStack mt={1} spacing={3}>
+                                                                <Text fontSize="xs" color="gray.400">
+                                                                    Stock: {parte.cantidad}
+                                                                </Text>
+                                                                <Text fontSize="xs" color="green.400">
+                                                                    ${(parte.precio / 1000).toFixed(0)}K
+                                                                </Text>
+                                                            </HStack>
+                                                        </Box>
+                                                        <Badge colorScheme={parte.cantidad > 2 ? 'green' : 'orange'}>
+                                                            {parte.cantidad} disp.
+                                                        </Badge>
                                                     </HStack>
-                                                    <HStack mt={1} spacing={2}>
-                                                        <Badge colorScheme="yellow" variant="subtle" size="sm">
-                                                            <HStack spacing={1}>
-                                                                <Zap size={10}/><Text>P: {parte.potencia}</Text>
-                                                            </HStack>
+                                                    {/* Stats P, A, M */}
+                                                    <HStack spacing={2} pt={1} borderTop="1px solid" borderColor="brand.700">
+                                                        <Badge colorScheme="yellow" variant="subtle" flex={1} textAlign="center">
+                                                            P: {p}
                                                         </Badge>
-                                                        <Badge colorScheme="blue" variant="subtle" size="sm">
-                                                            <HStack spacing={1}>
-                                                                <Wind size={10}/><Text>A: {parte.aerodinamica}</Text>
-                                                            </HStack>
+                                                        <Badge colorScheme="blue" variant="subtle" flex={1} textAlign="center">
+                                                            A: {a}
                                                         </Badge>
-                                                        <Badge colorScheme="green" variant="subtle" size="sm">
-                                                            <HStack spacing={1}>
-                                                                <Target size={10}/><Text>M: {parte.manejo}</Text>
-                                                            </HStack>
+                                                        <Badge colorScheme="green" variant="subtle" flex={1} textAlign="center">
+                                                            M: {m}
                                                         </Badge>
                                                     </HStack>
-                                                </Box>
-                                            </HStack>
-                                        </CardBody>
-                                    </Card>
-                                );
-                            })}
+                                                </VStack>
+                                            </CardBody>
+                                        </Card>
+                                    );
+                                })}
                             
-                            {slotActivo && (!inventario[slotActivo] || inventario[slotActivo].length === 0) && (
+                            {slotActivo && inventario.filter(item => {
+                                const categoriaMap = {
+                                    powerUnit: 'Power Unit',
+                                    aerodinamica: 'Aerodinámica',
+                                    cajaCambios: 'Caja de Cambios',
+                                    suspension: 'Suspensión',
+                                    neumaticos: 'Neumáticos'
+                                };
+                                return item.categoria === categoriaMap[slotActivo];
+                            }).length === 0 && (
                                 <Text color="gray.500" textAlign="center" py={4}>
-                                    No hay partes disponibles en el inventario
+                                    No hay partes disponibles en el inventario para esta categoría
                                 </Text>
                             )}
                         </VStack>

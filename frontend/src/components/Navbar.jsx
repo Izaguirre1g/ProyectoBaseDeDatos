@@ -106,18 +106,11 @@ function Navbar() {
                                         Usuarios
                                     </NavLink>
                                     <NavLink 
-                                        to="/carros" 
-                                        icon={Wrench} 
-                                        isActive={isActive('/carros') || location.pathname.startsWith('/carros/')}
+                                        to="/equipos" 
+                                        icon={Building2} 
+                                        isActive={isActive('/equipos') || location.pathname.startsWith('/equipos/')}
                                     >
-                                        Carros
-                                    </NavLink>
-                                    <NavLink 
-                                        to="/catalogo" 
-                                        icon={ShoppingCart} 
-                                        isActive={isActive('/catalogo')}
-                                    >
-                                        Catalogo
+                                        Equipos
                                     </NavLink>
                                 </>
                             )}
@@ -125,29 +118,34 @@ function Navbar() {
                             {usuario?.rol === 'Engineer' && (
                                 <>
                                     <NavLink 
-                                        to="/carros" 
-                                        icon={Wrench} 
-                                        isActive={isActive('/carros') || location.pathname.startsWith('/carros/')}
+                                        to="/equipos" 
+                                        icon={Building2} 
+                                        isActive={isActive('/equipos') || location.pathname.startsWith('/equipos/')}
                                     >
-                                        Armado
-                                    </NavLink>
-                                    <NavLink 
-                                        to="/catalogo" 
-                                        icon={ShoppingCart} 
-                                        isActive={isActive('/catalogo')}
-                                    >
-                                        Catalogo
+                                        Mi Equipo
                                     </NavLink>
                                 </>
                             )}
 
-                            <NavLink 
-                                to="/catalogo" 
-                                icon={ShoppingCart} 
-                                isActive={isActive('/catalogo')}
-                            >
-                                Catalogo
-                            </NavLink>
+                            {usuario?.rol === 'Driver' && (
+                                <NavLink 
+                                    to="/simulaciones" 
+                                    icon={Flag} 
+                                    isActive={isActive('/simulaciones')}
+                                >
+                                    Simulaciones
+                                </NavLink>
+                            )}
+
+                            {(usuario?.rol === 'Admin' || usuario?.rol === 'Engineer') && (
+                                <NavLink 
+                                    to="/catalogo" 
+                                    icon={ShoppingCart} 
+                                    isActive={isActive('/catalogo')}
+                                >
+                                    Catálogo
+                                </NavLink>
+                            )}
                         </HStack>
 
                         {/* User Menu */}
