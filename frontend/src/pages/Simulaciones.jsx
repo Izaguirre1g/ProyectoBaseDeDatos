@@ -78,7 +78,12 @@ const simulacionesData = [
             cajaCambios: { nombre: 'Caja 8V Carbon', p: 7, a: 5, m: 6 },
             neumaticos: { nombre: 'Pirelli Soft C5', p: 6, a: 5, m: 5 }
         },
-        posicion: 1
+        posicion: 1,
+        podio: [
+            { posicion: 1, piloto: 'Charles Leclerc', equipo: 'Scuderia Ferrari HP', tiempo: 81.245 },
+            { posicion: 2, piloto: 'Max Verstappen', equipo: 'Oracle Red Bull Racing', tiempo: 81.478 },
+            { posicion: 3, piloto: 'Lando Norris', equipo: 'McLaren F1 Team', tiempo: 81.892 }
+        ]
     },
     {
         id: 'SIM-2026-002',
@@ -104,7 +109,12 @@ const simulacionesData = [
             cajaCambios: { nombre: 'Caja 8V Carbon', p: 7, a: 5, m: 6 },
             neumaticos: { nombre: 'Pirelli Soft C5', p: 6, a: 5, m: 5 }
         },
-        posicion: 2
+        posicion: 2,
+        podio: [
+            { posicion: 1, piloto: 'Max Verstappen', equipo: 'Oracle Red Bull Racing', tiempo: 90.123 },
+            { posicion: 2, piloto: 'Charles Leclerc', equipo: 'Scuderia Ferrari HP', tiempo: 90.345 },
+            { posicion: 3, piloto: 'Lewis Hamilton', equipo: 'Mercedes-AMG Petronas', tiempo: 90.678 }
+        ]
     },
     {
         id: 'SIM-2026-003',
@@ -130,7 +140,12 @@ const simulacionesData = [
             cajaCambios: { nombre: 'Caja 8V Carbon', p: 7, a: 5, m: 6 },
             neumaticos: { nombre: 'Pirelli Medium C3', p: 5, a: 6, m: 6 }
         },
-        posicion: 3
+        posicion: 3,
+        podio: [
+            { posicion: 1, piloto: 'Max Verstappen', equipo: 'Oracle Red Bull Racing', tiempo: 99.543 },
+            { posicion: 2, piloto: 'Lando Norris', equipo: 'McLaren F1 Team', tiempo: 99.821 },
+            { posicion: 3, piloto: 'Charles Leclerc', equipo: 'Scuderia Ferrari HP', tiempo: 100.234 }
+        ]
     },
     {
         id: 'SIM-2026-004',
@@ -156,7 +171,12 @@ const simulacionesData = [
             cajaCambios: { nombre: 'Caja 8V Carbon', p: 7, a: 5, m: 6 },
             neumaticos: { nombre: 'Pirelli Hard C1', p: 4, a: 7, m: 6 }
         },
-        posicion: 4
+        posicion: 4,
+        podio: [
+            { posicion: 1, piloto: 'Lando Norris', equipo: 'McLaren F1 Team', tiempo: 88.654 },
+            { posicion: 2, piloto: 'Max Verstappen', equipo: 'Oracle Red Bull Racing', tiempo: 88.892 },
+            { posicion: 3, piloto: 'Lewis Hamilton', equipo: 'Mercedes-AMG Petronas', tiempo: 89.123 }
+        ]
     },
     {
         id: 'SIM-2026-005',
@@ -182,7 +202,12 @@ const simulacionesData = [
             cajaCambios: { nombre: 'Caja 8V Carbon', p: 7, a: 5, m: 6 },
             neumaticos: { nombre: 'Pirelli Soft C5', p: 6, a: 5, m: 5 }
         },
-        posicion: 1
+        posicion: 1,
+        podio: [
+            { posicion: 1, piloto: 'Charles Leclerc', equipo: 'Scuderia Ferrari HP', tiempo: 84.567 },
+            { posicion: 2, piloto: 'Carlos Sainz', equipo: 'Scuderia Ferrari HP', tiempo: 84.821 },
+            { posicion: 3, piloto: 'Max Verstappen', equipo: 'Oracle Red Bull Racing', tiempo: 85.123 }
+        ]
     }
 ];
 
@@ -287,6 +312,75 @@ function SimulacionDetalle({ sim }) {
                     <Badge colorScheme="purple">{sim.circuito.curvas} curvas</Badge>
                 </HStack>
             </HStack>
+            
+            <Divider borderColor="brand.700" />
+
+            {/* Podio */}
+            <Box>
+                <Text fontWeight="bold" color="white" mb={3}>
+                    <Icon as={Trophy} mr={2} color="yellow.500" />
+                    Podio de la Simulación
+                </Text>
+                <SimpleGrid columns={{ base: 1, md: 3 }} spacing={3}>
+                    {sim.podio.map((piloto) => (
+                        <Box
+                            key={piloto.posicion}
+                            p={4}
+                            bg={piloto.posicion === 1 ? 'yellow.500' : piloto.posicion === 2 ? 'gray.400' : 'orange.600'}
+                            borderRadius="md"
+                            position="relative"
+                            overflow="hidden"
+                        >
+                            <Box
+                                position="absolute"
+                                top="0"
+                                right="0"
+                                fontSize="6xl"
+                                fontWeight="bold"
+                                opacity="0.1"
+                                lineHeight="1"
+                                color={piloto.posicion === 2 ? 'black' : 'white'}
+                            >
+                                {piloto.posicion}
+                            </Box>
+                            <VStack align="stretch" spacing={1} position="relative" zIndex={1}>
+                                <HStack>
+                                    <Badge
+                                        bg={piloto.posicion === 2 ? 'gray.600' : piloto.posicion === 1 ? 'yellow.700' : 'orange.800'}
+                                        color="white"
+                                        px={2}
+                                        fontWeight="bold"
+                                    >
+                                        P{piloto.posicion}
+                                    </Badge>
+                                    <Icon as={Trophy} color={piloto.posicion === 2 ? 'black' : 'white'} />
+                                </HStack>
+                                <Text
+                                    fontWeight="bold"
+                                    fontSize="lg"
+                                    color={piloto.posicion === 2 ? 'black' : 'white'}
+                                >
+                                    {piloto.piloto}
+                                </Text>
+                                <Text
+                                    fontSize="xs"
+                                    color={piloto.posicion === 2 ? 'gray.800' : 'whiteAlpha.800'}
+                                >
+                                    {piloto.equipo}
+                                </Text>
+                                <Text
+                                    fontSize="sm"
+                                    fontWeight="bold"
+                                    color={piloto.posicion === 2 ? 'black' : 'white'}
+                                    mt={1}
+                                >
+                                    {formatTiempo(piloto.tiempo)}
+                                </Text>
+                            </VStack>
+                        </Box>
+                    ))}
+                </SimpleGrid>
+            </Box>
             
             <Divider borderColor="brand.700" />
             
@@ -443,7 +537,7 @@ function Simulaciones() {
                                             _hover={{ bg: 'brand.700' }}
                                             _expanded={{ bg: 'brand.700', borderBottomRadius: 0 }}
                                         >
-                                            <HStack flex={1} spacing={4}>
+                                            <HStack flex={1} spacing={4} flexWrap="wrap">
                                                 <Badge 
                                                     bg={getPosicionColor(sim.posicion)}
                                                     color={sim.posicion === 2 ? 'black' : 'white'}
@@ -456,14 +550,28 @@ function Simulaciones() {
                                                     P{sim.posicion}
                                                 </Badge>
                                                 <Text fontSize="xl">{sim.circuito.imagen}</Text>
-                                                <Box flex={1} textAlign="left">
+                                                <Box flex={1} textAlign="left" minW="200px">
                                                     <Text color="white" fontWeight="bold">
                                                         {sim.circuito.nombre}
                                                     </Text>
                                                     <Text color="gray.500" fontSize="xs">
-                                                        {sim.fecha} • {sim.id}
+                                                        {sim.fecha}
                                                     </Text>
                                                 </Box>
+                                                <VStack align="end" spacing={1} minW="150px">
+                                                    <HStack>
+                                                        <Icon as={Trophy} color="yellow.500" boxSize={4} />
+                                                        <Text color="gray.400" fontSize="xs">
+                                                            Ganador:
+                                                        </Text>
+                                                    </HStack>
+                                                    <Text color="white" fontWeight="bold" fontSize="sm">
+                                                        {sim.podio[0].piloto}
+                                                    </Text>
+                                                    <Text color="gray.500" fontSize="xs">
+                                                        {formatTiempo(sim.podio[0].tiempo)}
+                                                    </Text>
+                                                </VStack>
                                                 <VStack align="end" spacing={0}>
                                                     <Text color="accent.400" fontWeight="bold">
                                                         {formatTiempo(calc.tiempoSegundos)}

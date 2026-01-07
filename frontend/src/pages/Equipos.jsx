@@ -205,6 +205,7 @@ function Equipos() {
     const navigate = useNavigate();
     const toast = useToast();
     const { isOpen, onOpen, onClose } = useDisclosure();
+    const { isOpen: isAporteOpen, onOpen: onAporteOpen, onClose: onAporteClose } = useDisclosure();
     const { usuario, isEngineer } = useAuth();
     
     // Los ingenieros solo pueden ver su equipo asignado (Ferrari id: 2)
@@ -218,6 +219,12 @@ function Equipos() {
         pais: '',
         colorPrimario: '#e10600',
         presupuesto: 100000000
+    });
+    
+    // Estado para nuevo aporte
+    const [nuevoAporte, setNuevoAporte] = useState({
+        origen: '',
+        monto: ''
     });
 
     useEffect(() => {
@@ -254,6 +261,67 @@ function Equipos() {
         navigate(`/equipos/${selectedEquipo.id}/carros/${carroId}`);
     };
 
+    const handleAgregarAporte = () => {
+        if (!nuevoAporte.origen || !nuevoAporte.monto) {
+            toast({
+                title: 'Campos incompletos',
+                description: 'Por favor completa todos los campos',
+                status: 'warning',
+                duration: 3000,
+            });
+            return;
+        }
+        
+        const montoNumerico = parseFloat(nuevoAporte.monto);
+        if (isNaN(montoNumerico) || montoNumerico <= 0) {
+            toast({
+                title: 'Monto inválido',
+                description: 'Por favor ingresa un monto válido',
+                status: 'error',
+                duration: 3000,
+            });
+            return;
+        }
+        
+        // Crear nuevo patrocinador
+        const nuevoPatrocinador = {
+            id: Date.now(),
+            nombre: nuevoAporte.origen,
+            tipo: 'Aporte',
+            aporte: montoNumerico
+        };
+        
+        // Actualizar el presupuesto y patrocinadores del equipo seleccionado
+        const equiposActualizados = equipos.map(eq => {
+            if (eq.id === selectedEquipo.id) {
+                return {
+                    ...eq,
+                    presupuesto: {
+                        ...eq.presupuesto,
+                        total: eq.presupuesto.total + montoNumerico,
+                        sponsors: eq.presupuesto.sponsors + montoNumerico
+                    },
+                    patrocinadores: [...(eq.patrocinadores || []), nuevoPatrocinador]
+                };
+            }
+            return eq;
+        });
+        
+        setEquipos(equiposActualizados);
+        setSelectedEquipo(equiposActualizados.find(eq => eq.id === selectedEquipo.id));
+        
+        // Limpiar formulario y cerrar modal
+        setNuevoAporte({ origen: '', monto: '' });
+        onAporteClose();
+        
+        toast({
+            title: 'Aporte agregado',
+            description: `$${(montoNumerico / 1000000).toFixed(1)}M agregados desde ${nuevoAporte.origen}`,
+            status: 'success',
+            duration: 3000,
+        });
+    };
+    
     const handleCrearEquipo = () => {
         // Simular creación (en producción sería una llamada al backend)
         const nuevoId = equipos.length + 1;
@@ -425,6 +493,17 @@ function Equipos() {
                                 <TabPanels>
                                     {/* Tab Presupuesto */}
                                     <TabPanel p={0}>
+                                        <HStack justify="space-between" mb={4}>
+                                            <Text fontSize="sm" color="gray.400">Gestiona el presupuesto y aportes del equipo</Text>
+                                            <Button
+                                                leftIcon={<Plus size={16} />}
+                                                size="sm"
+                                                colorScheme="green"
+                                                onClick={onAporteOpen}
+                                            >
+                                                Agregar Aporte
+                                            </Button>
+                                        </HStack>
                                         <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={4} mb={6}>
                                             <StatCard
                                                 icon={DollarSign}
@@ -702,6 +781,88 @@ function Equipos() {
                             isDisabled={!nuevoEquipo.nombre || !nuevoEquipo.nombreCompleto || !nuevoEquipo.pais}
                         >
                             Crear Equipo
+                        </Button>
+                    </ModalFooter>
+                </ModalContent>
+            </Modal>
+
+            {/* Modal para Agregar Aporte */}
+            <Modal isOpen={isAporteOpen} onClose={onAporteClose} size="md" isCentered>
+                <ModalOverlay bg="blackAlpha.800"/>
+                <ModalContent bg="brand.800" borderColor="brand.700">
+                    <ModalHeader color="white">
+                        <HStack>
+                            <Icon as={DollarSign} boxSize={5} color="green.400" />
+                            <Text>Agregar Aporte al Presupuesto</Text>
+                        </HStack>
+                    </ModalHeader>
+                    <ModalCloseButton/>
+                    <ModalBody pb={6}>
+                        <VStack spacing={4} align="stretch">
+                            <FormControl isRequired>
+                                <FormLabel color="gray.300">Origen del Aporte</FormLabel>
+                                <Input
+                                    placeholder="Ej: Sponsor Principal, Inversión, etc."
+                                    value={nuevoAporte.origen}
+                                    onChange={(e) => setNuevoAporte({...nuevoAporte, origen: e.target.value})}
+                                    bg="brand.900"
+                                    borderColor="brand.700"
+                                    _focus={{ borderColor: 'accent.500' }}
+                                    _placeholder={{ color: 'gray.500' }}
+                                />
+                            </FormControl>
+
+                            <FormControl isRequired>
+                                <FormLabel color="gray.300">Monto (USD)</FormLabel>
+                                <Input
+                                    type="number"
+                                    placeholder="Ej: 5000000"
+                                    value={nuevoAporte.monto}
+                                    onChange={(e) => setNuevoAporte({...nuevoAporte, monto: e.target.value})}
+                                    bg="brand.900"
+                                    borderColor="brand.700"
+                                    _focus={{ borderColor: 'accent.500' }}
+                                    _placeholder={{ color: 'gray.500' }}
+                                />
+                                <Text fontSize="xs" color="gray.500" mt={1}>
+                                    Ingresa el monto en dólares (sin comas ni símbolos)
+                                </Text>
+                            </FormControl>
+
+                            {/* Preview del aporte */}
+                            {nuevoAporte.monto && !isNaN(parseFloat(nuevoAporte.monto)) && (
+                                <Card bg="brand.900" borderColor="green.700" borderWidth="1px">
+                                    <CardBody py={3}>
+                                        <VStack align="stretch" spacing={2}>
+                                            <HStack justify="space-between">
+                                                <Text fontSize="sm" color="gray.400">Nuevo presupuesto total:</Text>
+                                                <Text fontWeight="bold" color="green.400">
+                                                    ${((selectedEquipo?.presupuesto?.total + parseFloat(nuevoAporte.monto)) / 1000000).toFixed(1)}M
+                                                </Text>
+                                            </HStack>
+                                            <HStack justify="space-between">
+                                                <Text fontSize="sm" color="gray.400">Aumento:</Text>
+                                                <Badge colorScheme="green" fontSize="sm">
+                                                    +${(parseFloat(nuevoAporte.monto) / 1000000).toFixed(1)}M
+                                                </Badge>
+                                            </HStack>
+                                        </VStack>
+                                    </CardBody>
+                                </Card>
+                            )}
+                        </VStack>
+                    </ModalBody>
+                    <ModalFooter>
+                        <Button variant="ghost" mr={3} onClick={onAporteClose}>
+                            Cancelar
+                        </Button>
+                        <Button 
+                            colorScheme="green" 
+                            onClick={handleAgregarAporte}
+                            isDisabled={!nuevoAporte.origen || !nuevoAporte.monto}
+                            leftIcon={<Plus size={16} />}
+                        >
+                            Agregar Aporte
                         </Button>
                     </ModalFooter>
                 </ModalContent>
