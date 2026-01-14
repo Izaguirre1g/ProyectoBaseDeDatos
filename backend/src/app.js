@@ -9,6 +9,7 @@ const authRoutes = require('./routes/auth.routes');
 const partesRoutes = require('./routes/partes.routes');
 const carrosRoutes = require('./routes/carros.routes');
 const equiposRoutes = require('./routes/equipos.routes');
+const simulacionesRoutes = require('./routes/simulaciones.routes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -51,6 +52,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/partes', partesRoutes);
 app.use('/api/carros', carrosRoutes);
 app.use('/api/equipos', equiposRoutes);
+app.use('/api/simulaciones', simulacionesRoutes);
 
 // Manejo de errores global
 app.use((err, req, res, next) => {

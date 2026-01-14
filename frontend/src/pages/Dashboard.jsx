@@ -1,5 +1,7 @@
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import simulacionesService from '../services/simulaciones.service';
 import {
     Box,
     Container,
@@ -17,6 +19,9 @@ import {
     Avatar,
     Divider,
     Icon,
+    Spinner,
+    Alert,
+    AlertIcon,
 } from '@chakra-ui/react';
 import {
     Users,
@@ -524,128 +529,46 @@ function EngineerDashboard() {
 }
 
 function DriverDashboard() {
-    // Datos de Charles Leclerc (piloto de Ferrari)
-    const driver = {
-        nombre: 'Charles Leclerc',
-        equipo: 'Scuderia Ferrari HP',
-        equipoColor: '#DC0000',
-        numero: 16,
-        nacionalidad: 'Mónaco',
-        habilidad: 92, // H del conductor
-        victorias: 7,
-        podios: 32,
-        puntos: 308,
-        campeonatos: 0
-    };
+    const { usuario } = useAuth();
+    const navigate = useNavigate();
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [data, setData] = useState(null);
+    const [stats, setStats] = useState(null);
 
-    const carro = {
-        nombre: 'SF-24-01',
-        partes: 5,
-        total: 5,
-        // Totales del carro (suma de las 5 partes, cada parte con p,a,m de 0-9)
-        stats: { 
-            potencia: 30,      // P = p1+p2+p3+p4+p5 (5 partes × ~6 promedio)
-            aerodinamica: 30,  // A = a1+a2+a3+a4+a5
-            manejo: 29         // M = m1+m2+m3+m4+m5
+    useEffect(() => {
+        loadData();
+    }, []);
+
+    const loadData = async () => {
+        try {
+            setLoading(true);
+            setError(null);
+            
+            const [simData, statsData] = await Promise.all([
+                simulacionesService.getSimulaciones(),
+                simulacionesService.getDriverStats()
+            ]);
+            
+            setData(simData);
+            setStats(statsData);
+        } catch (err) {
+            console.error('Error cargando datos:', err);
+            setError(err.response?.data?.error || 'Error al cargar datos');
+        } finally {
+            setLoading(false);
         }
     };
 
-    // Constante global del sistema
-    const DC_CURVA = 0.5; // km por curva
-
-    // Simulaciones del piloto (historial) - valores p,a,m de 0-9
-    const simulaciones = [
-        {
-            id: 'SIM-2026-001',
-            fecha: '2026-01-03 14:30',
-            circuito: { nombre: 'Monza', distancia: 5.793, curvas: 11 },
-            setup: {
-                powerUnit: { nombre: 'Ferrari 066/12', p: 8, a: 5, m: 4 },
-                aerodinamica: { nombre: 'Alerón Monza', p: 4, a: 9, m: 6 },
-                suspension: { nombre: 'Suspensión Pro', p: 5, a: 6, m: 8 },
-                cajaCambios: { nombre: 'Caja 8V Racing', p: 7, a: 5, m: 6 },
-                neumaticos: { nombre: 'Pirelli Soft', p: 6, a: 5, m: 5 }
-            },
-            totales: { P: 30, A: 30, M: 29, H: 92 },
-            calculados: {
-                Vrecta: 200 + 3*30 + 0.2*92 - 1*30,
-                Vcurva: 90 + 2*30 + 2*29 + 0.2*92,
-                penalizacion: (11 * 40) / (1 + 92/100),
-                tiempoSegundos: 287.45
-            },
-            posicion: 1
-        },
-        {
-            id: 'SIM-2026-002',
-            fecha: '2026-01-02 10:15',
-            circuito: { nombre: 'Monaco', distancia: 3.337, curvas: 19 },
-            setup: {
-                powerUnit: { nombre: 'Ferrari 066/12', p: 8, a: 5, m: 4 },
-                aerodinamica: { nombre: 'Alerón Alta Carga', p: 3, a: 9, m: 7 },
-                suspension: { nombre: 'Suspensión Pro', p: 5, a: 6, m: 8 },
-                cajaCambios: { nombre: 'Caja 8V Racing', p: 7, a: 5, m: 6 },
-                neumaticos: { nombre: 'Pirelli Soft', p: 6, a: 5, m: 5 }
-            },
-            totales: { P: 29, A: 30, M: 30, H: 92 },
-            calculados: {
-                Vrecta: 200 + 3*29 + 0.2*92 - 1*30,
-                Vcurva: 90 + 2*30 + 2*30 + 0.2*92,
-                penalizacion: (19 * 40) / (1 + 92/100),
-                tiempoSegundos: 425.67
-            },
-            posicion: 2
-        },
-        {
-            id: 'SIM-2026-003',
-            fecha: '2026-01-01 16:45',
-            circuito: { nombre: 'Spa-Francorchamps', distancia: 7.004, curvas: 19 },
-            setup: {
-                powerUnit: { nombre: 'Ferrari 066/12', p: 8, a: 5, m: 4 },
-                aerodinamica: { nombre: 'Alerón Monza', p: 4, a: 9, m: 6 },
-                suspension: { nombre: 'Suspensión Pro', p: 5, a: 6, m: 8 },
-                cajaCambios: { nombre: 'Caja 8V Racing', p: 7, a: 5, m: 6 },
-                neumaticos: { nombre: 'Pirelli Medium', p: 5, a: 6, m: 6 }
-            },
-            totales: { P: 29, A: 31, M: 30, H: 92 },
-            calculados: {
-                Vrecta: 200 + 3*29 + 0.2*92 - 1*31,
-                Vcurva: 90 + 2*31 + 2*30 + 0.2*92,
-                penalizacion: (19 * 40) / (1 + 92/100),
-                tiempoSegundos: 512.34
-            },
-            posicion: 3
-        },
-        {
-            id: 'SIM-2026-004',
-            fecha: '2025-12-28 09:00',
-            circuito: { nombre: 'Silverstone', distancia: 5.891, curvas: 18 },
-            setup: {
-                powerUnit: { nombre: 'Ferrari 066/12', p: 8, a: 5, m: 4 },
-                aerodinamica: { nombre: 'Alerón Equilibrado', p: 4, a: 8, m: 7 },
-                suspension: { nombre: 'Suspensión Pro', p: 5, a: 6, m: 8 },
-                cajaCambios: { nombre: 'Caja 8V Racing', p: 7, a: 5, m: 6 },
-                neumaticos: { nombre: 'Pirelli Hard', p: 4, a: 7, m: 6 }
-            },
-            totales: { P: 28, A: 31, M: 31, H: 92 },
-            calculados: {
-                Vrecta: 200 + 3*28 + 0.2*92 - 1*31,
-                Vcurva: 90 + 2*31 + 2*31 + 0.2*92,
-                penalizacion: (18 * 40) / (1 + 92/100),
-                tiempoSegundos: 478.92
-            },
-            posicion: 4
-        }
-    ];
-
-    // Función para formatear tiempo (minutos:segundos si > 60s)
+    // Función para formatear tiempo
     const formatTiempo = (segundos) => {
+        if (!segundos) return '--';
         if (segundos >= 60) {
             const mins = Math.floor(segundos / 60);
             const secs = (segundos % 60).toFixed(2);
             return `${mins}:${secs.padStart(5, '0')}`;
-        } else {
-            return `${segundos.toFixed(2)}s`;
         }
+        return `${segundos.toFixed(2)}s`;
     };
 
     // Color según posición
@@ -656,13 +579,49 @@ function DriverDashboard() {
         return 'brand.600';
     };
 
+    // Nombres de circuitos por distancia
+    const getNombreCircuito = (distancia) => {
+        const nombres = {
+            5.793: 'Monza',
+            3.337: 'Monaco',
+            7.004: 'Spa-Francorchamps',
+            5.891: 'Silverstone',
+            5.807: 'Suzuka',
+            4.318: 'Barcelona',
+            5.412: 'Interlagos',
+            6.003: 'COTA'
+        };
+        return nombres[distancia] || `Circuito`;
+    };
+
+    if (loading) {
+        return (
+            <VStack spacing={6} align="center" py={20}>
+                <Spinner size="xl" color="accent.500" />
+                <Text color="gray.400">Cargando datos del piloto...</Text>
+            </VStack>
+        );
+    }
+
+    if (error) {
+        return (
+            <Alert status="error" bg="red.900" borderRadius="md">
+                <AlertIcon />
+                {error}
+            </Alert>
+        );
+    }
+
+    const carro = data?.carro;
+    const simulaciones = data?.simulaciones || [];
+
     return (
         <VStack spacing={6} align="stretch">
             <Box>
                 <Heading size="lg" color="white">Mi Perfil de Piloto</Heading>
                 <HStack mt={1}>
-                    <Box w="12px" h="12px" bg={driver.equipoColor} borderRadius="sm" />
-                    <Text color="gray.400">#{driver.numero} - {driver.equipo}</Text>
+                    <Box w="12px" h="12px" bg="red.600" borderRadius="sm" />
+                    <Text color="gray.400">{usuario?.correo} - {carro?.equipo || 'Sin equipo'}</Text>
                 </HStack>
             </Box>
 
@@ -671,30 +630,25 @@ function DriverDashboard() {
                     <HStack spacing={6} align="center">
                         <Avatar 
                             size="xl" 
-                            name={driver.nombre}
+                            name={usuario?.correo?.split('@')[0]}
                             bg="accent.600"
                         />
                         <Box flex={1}>
                             <HStack mb={1}>
-                                <Heading size="md" color="white">{driver.nombre}</Heading>
-                                <Badge colorScheme="blue">{driver.nacionalidad}</Badge>
+                                <Heading size="md" color="white" textTransform="capitalize">
+                                    {usuario?.correo?.split('@')[0] || 'Piloto'}
+                                </Heading>
+                                <Badge colorScheme="blue">{carro?.equipo}</Badge>
                             </HStack>
-                            <Text color="gray.400" fontSize="sm" mb={3}>
-                                Carro: {carro.nombre} • {carro.partes}/{carro.total} partes instaladas
-                            </Text>
-                            <Box>
-                                <HStack justify="space-between" mb={1}>
-                                    <Text fontSize="sm" color="gray.400">Habilidad (H)</Text>
-                                    <Text fontSize="sm" color="green.400" fontWeight="bold">{driver.habilidad}/100</Text>
-                                </HStack>
-                                <Progress 
-                                    value={driver.habilidad} 
-                                    colorScheme="green" 
-                                    bg="brand.700"
-                                    borderRadius="full"
-                                    size="sm"
-                                />
-                            </Box>
+                            {carro ? (
+                                <Text color="gray.400" fontSize="sm" mb={3}>
+                                    Carro #{carro.id} • {carro.finalizado ? 'Listo para correr' : 'En construcción'}
+                                </Text>
+                            ) : (
+                                <Text color="orange.400" fontSize="sm" mb={3}>
+                                    No tienes un carro asignado
+                                </Text>
+                            )}
                         </Box>
                     </HStack>
                 </CardBody>
@@ -704,167 +658,184 @@ function DriverDashboard() {
                 <StatCard 
                     icon={Trophy} 
                     label="Victorias" 
-                    value={driver.victorias} 
+                    value={stats?.victorias || 0} 
                     color="yellow.500" 
                 />
                 <StatCard 
                     icon={Medal} 
                     label="Podios" 
-                    value={driver.podios} 
+                    value={stats?.podios || 0} 
                     color="purple.500" 
                 />
                 <StatCard 
-                    icon={Star} 
-                    label="Puntos Temporada" 
-                    value={driver.puntos} 
+                    icon={Flag} 
+                    label="Carreras" 
+                    value={stats?.carreras || 0} 
                     color="green.500" 
                 />
                 <StatCard 
-                    icon={Flag} 
-                    label="Campeonatos" 
-                    value={driver.campeonatos} 
+                    icon={Clock} 
+                    label="Mejor Tiempo" 
+                    value={formatTiempo(stats?.mejorTiempo)} 
                     color="blue.500" 
                 />
             </SimpleGrid>
 
             <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={4}>
-                {/* Rendimiento del carro - Solo P, A, M */}
-                <Card bg="brand.800" borderColor="brand.700">
-                    <CardBody>
-                        <Heading size="md" color="white" mb={4}>Rendimiento del Carro</Heading>
-                        <VStack spacing={4}>
-                            <Box w="full">
-                                <HStack justify="space-between" mb={1}>
-                                    <HStack>
-                                        <Box w="8px" h="8px" bg="yellow.400" borderRadius="full" />
-                                        <Text fontSize="sm" color="gray.400">Potencia (P)</Text>
+                {/* Rendimiento del carro */}
+                {carro && (
+                    <Card bg="brand.800" borderColor="brand.700">
+                        <CardBody>
+                            <Heading size="md" color="white" mb={4}>Rendimiento del Carro</Heading>
+                            <VStack spacing={4}>
+                                <Box w="full">
+                                    <HStack justify="space-between" mb={1}>
+                                        <HStack>
+                                            <Box w="8px" h="8px" bg="yellow.400" borderRadius="full" />
+                                            <Text fontSize="sm" color="gray.400">Potencia (P)</Text>
+                                        </HStack>
+                                        <Text fontSize="sm" color="white" fontWeight="bold">{carro.stats.P}</Text>
                                     </HStack>
-                                    <Text fontSize="sm" color="white" fontWeight="bold">{carro.stats.potencia}</Text>
-                                </HStack>
-                                <Progress 
-                                    value={carro.stats.potencia} 
-                                    colorScheme="yellow"
-                                    bg="brand.700" 
-                                    size="sm" 
-                                    borderRadius="full"
-                                />
-                            </Box>
-                            <Box w="full">
-                                <HStack justify="space-between" mb={1}>
-                                    <HStack>
-                                        <Box w="8px" h="8px" bg="blue.400" borderRadius="full" />
-                                        <Text fontSize="sm" color="gray.400">Aerodinámica (A)</Text>
-                                    </HStack>
-                                    <Text fontSize="sm" color="white" fontWeight="bold">{carro.stats.aerodinamica}</Text>
-                                </HStack>
-                                <Progress 
-                                    value={carro.stats.aerodinamica} 
-                                    colorScheme="blue"
-                                    bg="brand.700" 
-                                    size="sm" 
-                                    borderRadius="full"
-                                />
-                            </Box>
-                            <Box w="full">
-                                <HStack justify="space-between" mb={1}>
-                                    <HStack>
-                                        <Box w="8px" h="8px" bg="green.400" borderRadius="full" />
-                                        <Text fontSize="sm" color="gray.400">Manejo (M)</Text>
-                                    </HStack>
-                                    <Text fontSize="sm" color="white" fontWeight="bold">{carro.stats.manejo}</Text>
-                                </HStack>
-                                <Progress 
-                                    value={carro.stats.manejo} 
-                                    colorScheme="green"
-                                    bg="brand.700" 
-                                    size="sm" 
-                                    borderRadius="full"
-                                />
-                            </Box>
-                            
-                            <Divider borderColor="brand.700" />
-                            
-                            {/* Velocidades calculadas */}
-                            <SimpleGrid columns={2} spacing={4} w="full">
-                                <Box p={3} bg="brand.900" borderRadius="md" textAlign="center">
-                                    <Text fontSize="xs" color="gray.500">V. Recta</Text>
-                                    <Text fontSize="lg" fontWeight="bold" color="yellow.400">
-                                        {(200 + 3*carro.stats.potencia + 0.2*driver.habilidad - carro.stats.aerodinamica).toFixed(1)} km/h
-                                    </Text>
+                                    <Progress 
+                                        value={(carro.stats.P / 45) * 100} 
+                                        colorScheme="yellow"
+                                        bg="brand.700" 
+                                        size="sm" 
+                                        borderRadius="full"
+                                    />
                                 </Box>
-                                <Box p={3} bg="brand.900" borderRadius="md" textAlign="center">
-                                    <Text fontSize="xs" color="gray.500">V. Curva</Text>
-                                    <Text fontSize="lg" fontWeight="bold" color="blue.400">
-                                        {(90 + 2*carro.stats.aerodinamica + 2*carro.stats.manejo + 0.2*driver.habilidad).toFixed(1)} km/h
-                                    </Text>
+                                <Box w="full">
+                                    <HStack justify="space-between" mb={1}>
+                                        <HStack>
+                                            <Box w="8px" h="8px" bg="blue.400" borderRadius="full" />
+                                            <Text fontSize="sm" color="gray.400">Aerodinámica (A)</Text>
+                                        </HStack>
+                                        <Text fontSize="sm" color="white" fontWeight="bold">{carro.stats.A}</Text>
+                                    </HStack>
+                                    <Progress 
+                                        value={(carro.stats.A / 45) * 100} 
+                                        colorScheme="blue"
+                                        bg="brand.700" 
+                                        size="sm" 
+                                        borderRadius="full"
+                                    />
                                 </Box>
-                            </SimpleGrid>
-                        </VStack>
-                    </CardBody>
-                </Card>
+                                <Box w="full">
+                                    <HStack justify="space-between" mb={1}>
+                                        <HStack>
+                                            <Box w="8px" h="8px" bg="green.400" borderRadius="full" />
+                                            <Text fontSize="sm" color="gray.400">Manejo (M)</Text>
+                                        </HStack>
+                                        <Text fontSize="sm" color="white" fontWeight="bold">{carro.stats.M}</Text>
+                                    </HStack>
+                                    <Progress 
+                                        value={(carro.stats.M / 45) * 100} 
+                                        colorScheme="green"
+                                        bg="brand.700" 
+                                        size="sm" 
+                                        borderRadius="full"
+                                    />
+                                </Box>
+                            </VStack>
+                        </CardBody>
+                    </Card>
+                )}
 
-                {/* Simulaciones */}
+                {/* Historial de Simulaciones */}
                 <Card bg="brand.800" borderColor="brand.700">
                     <CardBody>
-                        <Heading size="md" color="white" mb={4}>Historial de Simulaciones</Heading>
-                        <VStack spacing={0} align="stretch" divider={<Divider borderColor="brand.700" />}>
-                            {simulaciones.map((sim, index) => (
-                                <Box key={sim.id} py={3}>
-                                    <HStack justify="space-between" mb={2}>
-                                        <HStack spacing={3}>
-                                            <Badge 
-                                                bg={getPosicionColor(sim.posicion)}
-                                                color={sim.posicion === 2 ? 'black' : 'white'}
-                                                px={2} 
-                                                py={1}
-                                                borderRadius="md"
-                                                fontWeight="bold"
-                                                fontSize="sm"
-                                            >
-                                                P{sim.posicion}
-                                            </Badge>
-                                            <VStack align="start" spacing={0}>
-                                                <Text color="white" fontSize="sm" fontWeight="bold">
-                                                    {sim.circuito.nombre}
+                        <HStack justify="space-between" mb={4}>
+                            <Heading size="md" color="white">Historial de Simulaciones</Heading>
+                            <Button 
+                                size="xs" 
+                                variant="ghost" 
+                                color="accent.400"
+                                onClick={() => navigate('/simulaciones')}
+                            >
+                                Ver todas
+                            </Button>
+                        </HStack>
+                        
+                        {simulaciones.length === 0 ? (
+                            <Text color="gray.500" textAlign="center" py={4}>
+                                No has participado en simulaciones aún
+                            </Text>
+                        ) : (
+                            <VStack spacing={0} align="stretch" divider={<Divider borderColor="brand.700" />}>
+                                {simulaciones.slice(0, 5).map((sim) => (
+                                    <Box key={sim.id} py={3}>
+                                        <HStack justify="space-between" mb={2}>
+                                            <HStack spacing={3}>
+                                                <Badge 
+                                                    bg={getPosicionColor(sim.resultado.posicion)}
+                                                    color={sim.resultado.posicion === 2 ? 'black' : 'white'}
+                                                    px={2} 
+                                                    py={1}
+                                                    borderRadius="md"
+                                                    fontWeight="bold"
+                                                    fontSize="sm"
+                                                >
+                                                    P{sim.resultado.posicion}
+                                                </Badge>
+                                                <VStack align="start" spacing={0}>
+                                                    <Text color="white" fontSize="sm" fontWeight="bold">
+                                                        {getNombreCircuito(sim.circuito.distancia)}
+                                                    </Text>
+                                                    <Text color="gray.500" fontSize="xs">
+                                                        {new Date(sim.fecha).toLocaleDateString()}
+                                                    </Text>
+                                                </VStack>
+                                            </HStack>
+                                            <VStack align="end" spacing={0}>
+                                                <Text color="accent.400" fontWeight="bold" fontSize="sm">
+                                                    {formatTiempo(sim.resultado.tiempoSegundos)}
                                                 </Text>
                                                 <Text color="gray.500" fontSize="xs">
-                                                    {sim.fecha}
+                                                    Pen: +{sim.resultado.penalizacion.toFixed(1)}s
                                                 </Text>
                                             </VStack>
                                         </HStack>
-                                        <VStack align="end" spacing={0}>
-                                            <Text color="accent.400" fontWeight="bold" fontSize="sm">
-                                                {formatTiempo(sim.calculados.tiempoSegundos)}
-                                            </Text>
+                                        <HStack spacing={2} flexWrap="wrap">
+                                            <Badge size="sm" colorScheme="yellow" variant="subtle">
+                                                P:{sim.stats.P}
+                                            </Badge>
+                                            <Badge size="sm" colorScheme="blue" variant="subtle">
+                                                A:{sim.stats.A}
+                                            </Badge>
+                                            <Badge size="sm" colorScheme="green" variant="subtle">
+                                                M:{sim.stats.M}
+                                            </Badge>
+                                            <Badge size="sm" colorScheme="purple" variant="subtle">
+                                                H:{sim.stats.H}
+                                            </Badge>
+                                            <Text color="gray.600" fontSize="xs">•</Text>
                                             <Text color="gray.500" fontSize="xs">
-                                                Pen: +{sim.calculados.penalizacion.toFixed(1)}s
+                                                {sim.circuito.distancia}km, {sim.circuito.curvas} curvas
                                             </Text>
-                                        </VStack>
-                                    </HStack>
-                                    <HStack spacing={2} flexWrap="wrap">
-                                        <Badge size="sm" colorScheme="yellow" variant="subtle">
-                                            P:{sim.totales.P}
-                                        </Badge>
-                                        <Badge size="sm" colorScheme="blue" variant="subtle">
-                                            A:{sim.totales.A}
-                                        </Badge>
-                                        <Badge size="sm" colorScheme="green" variant="subtle">
-                                            M:{sim.totales.M}
-                                        </Badge>
-                                        <Badge size="sm" colorScheme="purple" variant="subtle">
-                                            H:{sim.totales.H}
-                                        </Badge>
-                                        <Text color="gray.600" fontSize="xs">•</Text>
-                                        <Text color="gray.500" fontSize="xs">
-                                            {sim.circuito.distancia}km, {sim.circuito.curvas} curvas
-                                        </Text>
-                                    </HStack>
-                                </Box>
-                            ))}
-                        </VStack>
+                                        </HStack>
+                                    </Box>
+                                ))}
+                            </VStack>
+                        )}
                     </CardBody>
                 </Card>
             </SimpleGrid>
+
+            <Card bg="brand.800" borderColor="brand.700">
+                <CardBody>
+                    <Heading size="md" color="white" mb={4}>Acciones</Heading>
+                    <Flex gap={3} flexWrap="wrap">
+                        <Button 
+                            leftIcon={<Flag size={16} />} 
+                            colorScheme="red"
+                            size="sm"
+                            onClick={() => navigate('/simulaciones')}
+                        >
+                            Ver Simulaciones
+                        </Button>
+                    </Flex>
+                </CardBody>
+            </Card>
         </VStack>
     );
 }
