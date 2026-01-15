@@ -15,22 +15,23 @@ const usuarios = [
 
 async function insertarUsuarios() {
     try {
-        console.log('🔄 Conectando a la base de datos...\n');
+        console.log('Conectando a la base de datos...\n');
         const pool = await sql.connect(config);
         
         console.log('👤 INSERTANDO USUARIOS:');
         console.log('================================\n');
         
         for (const usuario of usuarios) {
-            // Generar hash Argon2id
+            // Genera el hash de Argon2id
             const hash = await argon2.hash(usuario.password, {
                 type: argon2.argon2id,
-                memoryCost: 19456,
-                timeCost: 2,
-                parallelism: 1
+                memoryCost: 2**16, // 64MB de memoria
+                timeCost: 3,          // 3 iteraciones
+                parallelism: 4,     // 4 threads
+                raw: false        // Retorna el hash codificado (incluye salt y parámetros)
             });
             
-            console.log(`📧 ${usuario.correo}`);
+            console.log(`${usuario.correo}`);
             console.log(`   Rol: ${usuario.id_rol} | Equipo: ${usuario.id_equipo}`);
             console.log(`   Hash: ${hash.substring(0, 50)}...`);
             
@@ -40,7 +41,7 @@ async function insertarUsuarios() {
                 .query('SELECT Id_usuario FROM USUARIO WHERE Correo_usuario = @correo');
             
             if (existe.recordset.length > 0) {
-                console.log(`   ⚠️  Ya existe, actualizando...\n`);
+                console.log(`Ya existe, actualizando...\n`);
                 await pool.request()
                     .input('correo', sql.NVarChar, usuario.correo)
                     .input('hash', sql.NVarChar, hash)
@@ -52,7 +53,7 @@ async function insertarUsuarios() {
                         WHERE Correo_usuario = @correo
                     `);
             } else {
-                console.log(`   ✅ Insertando...\n`);
+                console.log(`Insertando...\n`);
                 await pool.request()
                     .input('id', sql.Int, usuario.id)
                     .input('correo', sql.NVarChar, usuario.correo)
@@ -67,7 +68,7 @@ async function insertarUsuarios() {
         }
         
         // Verificar usuarios insertados
-        console.log('\n📋 USUARIOS EN LA BD:');
+        console.log('\n USUARIOS EN LA BD:');
         console.log('================================');
         const result = await pool.request().query(`
             SELECT u.Id_usuario, u.Correo_usuario, r.Nombre as Rol, e.Nombre as Equipo
@@ -77,11 +78,11 @@ async function insertarUsuarios() {
         `);
         console.table(result.recordset);
         
-        console.log('\n✅ Usuarios insertados correctamente!');
+        console.log('\n Usuarios insertados correctamente!');
         await pool.close();
         process.exit(0);
     } catch (error) {
-        console.error('❌ Error:', error.message);
+        console.error('Error:', error.message);
         console.error(error);
         process.exit(1);
     }
