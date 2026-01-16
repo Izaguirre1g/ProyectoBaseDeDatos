@@ -2,7 +2,7 @@ const sql = require('mssql/msnodesqlv8');
 require('dotenv').config();
 
 const dbConfig = {
-    connectionString: `Driver={ODBC Driver 17 for SQL Server};Server=${process.env.DB_SERVER || 'localhost'};Database=${process.env.DB_DATABASE || 'F1Database'};Trusted_Connection=yes;`
+    connectionString: `Driver={ODBC Driver 17 for SQL Server};Server=${process.env.DB_SERVER || 'localhost'};Database=${process.env.DB_DATABASE || 'DB_F1_Garage_Manager'};Trusted_Connection=yes;`
 };
 
 let pool;
