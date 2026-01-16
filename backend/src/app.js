@@ -6,10 +6,9 @@ require('dotenv').config();
 
 // Rutas
 const authRoutes = require('./routes/auth.routes');
-const partesRoutes = require('./routes/partes.routes');
-const carrosRoutes = require('./routes/carros.routes');
-const equiposRoutes = require('./routes/equipos.routes');
-const simulacionesRoutes = require('./routes/simulaciones.routes');
+
+// Base de datos
+const { getConnection } = require('./config/database');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -49,10 +48,6 @@ app.get('/', (req, res) => {
 
 // Rutas de la API
 app.use('/api/auth', authRoutes);
-app.use('/api/partes', partesRoutes);
-app.use('/api/carros', carrosRoutes);
-app.use('/api/equipos', equiposRoutes);
-app.use('/api/simulaciones', simulacionesRoutes);
 
 // Manejo de errores global
 app.use((err, req, res, next) => {
@@ -64,9 +59,18 @@ app.use((err, req, res, next) => {
 });
 
 // Iniciar servidor
-app.listen(PORT, () => {
-    console.log(`🏎️  Servidor F1 Database corriendo en http://localhost:${PORT}`);
-    console.log(`📊 Ambiente: ${process.env.NODE_ENV || 'development'}`);
+app.listen(PORT, async () => {
+    console.log(`Servidor F1 Database corriendo en http://localhost:${PORT}`);
+    console.log(`Ambiente: ${process.env.NODE_ENV || 'development'}`);
+    
+    // Intentar conectar a la base de datos
+    try {
+        await getConnection();
+        console.log('Base de datos conectada');
+    } catch (error) {
+        console.error('No se pudo conectar a la base de datos:', error.message);
+        console.error('Detalles:', error);
+    }
 });
 
 module.exports = app;

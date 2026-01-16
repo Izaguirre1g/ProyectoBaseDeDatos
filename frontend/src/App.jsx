@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Navbar from './components/Navbar';
 import Login from './pages/Login';
+import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Usuarios from './pages/Usuarios';
 import Catalogo from './pages/Catalogo';
@@ -38,6 +39,16 @@ function AppRoutes() {
                     element={
                         <PublicRoute>
                             <Login />
+                        </PublicRoute>
+                    } 
+                />
+
+                {/* Ruta pública - Registro */}
+                <Route 
+                    path="/register" 
+                    element={
+                        <PublicRoute>
+                            <Register />
                         </PublicRoute>
                     } 
                 />

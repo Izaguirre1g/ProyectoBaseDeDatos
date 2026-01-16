@@ -13,10 +13,10 @@ async function getConnection() {
             return pool;
         }
         pool = await sql.connect(dbConfig);
-        console.log('✅ Conexión a SQL Server establecida');
+        console.log('Conexión a SQL Server establecida');
         return pool;
     } catch (error) {
-        console.error('❌ Error al conectar a SQL Server:', error);
+        console.error('Error al conectar a SQL Server:', error);
         throw error;
     }
 }

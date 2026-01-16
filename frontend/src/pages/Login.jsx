@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import {
     Box,
     Button,
@@ -52,8 +52,26 @@ function Login() {
     };
 
     return (
-        <Center minH="100vh" bg="brand.900" p={4}>
-            <Card maxW="420px" w="full" bg="brand.800" borderColor="brand.600">
+        <Center 
+            minH="100vh" 
+            p={4}
+            backgroundImage="url('/images/image2.png')"
+            backgroundSize="cover"
+            backgroundPosition="center"
+            backgroundAttachment="fixed"
+            position="relative"
+            _before={{
+                content: '""',
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                bg: 'rgba(15, 15, 15, 0.7)',
+                zIndex: 1
+            }}
+        >
+            <Card maxW="420px" w="full" bg="brand.800" borderColor="brand.600" zIndex={2} position="relative">
                 <CardBody p={8}>
                     <VStack spacing={6}>
                         {/* Header */}
@@ -170,6 +188,15 @@ function Login() {
                                 Contrasena: 123456
                             </Text>
                         </Box>
+
+                        {/* Register Link */}
+                        <VStack spacing={2} align="center">
+                            <Link to="/register">
+                                <Button variant="ghost" size="sm" color="red.600" _hover={{ color: 'white' }}>
+                                    Regístrate aquí
+                                </Button>
+                            </Link>
+                        </VStack>
                     </VStack>
                 </CardBody>
             </Card>
