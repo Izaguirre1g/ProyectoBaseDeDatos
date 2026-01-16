@@ -58,27 +58,27 @@ module.exports = {
 
     // Usuarios base del sistema
     usuariosBase: [
-        { correo: 'admin@f1.com', password: '123456', equipo: 'Scuderia Ferrari', idRol: 1 },
-        { correo: 'engineer@f1.com', password: '123456', equipo: 'Scuderia Ferrari', idRol: 2 },
-        { correo: 'driver@f1.com', password: '123456', equipo: 'Scuderia Ferrari', idRol: 3 },
+        { nombre: 'Administrador', correo: 'admin@f1.com', password: '123456', equipo: 'Scuderia Ferrari', idRol: 1 },
+        { nombre: 'Ingeniero', correo: 'engineer@f1.com', password: '123456', equipo: 'Scuderia Ferrari', idRol: 2 },
+        { nombre: 'Conductor', correo: 'driver@f1.com', password: '123456', equipo: 'Scuderia Ferrari', idRol: 3 },
     ],
 
     // Pilotos e ingenieros de equipos
     usuariosF1: [
         // Red Bull
-        { correo: 'verstappen@f1.com', password: '123456', equipo: 'Oracle Red Bull Racing', idRol: 3 },
-        { correo: 'perez@f1.com', password: '123456', equipo: 'Oracle Red Bull Racing', idRol: 3 },
-        { correo: 'newey@f1.com', password: '123456', equipo: 'Oracle Red Bull Racing', idRol: 2 },
+        { nombre: 'Max Verstappen', correo: 'verstappen@f1.com', password: '123456', equipo: 'Oracle Red Bull Racing', idRol: 3 },
+        { nombre: 'Sergio Perez', correo: 'perez@f1.com', password: '123456', equipo: 'Oracle Red Bull Racing', idRol: 3 },
+        { nombre: 'Adrian Newey', correo: 'newey@f1.com', password: '123456', equipo: 'Oracle Red Bull Racing', idRol: 2 },
         // Mercedes
-        { correo: 'hamilton@f1.com', password: '123456', equipo: 'Mercedes-AMG Petronas', idRol: 3 },
-        { correo: 'russell@f1.com', password: '123456', equipo: 'Mercedes-AMG Petronas', idRol: 3 },
-        { correo: 'wolff@f1.com', password: '123456', equipo: 'Mercedes-AMG Petronas', idRol: 2 },
+        { nombre: 'Lewis Hamilton', correo: 'hamilton@f1.com', password: '123456', equipo: 'Mercedes-AMG Petronas', idRol: 3 },
+        { nombre: 'George Russell', correo: 'russell@f1.com', password: '123456', equipo: 'Mercedes-AMG Petronas', idRol: 3 },
+        { nombre: 'Toto Wolff', correo: 'wolff@f1.com', password: '123456', equipo: 'Mercedes-AMG Petronas', idRol: 2 },
         // McLaren
-        { correo: 'norris@f1.com', password: '123456', equipo: 'McLaren F1 Team', idRol: 3 },
-        { correo: 'piastri@f1.com', password: '123456', equipo: 'McLaren F1 Team', idRol: 3 },
+        { nombre: 'Lando Norris', correo: 'norris@f1.com', password: '123456', equipo: 'McLaren F1 Team', idRol: 3 },
+        { nombre: 'Oscar Piastri', correo: 'piastri@f1.com', password: '123456', equipo: 'McLaren F1 Team', idRol: 3 },
         // Ferrari
-        { correo: 'leclerc@f1.com', password: '123456', equipo: 'Scuderia Ferrari', idRol: 3 },
-        { correo: 'sainz@f1.com', password: '123456', equipo: 'Scuderia Ferrari', idRol: 3 },
+        { nombre: 'Charles Leclerc', correo: 'leclerc@f1.com', password: '123456', equipo: 'Scuderia Ferrari', idRol: 3 },
+        { nombre: 'Carlos Sainz', correo: 'sainz@f1.com', password: '123456', equipo: 'Scuderia Ferrari', idRol: 3 },
     ],
 
     aportes: [

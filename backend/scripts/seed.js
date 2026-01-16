@@ -81,6 +81,7 @@ async function seed() {
             const idEquipo = equipoMap[u.equipo];
             if (idEquipo) {
                 await usuariosService.upsert({
+                    nombre: u.nombre,
                     correo: u.correo,
                     password: u.password,
                     idEquipo,
@@ -96,6 +97,7 @@ async function seed() {
             const idEquipo = equipoMap[u.equipo];
             if (idEquipo) {
                 await usuariosService.upsert({
+                    nombre: u.nombre,
                     correo: u.correo,
                     password: u.password,
                     idEquipo,

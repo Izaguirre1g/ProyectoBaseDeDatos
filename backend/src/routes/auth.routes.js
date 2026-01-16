@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { verifyPassword } = require('../utils/password');
 const { getConnection, sql } = require('../config/database');
+const usuariosService = require('../services/usuarios.service');
 
 // POST /api/auth/login
 router.post('/login', async (req, res) => {
@@ -116,6 +117,88 @@ router.get('/me', (req, res) => {
         });
     } else {
         res.json({ loggedIn: false });
+    }
+});
+
+// POST /api/auth/register - Registrar nuevo usuario
+router.post('/register', async (req, res) => {
+    const { nombre, email, password, rol } = req.body;
+    
+    try {
+        console.log('\n📝 ========== REGISTRO NUEVO USUARIO ==========');
+        console.log(`👤 Nombre: ${nombre}`);
+        console.log(`📧 Email: ${email}`);
+        console.log(`🎭 Rol: ${rol}`);
+        
+        // Validaciones básicas
+        if (!nombre || !email || !password || !rol) {
+            return res.status(400).json({
+                success: false,
+                error: 'Todos los campos son requeridos'
+            });
+        }
+        
+        // Mapear rol del frontend al ID de BD
+        const rolMap = {
+            'Administrador': 1,
+            'Ingeniero': 2,
+            'Conductor': 3
+        };
+        const idRol = rolMap[rol];
+        
+        if (!idRol) {
+            return res.status(400).json({
+                success: false,
+                error: 'Rol inválido'
+            });
+        }
+        
+        // Verificar que el usuario no exista
+        const usuarioExistente = await usuariosService.getByCorreo(email);
+        if (usuarioExistente) {
+            console.log('❌ El correo ya está registrado');
+            return res.status(400).json({
+                success: false,
+                error: 'El correo ya está registrado'
+            });
+        }
+        
+        // Crear usuario con equipo por defecto (Ferrari)
+        const pool = await getConnection();
+        const equipoResult = await pool.request()
+            .input('nombre', sql.NVarChar, 'Scuderia Ferrari')
+            .query('SELECT Id_equipo FROM EQUIPO WHERE Nombre = @nombre');
+        
+        const idEquipo = equipoResult.recordset[0]?.Id_equipo || 1;
+        
+        // Crear el usuario
+        const nuevoUsuario = await usuariosService.create({
+            nombre,
+            correo: email,
+            password,
+            idEquipo,
+            idRol
+        });
+        
+        console.log(`✅ Usuario registrado: ${email}`);
+        console.log('📝 ========== REGISTRO EXITOSO ==========\n');
+        
+        res.status(201).json({
+            success: true,
+            mensaje: 'Usuario registrado exitosamente',
+            usuario: {
+                id: nuevoUsuario.Id_usuario,
+                nombre: nuevoUsuario.Nombre_usuario,
+                email: nuevoUsuario.Correo_usuario,
+                rol: rol
+            }
+        });
+    } catch (error) {
+        console.error('❌ ERROR EN REGISTRO:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Error al registrar usuario'
+        });
     }
 });
 
