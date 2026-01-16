@@ -6,6 +6,10 @@
   "scripts": {
     "start": "node src/app.js",
     "dev": "nodemon src/app.js",
+    "seed": "node scripts/seed.js",
+    "seed:simulaciones": "node scripts/seed-simulaciones.js",
+    "db:check": "node scripts/check-db.js",
+    "db:clean": "node scripts/clean-db.js --confirm",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

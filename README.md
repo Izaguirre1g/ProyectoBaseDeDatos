@@ -82,7 +82,7 @@ NODE_ENV=development
 
 # Base de Datos SQL Server
 DB_SERVER=localhost
-DB_NAME=F1Database
+DB_NAME=DB_F1_Garage_Manager
 DB_USER=tu_usuario
 DB_PASSWORD=tu_password
 DB_PORT=1433
