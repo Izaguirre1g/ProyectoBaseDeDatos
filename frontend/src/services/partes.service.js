@@ -22,7 +22,7 @@ export const partesService = {
      * @returns {Promise} Lista de categorías
      */
     async getCategorias() {
-        const response = await api.get('/partes/categorias');
+        const response = await api.get('/partes/categorias/todas'); 
         return response.data;
     },
 

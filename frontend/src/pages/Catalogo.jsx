@@ -24,6 +24,7 @@ import {
 } from '@chakra-ui/react';
 import { Package, Zap, Wind, Target, ShoppingCart } from 'lucide-react';
 import partesService from '../services/partes.service';
+import ModalCompra from '../components/ModalCompra';
 
 function Catalogo() {
     const [partes, setPartes] = useState([]);
@@ -32,6 +33,11 @@ function Catalogo() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const toast = useToast();
+
+    // Estados para el modal de compra
+    const [modalCompraOpen, setModalCompraOpen] = useState(false);
+    const [parteSeleccionada, setParteSeleccionada] = useState(null);
+    const [presupuestoDisponible, setPresupuestoDisponible] = useState(0);
 
     useEffect(() => {
         const fetchCategorias = async () => {
@@ -43,6 +49,23 @@ function Catalogo() {
             }
         };
         fetchCategorias();
+    }, []);
+
+    useEffect(() => {
+        // Obtener datos del usuario logueado
+        const usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
+        
+        // Obtener presupuesto del equipo
+        if (usuario.Id_equipo) {
+            fetch(`http://localhost:3000/api/equipos/${usuario.Id_equipo}/presupuesto`, {
+                credentials: 'include'
+            })
+            .then(res => res.json())
+            .then(data => {
+                setPresupuestoDisponible(data.Presupuesto || 0);
+            })
+            .catch(err => console.error('Error al obtener presupuesto:', err));
+        }
     }, []);
 
     useEffect(() => {
@@ -75,6 +98,8 @@ function Catalogo() {
         return 'red';
     };
 
+    
+
     const StatBar = ({ label, value, icon: IconComponent }) => (
         <HStack spacing={3} w="full">
             <HStack w="90px" spacing={2}>
@@ -95,13 +120,34 @@ function Catalogo() {
         </HStack>
     );
 
-    const handleComprar = async (parteId) => {
+    const handleComprar = (parte) => {
+        setParteSeleccionada(parte);
+        setModalCompraOpen(true);
+    };
+
+    const handleCompraExitosa = (data) => {
         toast({
-            title: 'Funcion de compra',
-            description: 'Se implementara con la base de datos',
-            status: 'info',
-            duration: 3000,
+            title: '¡Compra exitosa!',
+            description: data.mensaje || 'La parte ha sido agregada a tu inventario',
+            status: 'success',
+            duration: 5000,
+            isClosable: true,
         });
+        
+        // Recargar partes para actualizar stock
+        fetchPartes();
+        
+        // Actualizar presupuesto
+        const usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
+        if (usuario.Id_equipo) {
+            fetch(`http://localhost:3000/api/equipos/${usuario.Id_equipo}/presupuesto`, {
+                credentials: 'include'
+            })
+            .then(res => res.json())
+            .then(data => {
+                setPresupuestoDisponible(data.Presupuesto || 0);
+            });
+        }
     };
 
     const getCategoriaIcon = (catId) => {
@@ -202,12 +248,12 @@ function Catalogo() {
 
                                 <Flex justify="space-between" align="center">
                                     <Text fontSize="lg" fontWeight="bold" color="green.400">
-                                        {formatPrecio(parte.precio)}
+                                        {formatPrecio(parte.Precio)}
                                     </Text>
                                     <Button 
                                         size="sm" 
                                         leftIcon={<ShoppingCart size={14} />}
-                                        onClick={() => handleComprar(parte.id)}
+                                        onClick={() => handleComprar(parte)}
                                     >
                                         Comprar
                                     </Button>
@@ -217,6 +263,16 @@ function Catalogo() {
                     ))}
                 </SimpleGrid>
             )}
+
+            {/* Modal de Compra */}
+            <ModalCompra
+                isOpen={modalCompraOpen}
+                onClose={() => setModalCompraOpen(false)}
+                parte={parteSeleccionada}
+                idEquipo={JSON.parse(localStorage.getItem('usuario') || '{}').Id_equipo}
+                presupuestoDisponible={presupuestoDisponible}
+                onCompraExitosa={handleCompraExitosa}
+            />
 
             {/* Resumen */}
             <Text textAlign="center" mt={8} color="gray.600" fontSize="sm">
