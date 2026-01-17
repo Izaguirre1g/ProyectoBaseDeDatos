@@ -17,7 +17,7 @@ async function registrarSesionEnBD(idUsuario, req) {
         const ipUsuario = req.ip || req.connection.remoteAddress || 'Desconocida';
         
         const horaInicio = new Date();
-        horaInicio.setHours(horaInicio.getHours() - 6);
+        //horaInicio.setHours(horaInicio.getHours() - 6);  // Solo si SQL Server está en UTC
         
         const result = await pool.request()
             .input('horaInicio', sql.DateTime, horaInicio)

@@ -7,6 +7,10 @@ require('dotenv').config();
 // Rutas
 const authRoutes = require('./routes/auth.routes');
 const { validarTimeoutSesion } = require('./routes/auth.routes');
+const carrosRoutes = require('./routes/carros.routes');
+const equiposRoutes = require('./routes/equipos.routes');
+const partesRoutes = require('./routes/partes.routes');
+const simulacionesRoutes = require('./routes/simulaciones.routes');
 
 // Base de datos
 const { getConnection } = require('./config/database');
@@ -53,6 +57,12 @@ app.use('/api/auth', authRoutes);
 // Aplicar validación de timeout a TODAS las rutas de la API (excepto login y register)
 app.use('/api/', validarTimeoutSesion);
 
+// Registrar todas las rutas
+app.use('/api/carros', carrosRoutes);
+app.use('/api/equipos', equiposRoutes);
+app.use('/api/partes', partesRoutes);
+app.use('/api/simulaciones', simulacionesRoutes);
+
 // Manejo de errores global
 app.use((err, req, res, next) => {
     console.error(err.stack);
@@ -70,7 +80,7 @@ app.listen(PORT, async () => {
     // Intentar conectar a la base de datos
     try {
         await getConnection();
-        console.log('Base de datos conectada');
+        console.log('✅ Base de datos conectada');
     } catch (error) {
         console.error('No se pudo conectar a la base de datos:', error.message);
         console.error('Detalles:', error);

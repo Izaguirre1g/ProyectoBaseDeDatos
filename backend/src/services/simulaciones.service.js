@@ -94,7 +94,46 @@ const simulacionesService = {
                 JOIN CARRO c ON r.Id_carro = c.Id_carro
                 WHERE c.Id_conductor = @idConductor
             `);
-        return result.recordset[0];
+        return result.recordset[0] || {
+            totalSimulaciones: 0,
+            victorias: 0,
+            podios: 0,
+            posicionPromedio: 0,
+            mejorTiempo: null,
+            mejorVrecta: null,
+            mejorVcurva: null
+        };
+    },
+
+    /**
+     * Alias para getStatsConductor (compatibilidad con frontend)
+     */
+    async getDriverStats(idUsuario) {
+        return await this.getStatsConductor(idUsuario);
+    },
+
+    /**
+     * Obtener resultados de una simulación
+     */
+    async getResultados(idSimulacion) {
+        const pool = await getConnection();
+        const result = await pool.request()
+            .input('idSimulacion', sql.Int, idSimulacion)
+            .query(`
+                SELECT 
+                    r.*,
+                    ca.Id_equipo,
+                    e.Nombre as Equipo,
+                    u.Correo_usuario as Conductor,
+                    u.Nombre_usuario as NombreConductor
+                FROM RESULTADO r
+                JOIN CARRO ca ON r.Id_carro = ca.Id_carro
+                LEFT JOIN EQUIPO e ON ca.Id_equipo = e.Id_equipo
+                LEFT JOIN USUARIO u ON ca.Id_conductor = u.Id_usuario
+                WHERE r.Id_simulacion = @idSimulacion
+                ORDER BY r.Posicion
+            `);
+        return result.recordset;
     },
 
     /**
@@ -242,6 +281,7 @@ const simulacionesService = {
             SELECT 
                 u.Id_usuario,
                 u.Correo_usuario,
+                u.Nombre_usuario,
                 e.Nombre as Equipo,
                 COUNT(*) as totalCarreras,
                 SUM(CASE WHEN r.Posicion = 1 THEN 25 
@@ -260,7 +300,7 @@ const simulacionesService = {
             JOIN CARRO c ON r.Id_carro = c.Id_carro
             JOIN USUARIO u ON c.Id_conductor = u.Id_usuario
             LEFT JOIN EQUIPO e ON u.Id_equipo = e.Id_equipo
-            GROUP BY u.Id_usuario, u.Correo_usuario, e.Nombre
+            GROUP BY u.Id_usuario, u.Correo_usuario, u.Nombre_usuario, e.Nombre
             ORDER BY puntos DESC
         `);
         return result.recordset;
@@ -268,3 +308,4 @@ const simulacionesService = {
 };
 
 module.exports = simulacionesService;
+
