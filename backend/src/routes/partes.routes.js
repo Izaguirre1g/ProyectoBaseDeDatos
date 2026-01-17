@@ -81,25 +81,40 @@ router.get('/inventario/:idEquipo', async (req, res) => {
  */
 router.post('/comprar', async (req, res) => {
     try {
+        console.log('=== COMPRAR PARTE - INICIO ===');
+        console.log('Body recibido:', req.body);
+        
         const { idEquipo, idParte, cantidad } = req.body;
         
+        console.log('Parámetros extraídos:');
+        console.log('  idEquipo:', idEquipo, '(tipo:', typeof idEquipo, ')');
+        console.log('  idParte:', idParte, '(tipo:', typeof idParte, ')');
+        console.log('  cantidad:', cantidad, '(tipo:', typeof cantidad, ')');
+        
         if (!idEquipo || !idParte || !cantidad) {
+            console.log('❌ ERROR: Faltan parámetros');
             return res.status(400).json({ 
                 error: 'Faltan parámetros: idEquipo, idParte, cantidad' 
             });
         }
         
         if (cantidad <= 0) {
+            console.log('❌ ERROR: Cantidad inválida');
             return res.status(400).json({ 
                 error: 'La cantidad debe ser mayor a 0' 
             });
         }
+        
+        console.log('✓ Parámetros válidos, llamando al servicio de compra...');
         
         const resultado = await partesService.comprar(
             parseInt(idEquipo),
             parseInt(idParte),
             parseInt(cantidad)
         );
+        
+        console.log('✓ Resultado del servicio:', resultado);
+        console.log('=== COMPRAR PARTE - FIN ===');
         
         if (resultado.success) {
             res.json(resultado);
@@ -108,7 +123,9 @@ router.post('/comprar', async (req, res) => {
         }
         
     } catch (error) {
-        console.error('Error en compra:', error);
+        console.error('❌ ERROR COMPLETO en comprar:', error);
+        console.error('Mensaje:', error.message);
+        console.error('Stack:', error.stack);
         res.status(500).json({ 
             error: 'Error al procesar la compra',
             detalle: error.message 
@@ -122,13 +139,33 @@ router.post('/comprar', async (req, res) => {
  */
 router.post('/verificar-disponibilidad', async (req, res) => {
     try {
+        console.log('=== VERIFICAR DISPONIBILIDAD - INICIO ===');
+        console.log('Body recibido:', req.body);
+        
         const { idEquipo, idParte, cantidad } = req.body;
         
+        console.log('Parámetros extraídos:');
+        console.log('  idEquipo:', idEquipo, '(tipo:', typeof idEquipo, ')');
+        console.log('  idParte:', idParte, '(tipo:', typeof idParte, ')');
+        console.log('  cantidad:', cantidad, '(tipo:', typeof cantidad, ')');
+        
         if (!idEquipo || !idParte || !cantidad) {
+            console.log('❌ ERROR: Faltan parámetros');
+            console.log('  idEquipo válido?', !!idEquipo);
+            console.log('  idParte válido?', !!idParte);
+            console.log('  cantidad válido?', !!cantidad);
+            
             return res.status(400).json({ 
-                error: 'Faltan parámetros' 
+                error: 'Faltan parámetros',
+                detalle: {
+                    idEquipo: idEquipo || 'FALTA',
+                    idParte: idParte || 'FALTA',
+                    cantidad: cantidad || 'FALTA'
+                }
             });
         }
+        
+        console.log('✓ Parámetros válidos, llamando al servicio...');
         
         const disponibilidad = await partesService.verificarDisponibilidad(
             parseInt(idEquipo),
@@ -136,10 +173,15 @@ router.post('/verificar-disponibilidad', async (req, res) => {
             parseInt(cantidad)
         );
         
+        console.log('✓ Respuesta del servicio:', disponibilidad);
+        console.log('=== VERIFICAR DISPONIBILIDAD - FIN ===');
+        
         res.json(disponibilidad);
         
     } catch (error) {
-        console.error('Error al verificar disponibilidad:', error);
+        console.error('❌ ERROR COMPLETO en verificar disponibilidad:', error);
+        console.error('Mensaje:', error.message);
+        console.error('Stack:', error.stack);
         res.status(500).json({ error: 'Error al verificar disponibilidad' });
     }
 });

@@ -25,6 +25,7 @@ import {
 import { Package, Zap, Wind, Target, ShoppingCart } from 'lucide-react';
 import partesService from '../services/partes.service';
 import ModalCompra from '../components/ModalCompra';
+import { useAuth } from '../context/AuthContext'; // ← AGREGAR ESTE IMPORT
 
 function Catalogo() {
     const [partes, setPartes] = useState([]);
@@ -33,6 +34,7 @@ function Catalogo() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const toast = useToast();
+    const { usuario } = useAuth(); // ← AGREGAR ESTE HOOK
 
     // Estados para el modal de compra
     const [modalCompraOpen, setModalCompraOpen] = useState(false);
@@ -51,13 +53,24 @@ function Catalogo() {
         fetchCategorias();
     }, []);
 
+    // Función para cargar partes (accesible desde cualquier parte del componente)
+    const fetchPartes = async () => {
+        setLoading(true);
+        try {
+            const data = await partesService.getAll(categoriaActiva);
+            setPartes(data);
+            setError(null);
+        } catch (err) {
+            setError('Error al cargar partes');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
-        // Obtener datos del usuario logueado
-        const usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
-        
-        // Obtener presupuesto del equipo
-        if (usuario.Id_equipo) {
-            fetch(`http://localhost:3000/api/equipos/${usuario.Id_equipo}/presupuesto`, {
+        // Obtener presupuesto del equipo usando el usuario del contexto
+        if (usuario?.equipoId) {
+            fetch(`http://localhost:3000/api/equipos/${usuario.equipoId}/presupuesto`, {
                 credentials: 'include'
             })
             .then(res => res.json())
@@ -66,21 +79,9 @@ function Catalogo() {
             })
             .catch(err => console.error('Error al obtener presupuesto:', err));
         }
-    }, []);
+    }, [usuario]);
 
     useEffect(() => {
-        const fetchPartes = async () => {
-            setLoading(true);
-            try {
-                const data = await partesService.getAll(categoriaActiva);
-                setPartes(data);
-                setError(null);
-            } catch (err) {
-                setError('Error al cargar partes');
-            } finally {
-                setLoading(false);
-            }
-        };
         fetchPartes();
     }, [categoriaActiva]);
 
@@ -137,10 +138,9 @@ function Catalogo() {
         // Recargar partes para actualizar stock
         fetchPartes();
         
-        // Actualizar presupuesto
-        const usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
-        if (usuario.Id_equipo) {
-            fetch(`http://localhost:3000/api/equipos/${usuario.Id_equipo}/presupuesto`, {
+        // Actualizar presupuesto usando el usuario del contexto
+        if (usuario?.equipoId) {
+            fetch(`http://localhost:3000/api/equipos/${usuario.equipoId}/presupuesto`, {
                 credentials: 'include'
             })
             .then(res => res.json())
@@ -269,7 +269,7 @@ function Catalogo() {
                 isOpen={modalCompraOpen}
                 onClose={() => setModalCompraOpen(false)}
                 parte={parteSeleccionada}
-                idEquipo={JSON.parse(localStorage.getItem('usuario') || '{}').Id_equipo}
+                idEquipo={usuario?.equipoId}
                 presupuestoDisponible={presupuestoDisponible}
                 onCompraExitosa={handleCompraExitosa}
             />

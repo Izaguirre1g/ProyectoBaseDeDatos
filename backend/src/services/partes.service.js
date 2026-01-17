@@ -90,6 +90,11 @@ const partesService = {
     async comprar(idEquipo, idParte, cantidad) {
         const pool = await getConnection();
         
+        console.log('🛒 SERVICIO COMPRAR:');
+        console.log('  idEquipo:', idEquipo);
+        console.log('  idParte:', idParte);
+        console.log('  cantidad:', cantidad);
+        
         try {
             const result = await pool.request()
                 .input('Id_equipo', sql.Int, idEquipo)
@@ -103,13 +108,21 @@ const partesService = {
             const idPedido = result.output.Id_pedido_generado;
             const returnValue = result.returnValue;
             
+            console.log('📦 Respuesta del SP:');
+            console.log('  returnValue:', returnValue);
+            console.log('  mensaje:', mensaje);
+            console.log('  idPedido:', idPedido);
+            
             if (returnValue === 0 && idPedido) {
                 return { success: true, mensaje, idPedido };
             } else {
                 return { success: false, mensaje: mensaje || 'Error en la compra' };
             }
         } catch (error) {
-            console.error('Error en compra:', error);
+            console.error('❌ Error en compra (servicio):', error);
+            console.error('  Código:', error.code);
+            console.error('  Número:', error.number);
+            console.error('  Mensaje SQL:', error.message);
             throw new Error(error.message || 'Error al realizar la compra');
         }
     },
@@ -207,3 +220,4 @@ const partesService = {
 };
 
 module.exports = partesService;
+
