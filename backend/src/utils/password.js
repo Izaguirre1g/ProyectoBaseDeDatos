@@ -1,5 +1,13 @@
 const argon2 = require('argon2');
 
+// Configuración de Argon2id según OWASP (debe coincidir con usuariosService.js)
+const ARGON2_CONFIG = {
+    type: argon2.argon2id,
+    memoryCost: 19456,  // 19MB
+    timeCost: 2,
+    parallelism: 1
+};
+
 /**
  * Hashea una contraseña utilizando Argon2id
  * @param {string} password - Contraseña en texto plano
@@ -7,14 +15,8 @@ const argon2 = require('argon2');
  */
 async function hashPassword(password) {
     try {
-        // Argon2id con parámetros de seguridad de industria
-        const hash = await argon2.hash(password, {
-            type: argon2.argon2id,  // Argon2id
-            memoryCost: 2**16,      // 64MB de memoria
-            timeCost: 3,            // 3 iteraciones 
-            parallelism: 4,         // 4 threads
-            raw: false              // Retorna el hash codificado (incluye salt y parámetros)
-        });
+        // Argon2id con parámetros de seguridad de industria (OWASP)
+        const hash = await argon2.hash(password, ARGON2_CONFIG);
         return hash;
     } catch (error) {
         throw new Error(`Error al hashear contraseña: ${error.message}`);

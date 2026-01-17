@@ -6,6 +6,7 @@ require('dotenv').config();
 
 // Rutas
 const authRoutes = require('./routes/auth.routes');
+const { validarTimeoutSesion } = require('./routes/auth.routes');
 
 // Base de datos
 const { getConnection } = require('./config/database');
@@ -24,7 +25,7 @@ app.use(cors({
     credentials: true
 }));
 
-// Configuración de sesiones seguras (requisito del proyecto)
+// Configuración de sesiones seguras
 app.use(session({
     secret: process.env.SESSION_SECRET || 'secret-key-development',
     resave: false,
@@ -33,7 +34,7 @@ app.use(session({
         httpOnly: true,      // Protege contra XSS
         secure: process.env.NODE_ENV === 'production', // HTTPS en producción
         sameSite: 'lax',     // Protege contra CSRF
-        maxAge: parseInt(process.env.SESSION_MAX_AGE) || 3600000 // 1 hora
+        maxAge: parseInt(process.env.SESSION_MAX_AGE) || 120000 // 2 minutos
     }
 }));
 
@@ -48,6 +49,9 @@ app.get('/', (req, res) => {
 
 // Rutas de la API
 app.use('/api/auth', authRoutes);
+
+// Aplicar validación de timeout a TODAS las rutas de la API (excepto login y register)
+app.use('/api/', validarTimeoutSesion);
 
 // Manejo de errores global
 app.use((err, req, res, next) => {

@@ -13,10 +13,16 @@ const api = axios.create({
 api.interceptors.response.use(
     (response) => response,
     (error) => {
-        // Si el servidor responde con 401, el usuario no está autenticado
+        // Si el servidor responde con 401, el usuario no está autenticado o la sesión expiró
         if (error.response?.status === 401) {
-            // Podrías redirigir al login o limpiar el estado
-            console.log('No autorizado - sesión expirada o inválida');
+            console.log('⚠️ Sesión expirada o no autorizado');
+            
+            // Limpiar localStorage
+            localStorage.removeItem('usuario');
+            localStorage.removeItem('token');
+            
+            // Redirigir a login
+            window.location.href = '/login';
         }
         return Promise.reject(error);
     }

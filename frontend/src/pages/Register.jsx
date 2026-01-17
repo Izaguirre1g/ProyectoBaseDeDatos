@@ -39,6 +39,7 @@ function Register() {
 
     const navigate = useNavigate();
 
+    //restricciones adicionales 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
@@ -151,7 +152,6 @@ function Register() {
                             </Text>
                         </VStack>
 
-                        {/* Form */}
                         <Box as="form" onSubmit={handleSubmit} w="full">
                             <VStack spacing={2}>
                                 <FormControl>

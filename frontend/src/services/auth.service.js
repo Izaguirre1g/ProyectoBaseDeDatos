@@ -1,10 +1,10 @@
+//este archivo se encarga de hacer las llamadas a auth.routes.js para manejar la autenticación de usuarios
 import api from './api';
 
 /**
  * Servicios de autenticación
  * Preparado para integrar con base de datos (solo cambiar el backend)
  */
-
 export const authService = {
     /**
      * Iniciar sesión

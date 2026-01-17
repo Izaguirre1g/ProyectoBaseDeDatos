@@ -51,12 +51,17 @@ export function AuthProvider({ children }) {
 
     const logout = async () => {
         try {
-            await authService.logout();
+            // Intentar notificar al servidor que se cierra sesión
+            try {
+                await authService.logout();
+            } catch (err) {
+                console.log('Sesión ya cerrada en servidor:', err.message);
+            }
+            // Limpiar estado local de todos modos
             setUsuario(null);
             return { success: true };
         } catch (err) {
             console.error('Error al cerrar sesión:', err);
-            // Limpiar estado local de todos modos
             setUsuario(null);
             return { success: true };
         }
