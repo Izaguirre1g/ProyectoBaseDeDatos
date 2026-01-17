@@ -227,23 +227,80 @@ function Equipos() {
         monto: ''
     });
 
+
     useEffect(() => {
         loadEquipos();
     }, []);
 
+    // Carga todos los equipos y sus detalles
     const loadEquipos = async () => {
         try {
             setLoading(true);
-            let data = await equiposService.getAll();
-            
+            let equiposRaw = await equiposService.getAll();
+
             // Si es ingeniero, filtrar solo su equipo asignado
             if (esIngeniero) {
-                data = data.filter(e => e.id === equipoAsignadoId);
+                equiposRaw = equiposRaw.filter(e => e.Id_equipo === equipoAsignadoId);
             }
-            
-            setEquipos(data);
-            if (data.length > 0) {
-                setSelectedEquipo(data[0]);
+
+            // Para cada equipo, cargar detalles
+            const equiposDetallados = await Promise.all(equiposRaw.map(async (eq) => {
+                const [pilotos, carros, inventario, patrocinadores, presupuesto] = await Promise.all([
+                    equiposService.getPilotos(eq.Id_equipo),
+                    equiposService.getCarros(eq.Id_equipo),
+                    equiposService.getInventario(eq.Id_equipo),
+                    equiposService.getPatrocinadores(eq.Id_equipo),
+                    equiposService.getById(eq.Id_equipo)
+                ]);
+
+                // Transformar datos para la UI
+                return {
+                    id: eq.Id_equipo,
+                    nombre: eq.Nombre,
+                    pais: '', // No disponible en BD
+                    colorPrimario: '#e10600', // Default, no disponible en BD
+                    presupuesto: {
+                        total: presupuesto.presupuestoDisponible || eq.Presupuesto,
+                        gastado: 0, // No disponible en BD
+                        sponsors: patrocinadores.reduce((acc, p) => acc + (p.Monto || 0), 0),
+                        distribucion: [] // No disponible en BD
+                    },
+                    pilotos: pilotos.map(p => ({
+                        id: p.Id_usuario,
+                        nombre: p.Correo_usuario,
+                        nacionalidad: '',
+                        campeonatos: 0,
+                        victorias: 0,
+                        numero: p.Id_usuario
+                    })),
+                    carros: carros.map(c => ({
+                        id: c.Id_carro,
+                        nombre: c.Equipo + ' Carro #' + c.Id_carro,
+                        piloto: c.Conductor,
+                        configuracion: {},
+                        finalizado: c.Finalizado
+                    })),
+                    inventario: inventario.map(i => ({
+                        nombre: i.Nombre,
+                        categoria: i.Categoria,
+                        cantidad: i.Cantidad,
+                        precio: i.Precio
+                    })),
+                    patrocinadores: patrocinadores.map(p => ({
+                        id: p.Id_patrocinador,
+                        nombre: p.Nombre,
+                        tipo: 'Aporte',
+                        aporte: p.Monto || 0
+                    })),
+                    campeonatos: 0,
+                    fundacion: 2026,
+                    nombreCompleto: eq.Nombre
+                };
+            }));
+
+            setEquipos(equiposDetallados);
+            if (equiposDetallados.length > 0) {
+                setSelectedEquipo(equiposDetallados[0]);
             }
         } catch (error) {
             toast({

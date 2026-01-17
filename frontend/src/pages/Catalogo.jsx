@@ -122,7 +122,7 @@ function Catalogo() {
 
             {/* Filtros por categoria */}
             <Wrap spacing={3} mb={6}>
-                <WrapItem>
+                <WrapItem key="cat-todas">
                     <Button
                         leftIcon={<Package size={16} />}
                         variant={categoriaActiva === null ? 'solid' : 'outline'}
@@ -134,12 +134,12 @@ function Catalogo() {
                     </Button>
                 </WrapItem>
                 {categorias.map(cat => (
-                    <WrapItem key={cat.id}>
+                    <WrapItem key={cat.id || cat.Id_categoria}>
                         <Button
-                            variant={categoriaActiva === cat.id ? 'solid' : 'outline'}
+                            variant={categoriaActiva === (cat.id || cat.Id_categoria) ? 'solid' : 'outline'}
                             size="sm"
                             borderRadius="full"
-                            onClick={() => setCategoriaActiva(cat.id)}
+                            onClick={() => setCategoriaActiva(cat.id || cat.Id_categoria)}
                         >
                             {cat.nombre}
                         </Button>
@@ -170,7 +170,7 @@ function Catalogo() {
                 <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={5}>
                     {partes.map(parte => (
                         <Card 
-                            key={parte.id} 
+                            key={parte.Id_parte} 
                             bg="brand.800" 
                             borderColor="brand.700"
                             _hover={{ borderColor: 'brand.600', transform: 'translateY(-2px)' }}
@@ -179,24 +179,23 @@ function Catalogo() {
                             <CardBody>
                                 <Flex justify="space-between" mb={2}>
                                     <Text fontSize="xs" color="gray.500" textTransform="uppercase">
-                                        {parte.categoria}
+                                        {parte.Categoria}
                                     </Text>
                                     <Badge 
-                                        colorScheme={parte.stock > 5 ? 'green' : 'red'} 
+                                        colorScheme="gray" 
                                         variant="subtle"
                                         fontSize="xs"
                                     >
-                                        Stock: {parte.stock}
+                                        Marca: {parte.Marca}
                                     </Badge>
                                 </Flex>
-                                
-                                <Heading size="sm" color="white" mb={1}>{parte.nombre}</Heading>
-                                <Text fontSize="sm" color="gray.500" mb={4}>{parte.descripcion}</Text>
+                                <Heading size="sm" color="white" mb={1}>{parte.Nombre}</Heading>
+                                <Text fontSize="sm" color="gray.500" mb={4}>{parte.Descripcion || 'Sin descripción'}</Text>
 
                                 <VStack spacing={2} mb={4}>
-                                    <StatBar label="Potencia" value={parte.potencia} icon={Zap} />
-                                    <StatBar label="Aero" value={parte.aerodinamica} icon={Wind} />
-                                    <StatBar label="Manejo" value={parte.manejo} icon={Target} />
+                                    <StatBar label="Potencia" value={parte.Potencia} icon={Zap} />
+                                    <StatBar label="Aero" value={parte.Aerodinamica} icon={Wind} />
+                                    <StatBar label="Manejo" value={parte.Manejo} icon={Target} />
                                 </VStack>
 
                                 <Divider borderColor="brand.700" mb={4} />
