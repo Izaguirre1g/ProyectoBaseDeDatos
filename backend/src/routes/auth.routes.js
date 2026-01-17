@@ -166,18 +166,17 @@ router.get('/me', (req, res) => {
 
 // POST /api/auth/register - Registrar nuevo usuario
 router.post('/register', async (req, res) => {
-    const { nombre, email, password, rol } = req.body;
+    const { email, password, rol } = req.body;
     
     try {
         console.log('\n  Registrar un nuevo usuario ');
-        console.log(` Nombre: ${nombre}`);
         console.log(`Email: ${email}`);
         console.log(`Rol: ${rol}`);
         
-        if (!nombre || !email || !password || !rol) {
+        if (!email || !password || !rol) {
             return res.status(400).json({
                 success: false,
-                error: 'Todos los campos son requeridos'
+                error: 'Email, password y rol son requeridos'
             });
         }
         
@@ -207,7 +206,6 @@ router.post('/register', async (req, res) => {
         
         // Crear el usuario sin equipo por defecto
         const nuevoUsuario = await usuariosService.create({
-            nombre,
             correo: email,
             password,
             idEquipo: null,
@@ -222,7 +220,6 @@ router.post('/register', async (req, res) => {
             mensaje: 'Usuario registrado exitosamente',
             usuario: {
                 id: nuevoUsuario.Id_usuario,
-                nombre: nuevoUsuario.Nombre_usuario,
                 email: nuevoUsuario.Correo_usuario,
                 rol: rol
             }

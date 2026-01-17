@@ -767,19 +767,19 @@ function DriverDashboard() {
                                         <HStack justify="space-between" mb={2}>
                                             <HStack spacing={3}>
                                                 <Badge 
-                                                    bg={getPosicionColor(sim.resultado.posicion)}
-                                                    color={sim.resultado.posicion === 2 ? 'black' : 'white'}
+                                                    bg={getPosicionColor(sim.posicion)}
+                                                    color={sim.posicion === 2 ? 'black' : 'white'}
                                                     px={2} 
                                                     py={1}
                                                     borderRadius="md"
                                                     fontWeight="bold"
                                                     fontSize="sm"
                                                 >
-                                                    P{sim.resultado.posicion}
+                                                    P{sim.posicion}
                                                 </Badge>
                                                 <VStack align="start" spacing={0}>
                                                     <Text color="white" fontSize="sm" fontWeight="bold">
-                                                        {getNombreCircuito(sim.circuito.distancia)}
+                                                        {getNombreCircuito(sim.circuito?.distancia)}
                                                     </Text>
                                                     <Text color="gray.500" fontSize="xs">
                                                         {new Date(sim.fecha).toLocaleDateString()}
@@ -788,29 +788,26 @@ function DriverDashboard() {
                                             </HStack>
                                             <VStack align="end" spacing={0}>
                                                 <Text color="accent.400" fontWeight="bold" fontSize="sm">
-                                                    {formatTiempo(sim.resultado.tiempoSegundos)}
+                                                    {formatTiempo(sim.tiempo)}
                                                 </Text>
                                                 <Text color="gray.500" fontSize="xs">
-                                                    Pen: +{sim.resultado.penalizacion.toFixed(1)}s
+                                                    Vrecta: {sim.vrecta?.toFixed(0)} km/h
                                                 </Text>
                                             </VStack>
                                         </HStack>
                                         <HStack spacing={2} flexWrap="wrap">
                                             <Badge size="sm" colorScheme="yellow" variant="subtle">
-                                                P:{sim.stats.P}
+                                                P:{sim.stats?.P}
                                             </Badge>
                                             <Badge size="sm" colorScheme="blue" variant="subtle">
-                                                A:{sim.stats.A}
+                                                A:{sim.stats?.A}
                                             </Badge>
                                             <Badge size="sm" colorScheme="green" variant="subtle">
-                                                M:{sim.stats.M}
-                                            </Badge>
-                                            <Badge size="sm" colorScheme="purple" variant="subtle">
-                                                H:{sim.stats.H}
+                                                M:{sim.stats?.M}
                                             </Badge>
                                             <Text color="gray.600" fontSize="xs">•</Text>
                                             <Text color="gray.500" fontSize="xs">
-                                                {sim.circuito.distancia}km, {sim.circuito.curvas} curvas
+                                                {sim.circuito?.distancia}km, {sim.circuito?.curvas} curvas
                                             </Text>
                                         </HStack>
                                     </Box>

@@ -124,8 +124,7 @@ const simulacionesService = {
                     r.*,
                     ca.Id_equipo,
                     e.Nombre as Equipo,
-                    u.Correo_usuario as Conductor,
-                    u.Nombre_usuario as NombreConductor
+                    u.Correo_usuario as Conductor
                 FROM RESULTADO r
                 JOIN CARRO ca ON r.Id_carro = ca.Id_carro
                 LEFT JOIN EQUIPO e ON ca.Id_equipo = e.Id_equipo
@@ -259,6 +258,93 @@ const simulacionesService = {
     },
 
     /**
+     * Ejecutar simulación usando Stored Procedure con transacción
+     * Esta es la forma recomendada para producción - garantiza atomicidad
+     * @param {number} idCircuito - ID del circuito
+     * @param {Array} carros - Array de {idCarro, habilidad}
+     * @param {Date} fecha - Fecha opcional
+     * @returns {Object} - Resultado con simulación y resultados
+     */
+    async ejecutarSimulacionSP({ idCircuito, carros, fecha }) {
+        const pool = await getConnection();
+        
+        // Preparar JSON de carros para el SP
+        const carrosJSON = JSON.stringify(carros.map(c => ({
+            idCarro: c.idCarro || c.Id_carro,
+            habilidad: c.habilidad || 85
+        })));
+
+        try {
+            const result = await pool.request()
+                .input('Id_circuito', sql.Int, idCircuito)
+                .input('CarrosJSON', sql.NVarChar(sql.MAX), carrosJSON)
+                .input('Fecha_hora', sql.DateTime, fecha || new Date())
+                .output('Resultado', sql.VarChar(1000))
+                .output('Id_simulacion_generada', sql.Int)
+                .execute('SP_EjecutarSimulacion');
+            
+            const mensaje = result.output.Resultado;
+            const idSimulacion = result.output.Id_simulacion_generada;
+            
+            // Verificar si hubo error
+            if (result.returnValue !== 0 || !idSimulacion) {
+                throw new Error(mensaje || 'Error desconocido en la simulación');
+            }
+            
+            // Obtener la simulación completa con resultados
+            const simulacion = await this.getById(idSimulacion);
+            
+            return {
+                success: true,
+                mensaje,
+                simulacion
+            };
+        } catch (error) {
+            console.error('Error en SP_EjecutarSimulacion:', error);
+            throw new Error(error.message || 'Error al ejecutar la simulación');
+        }
+    },
+
+    /**
+     * Obtener estadísticas de conductor usando SP
+     */
+    async getStatsConductorSP(idUsuario) {
+        const pool = await getConnection();
+        
+        try {
+            const result = await pool.request()
+                .input('Id_usuario', sql.Int, idUsuario)
+                .execute('SP_ObtenerEstadisticasConductor');
+            
+            if (result.returnValue !== 0 || !result.recordset[0]) {
+                return {
+                    totalSimulaciones: 0,
+                    victorias: 0,
+                    podios: 0,
+                    posicionPromedio: null,
+                    mejorTiempo: null,
+                    puntosTotales: 0
+                };
+            }
+            
+            const stats = result.recordset[0];
+            return {
+                totalSimulaciones: stats.TotalSimulaciones || 0,
+                victorias: stats.Victorias || 0,
+                podios: stats.Podios || 0,
+                posicionPromedio: stats.PosicionPromedio,
+                mejorTiempo: stats.MejorTiempo,
+                mejorVrecta: stats.MejorVrecta,
+                mejorVcurva: stats.MejorVcurva,
+                puntosTotales: stats.PuntosTotales || 0
+            };
+        } catch (error) {
+            console.error('Error en SP_ObtenerEstadisticasConductor:', error);
+            return await this.getStatsConductor(idUsuario); // Fallback a método directo
+        }
+    },
+
+    /**
      * Eliminar simulación y sus resultados
      */
     async delete(id) {
@@ -281,7 +367,6 @@ const simulacionesService = {
             SELECT 
                 u.Id_usuario,
                 u.Correo_usuario,
-                u.Nombre_usuario,
                 e.Nombre as Equipo,
                 COUNT(*) as totalCarreras,
                 SUM(CASE WHEN r.Posicion = 1 THEN 25 
@@ -300,10 +385,90 @@ const simulacionesService = {
             JOIN CARRO c ON r.Id_carro = c.Id_carro
             JOIN USUARIO u ON c.Id_conductor = u.Id_usuario
             LEFT JOIN EQUIPO e ON u.Id_equipo = e.Id_equipo
-            GROUP BY u.Id_usuario, u.Correo_usuario, u.Nombre_usuario, e.Nombre
+            GROUP BY u.Id_usuario, u.Correo_usuario, e.Nombre
             ORDER BY puntos DESC
         `);
         return result.recordset;
+    },
+
+    /**
+     * Obtener todos los datos del dashboard de un conductor
+     * Incluye: carro asignado, equipo, simulaciones y estadísticas
+     */
+    async getDriverDashboard(idUsuario) {
+        const pool = await getConnection();
+        
+        // 1. Obtener el carro asignado al conductor
+        const carroResult = await pool.request()
+            .input('idUsuario', sql.Int, idUsuario)
+            .query(`
+                SELECT c.Id_carro, c.Finalizado, c.M_total, c.P_total, c.A_total,
+                       e.Id_equipo, e.Nombre as Equipo, e.Presupuesto
+                FROM CARRO c
+                JOIN EQUIPO e ON c.Id_equipo = e.Id_equipo
+                WHERE c.Id_conductor = @idUsuario
+            `);
+        
+        const carro = carroResult.recordset[0] || null;
+        
+        // 2. Obtener las simulaciones del conductor
+        const simulacionesResult = await pool.request()
+            .input('idUsuario', sql.Int, idUsuario)
+            .query(`
+                SELECT s.Id_simulacion, s.Fecha_hora, 
+                       c.Distancia_total, c.Cantidad_curvas,
+                       r.Posicion, r.Tiempo_segundos, r.Vrecta, r.Vcurva, r.Penalizacion,
+                       r.P_total, r.A_total, r.M_total
+                FROM SIMULACION s
+                JOIN RESULTADO r ON s.Id_simulacion = r.Id_simulacion
+                JOIN CARRO ca ON r.Id_carro = ca.Id_carro
+                LEFT JOIN CIRCUITO c ON s.Id_circuito = c.Id_circuito
+                WHERE ca.Id_conductor = @idUsuario
+                ORDER BY s.Fecha_hora DESC
+            `);
+        
+        // 3. Obtener estadísticas
+        const stats = await this.getStatsConductor(idUsuario);
+        
+        return {
+            carro: carro ? {
+                id: carro.Id_carro,
+                finalizado: carro.Finalizado === 1,
+                equipo: carro.Equipo,
+                equipoId: carro.Id_equipo,
+                presupuesto: carro.Presupuesto,
+                stats: {
+                    M: carro.M_total,
+                    P: carro.P_total,
+                    A: carro.A_total
+                }
+            } : null,
+            simulaciones: simulacionesResult.recordset.map(s => ({
+                id: s.Id_simulacion,
+                fecha: s.Fecha_hora,
+                circuito: {
+                    distancia: parseFloat(s.Distancia_total),
+                    curvas: s.Cantidad_curvas
+                },
+                posicion: s.Posicion,
+                tiempo: parseFloat(s.Tiempo_segundos),
+                vrecta: parseFloat(s.Vrecta),
+                vcurva: parseFloat(s.Vcurva),
+                penalizacion: parseFloat(s.Penalizacion),
+                stats: {
+                    P: s.P_total,
+                    A: s.A_total,
+                    M: s.M_total
+                }
+            })),
+            stats: {
+                victorias: stats.victorias || 0,
+                podios: stats.podios || 0,
+                carreras: stats.totalSimulaciones || 0,
+                mejorTiempo: stats.mejorTiempo ? parseFloat(stats.mejorTiempo) : null,
+                posicionPromedio: stats.posicionPromedio ? parseFloat(stats.posicionPromedio).toFixed(1) : null
+            }
+        };
     }
 };
 

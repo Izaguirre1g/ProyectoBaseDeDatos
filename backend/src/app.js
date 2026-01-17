@@ -11,6 +11,7 @@ const carrosRoutes = require('./routes/carros.routes');
 const equiposRoutes = require('./routes/equipos.routes');
 const partesRoutes = require('./routes/partes.routes');
 const simulacionesRoutes = require('./routes/simulaciones.routes');
+const circuitosRoutes = require('./routes/circuitos.routes');
 
 // Base de datos
 const { getConnection } = require('./config/database');
@@ -62,6 +63,7 @@ app.use('/api/carros', carrosRoutes);
 app.use('/api/equipos', equiposRoutes);
 app.use('/api/partes', partesRoutes);
 app.use('/api/simulaciones', simulacionesRoutes);
+app.use('/api/circuitos', circuitosRoutes);
 
 // Manejo de errores global
 app.use((err, req, res, next) => {

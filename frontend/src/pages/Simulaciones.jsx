@@ -92,7 +92,7 @@ function StatCard({ icon, label, value, subtext, color = 'accent.500' }) {
 
 // Componente de detalle de simulación
 function SimulacionDetalle({ sim, podio }) {
-    const circInfo = getNombreCircuito(sim.circuito.distancia);
+    const circInfo = getNombreCircuito(sim.circuito?.distancia);
     
     return (
         <VStack spacing={4} align="stretch" p={2}>
@@ -106,8 +106,8 @@ function SimulacionDetalle({ sim, podio }) {
                     </Box>
                 </HStack>
                 <HStack spacing={4}>
-                    <Badge colorScheme="blue">{sim.circuito.distancia} km</Badge>
-                    <Badge colorScheme="purple">{sim.circuito.curvas} curvas</Badge>
+                    <Badge colorScheme="blue">{sim.circuito?.distancia} km</Badge>
+                    <Badge colorScheme="purple">{sim.circuito?.curvas} curvas</Badge>
                 </HStack>
             </HStack>
             
@@ -190,25 +190,25 @@ function SimulacionDetalle({ sim, podio }) {
                 <Box p={3} bg="brand.900" borderRadius="md">
                     <Text fontSize="xs" color="gray.500">V. Recta</Text>
                     <Text fontSize="lg" fontWeight="bold" color="yellow.400">
-                        {sim.resultado.vRecta.toFixed(1)} km/h
+                        {sim.vrecta?.toFixed(1) || '--'} km/h
                     </Text>
                 </Box>
                 <Box p={3} bg="brand.900" borderRadius="md">
                     <Text fontSize="xs" color="gray.500">V. Curva</Text>
                     <Text fontSize="lg" fontWeight="bold" color="blue.400">
-                        {sim.resultado.vCurva.toFixed(1)} km/h
+                        {sim.vcurva?.toFixed(1) || '--'} km/h
                     </Text>
                 </Box>
                 <Box p={3} bg="brand.900" borderRadius="md">
                     <Text fontSize="xs" color="gray.500">Penalización</Text>
                     <Text fontSize="lg" fontWeight="bold" color="orange.400">
-                        +{sim.resultado.penalizacion.toFixed(2)}s
+                        +{sim.penalizacion?.toFixed(2) || '0.00'}s
                     </Text>
                 </Box>
                 <Box p={3} bg="brand.900" borderRadius="md">
                     <Text fontSize="xs" color="gray.500">Tiempo Total</Text>
                     <Text fontSize="lg" fontWeight="bold" color="accent.400">
-                        {formatTiempo(sim.resultado.tiempoSegundos)}
+                        {formatTiempo(sim.tiempo)}
                     </Text>
                 </Box>
             </SimpleGrid>
@@ -217,10 +217,9 @@ function SimulacionDetalle({ sim, podio }) {
             <Box p={3} bg="brand.900" borderRadius="md">
                 <Text fontSize="xs" color="gray.500" mb={2}>Stats del Carro</Text>
                 <HStack spacing={4}>
-                    <Badge colorScheme="yellow" fontSize="sm" px={3} py={1}>P: {sim.stats.P}</Badge>
-                    <Badge colorScheme="blue" fontSize="sm" px={3} py={1}>A: {sim.stats.A}</Badge>
-                    <Badge colorScheme="green" fontSize="sm" px={3} py={1}>M: {sim.stats.M}</Badge>
-                    <Badge colorScheme="purple" fontSize="sm" px={3} py={1}>H: {sim.stats.H}</Badge>
+                    <Badge colorScheme="yellow" fontSize="sm" px={3} py={1}>P: {sim.stats?.P}</Badge>
+                    <Badge colorScheme="blue" fontSize="sm" px={3} py={1}>A: {sim.stats?.A}</Badge>
+                    <Badge colorScheme="green" fontSize="sm" px={3} py={1}>M: {sim.stats?.M}</Badge>
                 </HStack>
             </Box>
         </VStack>
@@ -268,7 +267,14 @@ function Simulaciones() {
         try {
             setLoadingPodio(prev => ({ ...prev, [simId]: true }));
             const data = await simulacionesService.getSimulacion(simId);
-            setPodios(prev => ({ ...prev, [simId]: data.podio }));
+            // Transformar resultados a formato de podio
+            const podio = (data.resultados || []).map(r => ({
+                posicion: r.Posicion,
+                piloto: r.Conductor?.split('@')[0] || 'Piloto',
+                equipo: r.Equipo || 'Equipo',
+                tiempoSegundos: parseFloat(r.Tiempo_segundos)
+            }));
+            setPodios(prev => ({ ...prev, [simId]: podio }));
         } catch (err) {
             console.error('Error cargando podio:', err);
         } finally {
@@ -335,7 +341,7 @@ function Simulaciones() {
                     <StatCard 
                         icon={Gauge}
                         label="Pos. Promedio"
-                        value={stats?.promedioPos?.toFixed(1) || '--'}
+                        value={stats?.posicionPromedio || '--'}
                         color="blue.500"
                     />
                 </SimpleGrid>
@@ -352,7 +358,7 @@ function Simulaciones() {
                         ) : (
                             <Accordion allowMultiple>
                                 {simulaciones.map((sim) => {
-                                    const circInfo = getNombreCircuito(sim.circuito.distancia);
+                                    const circInfo = getNombreCircuito(sim.circuito?.distancia);
                                     return (
                                         <AccordionItem 
                                             key={sim.id} 
@@ -368,15 +374,15 @@ function Simulaciones() {
                                             >
                                                 <HStack flex={1} spacing={4} flexWrap="wrap">
                                                     <Badge 
-                                                        bg={getPosicionColor(sim.resultado.posicion)}
-                                                        color={sim.resultado.posicion === 2 ? 'black' : 'white'}
+                                                        bg={getPosicionColor(sim.posicion)}
+                                                        color={sim.posicion === 2 ? 'black' : 'white'}
                                                         px={3}
                                                         py={1}
                                                         borderRadius="md"
                                                         fontWeight="bold"
                                                         fontSize="md"
                                                     >
-                                                        P{sim.resultado.posicion}
+                                                        P{sim.posicion}
                                                     </Badge>
                                                     <Text fontSize="xl">{circInfo.imagen}</Text>
                                                     <Box flex={1} textAlign="left" minW="200px">
@@ -389,17 +395,17 @@ function Simulaciones() {
                                                     </Box>
                                                     <VStack align="end" spacing={0}>
                                                         <Text color="accent.400" fontWeight="bold">
-                                                            {formatTiempo(sim.resultado.tiempoSegundos)}
+                                                            {formatTiempo(sim.tiempo)}
                                                         </Text>
                                                         <HStack spacing={2}>
                                                             <Badge size="sm" colorScheme="yellow" variant="outline">
-                                                                P:{sim.stats.P}
+                                                                P:{sim.stats?.P}
                                                             </Badge>
                                                             <Badge size="sm" colorScheme="blue" variant="outline">
-                                                                A:{sim.stats.A}
+                                                                A:{sim.stats?.A}
                                                             </Badge>
                                                             <Badge size="sm" colorScheme="green" variant="outline">
-                                                                M:{sim.stats.M}
+                                                                M:{sim.stats?.M}
                                                             </Badge>
                                                         </HStack>
                                                     </VStack>

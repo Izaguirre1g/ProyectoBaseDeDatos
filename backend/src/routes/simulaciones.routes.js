@@ -2,14 +2,28 @@ const express = require('express');
 const router = express.Router();
 const simulacionesService = require('../services/simulaciones.service');
 
+// =============================================
+// RUTAS ESTÁTICAS (deben ir ANTES de las rutas con parámetros)
+// =============================================
+
 /**
  * GET /api/simulaciones
- * Obtener todas las simulaciones
+ * Obtener dashboard completo del conductor (carro, simulaciones, stats)
+ * Si no hay sesión, devuelve todas las simulaciones
  */
 router.get('/', async (req, res) => {
     try {
+        const idUsuario = req.session?.userId;
+        
+        // Si hay usuario logueado, devolver su dashboard
+        if (idUsuario) {
+            const dashboard = await simulacionesService.getDriverDashboard(idUsuario);
+            return res.json(dashboard);
+        }
+        
+        // Si no hay sesión, devolver todas las simulaciones (para admin)
         const simulaciones = await simulacionesService.getAll();
-        res.json(simulaciones);
+        res.json({ simulaciones });
     } catch (error) {
         console.error('Error obteniendo simulaciones:', error);
         res.status(500).json({ error: 'Error al obtener simulaciones' });
@@ -38,28 +52,60 @@ router.get('/driver/stats', async (req, res) => {
 });
 
 /**
- * GET /api/simulaciones/:id
- * Obtener simulación por ID
+ * GET /api/simulaciones/ranking/conductores
+ * Obtener ranking de conductores
  */
-router.get('/:id', async (req, res) => {
+router.get('/ranking/conductores', async (req, res) => {
     try {
-        const { id } = req.params;
-        const simulacion = await simulacionesService.getById(id);
+        const ranking = await simulacionesService.getRankingConductores();
+        res.json(ranking);
+    } catch (error) {
+        console.error('Error obteniendo ranking:', error);
+        res.status(500).json({ error: 'Error al obtener ranking' });
+    }
+});
+
+/**
+ * POST /api/simulaciones/ejecutar
+ * Ejecutar una simulación completa usando stored procedure con transacción
+ * Body: { idCircuito: number, carros: [{idCarro: number, habilidad: number}] }
+ */
+router.post('/ejecutar', async (req, res) => {
+    try {
+        const { idCircuito, carros, fecha } = req.body;
         
-        if (!simulacion) {
-            return res.status(404).json({ error: 'Simulación no encontrada' });
+        // Validaciones
+        if (!idCircuito) {
+            return res.status(400).json({ 
+                error: 'Falta el circuito (idCircuito)' 
+            });
         }
         
-        res.json(simulacion);
+        if (!carros || !Array.isArray(carros) || carros.length === 0) {
+            return res.status(400).json({ 
+                error: 'Debe proporcionar al menos un carro para la simulación' 
+            });
+        }
+        
+        // Ejecutar simulación con SP (transaccional)
+        const resultado = await simulacionesService.ejecutarSimulacionSP({
+            idCircuito,
+            carros,
+            fecha: fecha ? new Date(fecha) : new Date()
+        });
+        
+        res.status(201).json(resultado);
     } catch (error) {
-        console.error('Error obteniendo simulación:', error);
-        res.status(500).json({ error: 'Error al obtener simulación' });
+        console.error('Error ejecutando simulación:', error);
+        res.status(500).json({ 
+            error: error.message || 'Error al ejecutar la simulación' 
+        });
     }
 });
 
 /**
  * POST /api/simulaciones
- * Crear nueva simulación
+ * Crear nueva simulación (básica)
  */
 router.post('/', async (req, res) => {
     try {
@@ -83,6 +129,30 @@ router.post('/', async (req, res) => {
     }
 });
 
+// =============================================
+// RUTAS CON PARÁMETROS (deben ir AL FINAL)
+// =============================================
+
+/**
+ * GET /api/simulaciones/:id
+ * Obtener simulación por ID
+ */
+router.get('/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const simulacion = await simulacionesService.getById(id);
+        
+        if (!simulacion) {
+            return res.status(404).json({ error: 'Simulación no encontrada' });
+        }
+        
+        res.json(simulacion);
+    } catch (error) {
+        console.error('Error obteniendo simulación:', error);
+        res.status(500).json({ error: 'Error al obtener simulación' });
+    }
+});
+
 /**
  * GET /api/simulaciones/:id/resultados
  * Obtener resultados de una simulación
@@ -95,6 +165,21 @@ router.get('/:id/resultados', async (req, res) => {
     } catch (error) {
         console.error('Error obteniendo resultados:', error);
         res.status(500).json({ error: 'Error al obtener resultados' });
+    }
+});
+
+/**
+ * DELETE /api/simulaciones/:id
+ * Eliminar simulación y sus resultados
+ */
+router.delete('/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        await simulacionesService.delete(id);
+        res.json({ message: 'Simulación eliminada exitosamente' });
+    } catch (error) {
+        console.error('Error eliminando simulación:', error);
+        res.status(500).json({ error: 'Error al eliminar simulación' });
     }
 });
 

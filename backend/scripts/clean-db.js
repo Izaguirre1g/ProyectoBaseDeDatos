@@ -17,7 +17,10 @@ async function cleanDB() {
         const tablas = [
             'RESULTADO',
             'SIMULACION', 
-            'CARRO_PARTE',
+            'ESTRUCTURA_CARRO',
+            'INVENTARIO_EQUIPO',
+            'DETALLE_PEDIDO',
+            'PEDIDO',
             'APORTE',
             'CARRO',
             'USUARIO',
