@@ -73,20 +73,21 @@ const usuariosService = {
     /**
      * Crear nuevo usuario
      */
-    async create({ correo, password, idEquipo, idRol }) {
+    async create({ nombre, correo, password, idEquipo, idRol }) {
         const pool = await getConnection();
         const hash = await argon2.hash(password, ARGON2_CONFIG);
         const nextId = await this.getNextId();
 
         const result = await pool.request()
             .input('id', sql.Int, nextId)
+            .input('nombre', sql.NVarChar, nombre)
             .input('correo', sql.NVarChar, correo)
             .input('hash', sql.NVarChar, hash)
             .input('idEquipo', sql.Int, idEquipo)
             .input('idRol', sql.Int, idRol)
             .query(`
-                INSERT INTO USUARIO (Id_usuario, Correo_usuario, Contrasena_hash, Id_equipo, Id_rol)
-                VALUES (@id, @correo, @hash, @idEquipo, @idRol);
+                INSERT INTO USUARIO (Id_usuario, Nombre_usuario, Correo_usuario, Contrasena_hash, Id_equipo, Id_rol)
+                VALUES (@id, @nombre, @correo, @hash, @idEquipo, @idRol);
                 SELECT @id as Id_usuario;
             `);
         

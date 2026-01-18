@@ -37,13 +37,53 @@ export const partesService = {
     },
 
     /**
-     * Comprar una parte (para cuando tengas BD)
-     * @param {number} parteId 
-     * @param {number} cantidad 
-     * @returns {Promise}
+     * Obtener catálogo con inventario total
+     * @returns {Promise} Lista de partes con stock disponible
      */
-    async comprar(parteId, cantidad = 1) {
-        const response = await api.post('/partes/comprar', { parteId, cantidad });
+    async getCatalogo() {
+        const response = await api.get('/partes/inventario/total');
+        return response.data;
+    },
+
+    /**
+     * Obtener inventario de un equipo específico
+     * @param {number} idEquipo - ID del equipo
+     * @returns {Promise} Lista de partes disponibles en el inventario del equipo
+     */
+    async getInventarioEquipo(idEquipo) {
+        const response = await api.get(`/partes/inventario/${idEquipo}`);
+        return response.data;
+    },
+
+    /**
+     * Comprar una parte usando SP_RealizarCompra
+     * @param {number} idEquipo - ID del equipo que compra
+     * @param {number} idParte - ID de la parte a comprar
+     * @param {number} cantidad - Cantidad a comprar
+     * @returns {Promise<Object>} - Resultado con mensaje e ID pedido
+     */
+    async comprar(idEquipo, idParte, cantidad = 1) {
+        const response = await api.post('/partes/comprar', { 
+            idEquipo, 
+            idParte, 
+            cantidad 
+        });
+        return response.data;
+    },
+
+    /**
+     * Verificar disponibilidad antes de comprar
+     * @param {number} idEquipo - ID del equipo
+     * @param {number} idParte - ID de la parte
+     * @param {number} cantidad - Cantidad a verificar
+     * @returns {Promise<Object>} - Info de disponibilidad
+     */
+    async verificarDisponibilidad(idEquipo, idParte, cantidad) {
+        const response = await api.post('/partes/verificar-disponibilidad', {
+            idEquipo,
+            idParte,
+            cantidad
+        });
         return response.data;
     }
 };

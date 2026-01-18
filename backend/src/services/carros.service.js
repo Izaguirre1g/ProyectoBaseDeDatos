@@ -320,6 +320,46 @@ const carrosService = {
         }
     },
 
+    /**
+     * ============================================
+     * MÉTODO: crearCarro()
+     * Crear un nuevo carro usando SP_CrearCarro
+     * ============================================
+     * Valida que el equipo no tenga más de 2 carros
+     */
+    async crearCarro(idEquipo) {
+        const pool = await getConnection();
+        
+        try {
+            const result = await pool.request()
+                .input('Id_equipo', sql.Int, idEquipo)
+                .output('Resultado', sql.VarChar(200))
+                .execute('SP_CrearCarro');
+            
+            const mensaje = result.output.Resultado;
+            const returnValue = result.returnValue;
+            
+            if (returnValue === 0) {
+                // Obtener el carro creado
+                const carros = await this.getByEquipo(idEquipo);
+                const nuevoCaroo = carros[carros.length - 1]; // El último creado
+                return {
+                    success: true,
+                    mensaje,
+                    carro: nuevoCaroo
+                };
+            } else {
+                return {
+                    success: false,
+                    mensaje: mensaje || 'Error al crear carro'
+                };
+            }
+        } catch (error) {
+            console.error('Error en SP_CrearCarro:', error);
+            throw new Error(error.message || 'Error al crear carro');
+        }
+    },
+
     // CRUD básico
     async create({ idEquipo, finalizado = 0, mTotal = 0, pTotal = 0, aTotal = 0, idConductor = null }) {
         const pool = await getConnection();

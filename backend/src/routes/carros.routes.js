@@ -148,29 +148,29 @@ router.get('/:id', async (req, res) => {
 
 /**
  * POST /api/carros
- * Crear nuevo carro
+ * Crear nuevo carro usando SP_CrearCarro
  */
 router.post('/', async (req, res) => {
     try {
-        const { idEquipo, idConductor } = req.body;
+        const { idEquipo } = req.body;
         
         if (!idEquipo) {
             return res.status(400).json({ error: 'idEquipo es requerido' });
         }
         
-        const carro = await carrosService.create({
-            idEquipo: parseInt(idEquipo),
-            idConductor: idConductor ? parseInt(idConductor) : null,
-            finalizado: 0,
-            mTotal: 0,
-            pTotal: 0,
-            aTotal: 0
-        });
+        const resultado = await carrosService.crearCarro(parseInt(idEquipo));
         
-        res.status(201).json(carro);
+        if (resultado.success) {
+            res.status(201).json(resultado);
+        } else {
+            res.status(400).json(resultado);
+        }
     } catch (error) {
         console.error('Error al crear carro:', error);
-        res.status(500).json({ error: 'Error al crear carro' });
+        res.status(500).json({ 
+            error: 'Error al crear carro',
+            detalle: error.message 
+        });
     }
 });
 
