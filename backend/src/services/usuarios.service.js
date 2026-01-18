@@ -135,6 +135,28 @@ const usuariosService = {
     },
 
     /**
+     * Actualizar usuario (sin cambiar contraseña)
+     */
+    async update(id, { nombre, correo, idRol, idEquipo }) {
+        const pool = await getConnection();
+        await pool.request()
+            .input('id', sql.Int, id)
+            .input('nombre', sql.NVarChar, nombre)
+            .input('correo', sql.NVarChar, correo)
+            .input('idRol', sql.Int, idRol)
+            .input('idEquipo', sql.Int, idEquipo)
+            .query(`
+                UPDATE USUARIO 
+                SET Nombre_usuario = @nombre,
+                    Correo_usuario = @correo,
+                    Id_rol = @idRol,
+                    Id_equipo = @idEquipo
+                WHERE Id_usuario = @id
+            `);
+        return await this.getById(id);
+    },
+
+    /**
      * Verificar contraseña
      */
     async verifyPassword(correo, password) {

@@ -108,7 +108,7 @@ const partesService = {
             const idPedido = result.output.Id_pedido_generado;
             const returnValue = result.returnValue;
             
-            console.log('📦 Respuesta del SP:');
+            console.log('Respuesta del SP:');
             console.log('  returnValue:', returnValue);
             console.log('  mensaje:', mensaje);
             console.log('  idPedido:', idPedido);
@@ -119,7 +119,7 @@ const partesService = {
                 return { success: false, mensaje: mensaje || 'Error en la compra' };
             }
         } catch (error) {
-            console.error('❌ Error en compra (servicio):', error);
+            console.error(' Error en compra (servicio):', error);
             console.error('  Código:', error.code);
             console.error('  Número:', error.number);
             console.error('  Mensaje SQL:', error.message);
@@ -140,10 +140,22 @@ const partesService = {
                     DECLARE @Stock INT
                     DECLARE @Presupuesto DECIMAL(18,2)
                     DECLARE @Total DECIMAL(18,2)
+                    DECLARE @TotalAportes DECIMAL(18,2)
+                    DECLARE @TotalGastos DECIMAL(18,2)
                     
                     SELECT @Precio = Precio FROM PARTE WHERE Id_parte = @idParte
                     SELECT @Stock = ISNULL(Stock_total, 0) FROM INVENTARIO_TOTAL WHERE Id_parte = @idParte
-                    SET @Presupuesto = dbo.fn_CalcularPresupuestoEquipo(@idEquipo)
+                    
+                    -- Calcular presupuesto disponible
+                    SELECT @TotalAportes = ISNULL(SUM(ISNULL(Monto, 0)), 0)
+                    FROM APORTE
+                    WHERE Id_equipo = @idEquipo
+                    
+                    SELECT @TotalGastos = ISNULL(SUM(ISNULL(Costo_total, 0)), 0)
+                    FROM PEDIDO
+                    WHERE Id_equipo = @idEquipo
+                    
+                    SET @Presupuesto = @TotalAportes - @TotalGastos
                     SET @Total = @Precio * @cantidad
                     
                     SELECT 

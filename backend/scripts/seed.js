@@ -18,47 +18,47 @@ const seedData = require('./seed-data');
 
 async function seed() {
     try {
-        console.log('🔄 Conectando a la base de datos...\n');
+        console.log('Conectando a la base de datos...\n');
         await getConnection();
 
         // ========== EQUIPOS ==========
-        console.log('🏎️  Insertando EQUIPOS...');
+        console.log('Insertando EQUIPOS...');
         const equipoMap = {};
         for (const eq of seedData.equipos) {
             const equipo = await equiposService.upsert(eq);
             equipoMap[equipo.Nombre] = equipo.Id_equipo;
         }
-        console.log('   ✅ Equipos:', Object.keys(equipoMap).length);
+        console.log(' Equipos:', Object.keys(equipoMap).length);
 
         // ========== PATROCINADORES ==========
-        console.log('💰 Insertando PATROCINADORES...');
+        console.log('Insertando PATROCINADORES...');
         const patMap = {};
         for (const nombre of seedData.patrocinadores) {
             const pat = await patrocinadoresService.upsert({ nombre });
             patMap[pat.Nombre_patrocinador] = pat.Id_patrocinador;
         }
-        console.log('   ✅ Patrocinadores:', Object.keys(patMap).length);
+        console.log('Patrocinadores:', Object.keys(patMap).length);
 
         // ========== PARTES ==========
-        console.log('🔧 Insertando PARTES...');
+        console.log('Insertando PARTES...');
         let partesCount = 0;
         for (const p of seedData.partes) {
             await partesService.upsert(p);
             partesCount++;
         }
-        console.log('   ✅ Partes:', partesCount);
+        console.log(' Partes:', partesCount);
 
         // ========== CIRCUITOS ==========
-        console.log('🏁 Insertando CIRCUITOS...');
+        console.log('Insertando CIRCUITOS...');
         const circuitosInsertados = [];
         for (const c of seedData.circuitos) {
             const circ = await circuitosService.upsert(c);
             circuitosInsertados.push(circ);
         }
-        console.log('   ✅ Circuitos:', circuitosInsertados.length);
+        console.log('   Circuitos:', circuitosInsertados.length);
 
         // ========== CARROS ==========
-        console.log('🚗 Insertando CARROS...');
+        console.log(' Insertando CARROS...');
         const carrosInsertados = [];
         for (const c of seedData.carros) {
             const idEquipo = equipoMap[c.equipo];
@@ -73,10 +73,10 @@ async function seed() {
                 carrosInsertados.push(carro);
             }
         }
-        console.log('   ✅ Carros:', carrosInsertados.length);
+        console.log('  Carros:', carrosInsertados.length);
 
         // ========== USUARIOS BASE ==========
-        console.log('👤 Insertando USUARIOS base...');
+        console.log('Insertando USUARIOS base...');
         for (const u of seedData.usuariosBase) {
             const idEquipo = equipoMap[u.equipo];
             if (idEquipo) {
@@ -92,7 +92,7 @@ async function seed() {
         }
 
         // ========== USUARIOS F1 ==========
-        console.log('👤 Insertando USUARIOS F1...');
+        console.log(' Insertando USUARIOS F1...');
         for (const u of seedData.usuariosF1) {
             const idEquipo = equipoMap[u.equipo];
             if (idEquipo) {
@@ -106,10 +106,10 @@ async function seed() {
                 console.log(`   + ${u.correo}`);
             }
         }
-        console.log('   ✅ Usuarios insertados');
+        console.log('  Usuarios insertados');
 
         // ========== APORTES ==========
-        console.log('💵 Insertando APORTES...');
+        console.log(' Insertando APORTES...');
         for (const a of seedData.aportes) {
             const idEquipo = equipoMap[a.equipo];
             const idPatrocinador = patMap[a.patrocinador];
@@ -123,10 +123,10 @@ async function seed() {
                 });
             }
         }
-        console.log('   ✅ Aportes insertados');
+        console.log('  Aportes insertados');
 
         // ========== RESUMEN ==========
-        console.log('\n📊 RESUMEN DE DATOS:');
+        console.log('\n RESUMEN DE DATOS:');
         console.log('═'.repeat(50));
         
         const equipos = await equiposService.getAll();
@@ -145,10 +145,10 @@ async function seed() {
         console.log(`  PATROCINADOR         ${patrocinadores.length} registros`);
         console.log(`  APORTE               ${aportes.length} registros`);
 
-        console.log('\n✅ ¡Base de datos populada exitosamente!');
+        console.log('\n ¡Base de datos populada exitosamente!');
         process.exit(0);
     } catch (error) {
-        console.error('❌ Error:', error.message);
+        console.error('Error:', error.message);
         console.error(error);
         process.exit(1);
     }

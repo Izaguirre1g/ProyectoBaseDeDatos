@@ -16,7 +16,7 @@ const seedData = require('./seed-data');
 
 async function seedSimulaciones() {
     try {
-        console.log('🔄 Conectando a la base de datos...\n');
+        console.log('Conectando a la base de datos...\n');
         await getConnection();
 
         // Obtener datos necesarios
@@ -29,7 +29,7 @@ async function seedSimulaciones() {
         usuarios.forEach(u => { usuarioMap[u.Correo_usuario] = u; });
 
         // ========== ASIGNAR CONDUCTORES A CARROS ==========
-        console.log('👤 Asignando conductores a carros...');
+        console.log(' Asignando conductores a carros...');
         
         for (const asignacion of seedData.asignacionesConductores) {
             const carro = carros[asignacion.carroIndex];
@@ -39,13 +39,13 @@ async function seedSimulaciones() {
                 await carrosService.asignarConductor(carro.Id_carro, usuario.Id_usuario);
             }
         }
-        console.log('   ✅ Conductores asignados');
+        console.log(' Conductores asignados');
 
         // Recargar carros con conductores asignados
         const carrosActualizados = await carrosService.getFinalizados();
 
         // ========== CREAR SIMULACIONES ==========
-        console.log('🏁 Creando simulaciones...');
+        console.log(' Creando simulaciones...');
 
         // Crear mapa de habilidades por ID de usuario
         const habilidades = {};
@@ -104,18 +104,18 @@ async function seedSimulaciones() {
                 });
             }
 
-            console.log(`   ✅ Simulación ${simulacion.Id_simulacion} creada con ${resultados.length} resultados`);
+            console.log(`  Simulación ${simulacion.Id_simulacion} creada con ${resultados.length} resultados`);
         }
 
         // ========== RESUMEN ==========
-        console.log('\n📊 RESUMEN:');
+        console.log('\n RESUMEN:');
         const simulaciones = await simulacionesService.getAll();
         console.log(`   Simulaciones: ${simulaciones.length}`);
 
-        console.log('\n✅ ¡Simulaciones creadas exitosamente!');
+        console.log('\n ¡Simulaciones creadas exitosamente!');
         process.exit(0);
     } catch (error) {
-        console.error('❌ Error:', error.message);
+        console.error(' Error:', error.message);
         console.error(error);
         process.exit(1);
     }

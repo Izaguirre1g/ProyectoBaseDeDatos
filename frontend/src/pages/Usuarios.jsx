@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
     Box,
     Container,
@@ -30,25 +30,45 @@ import {
     useDisclosure,
     Flex,
     useToast,
+    Spinner,
+    Center,
 } from '@chakra-ui/react';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
+import { usuariosService } from '../services/usuarios.service';
 
 /**
  * Vista de gestion de usuarios (Admin)
- * Datos dummy - preparado para integrar con BD
  */
 function Usuarios() {
-    const [usuarios, setUsuarios] = useState([
-        { id: 1, nombre: 'Administrador', email: 'admin@f1.com', rol: 'Admin', equipo: null },
-        { id: 2, nombre: 'Carlos Engineer', email: 'engineer@f1.com', rol: 'Engineer', equipo: 'Ferrari' },
-        { id: 3, nombre: 'Carlos Sainz', email: 'driver@f1.com', rol: 'Driver', equipo: 'Ferrari' },
-        { id: 4, nombre: 'Max Engineer', email: 'max.eng@f1.com', rol: 'Engineer', equipo: 'Red Bull Racing' },
-        { id: 5, nombre: 'Max Verstappen', email: 'max@f1.com', rol: 'Driver', equipo: 'Red Bull Racing' },
-    ]);
-
+    const [usuarios, setUsuarios] = useState([]);
+    const [loading, setLoading] = useState(true);
     const { isOpen, onOpen, onClose } = useDisclosure();
     const [editingUser, setEditingUser] = useState(null);
     const toast = useToast();
+
+    // Cargar usuarios al montar el componente
+    useEffect(() => {
+        loadUsuarios();
+    }, []);
+
+    const loadUsuarios = async () => {
+        try {
+            setLoading(true);
+            const data = await usuariosService.getAll();
+            setUsuarios(data);
+        } catch (error) {
+            console.error('Error al cargar usuarios:', error);
+            toast({
+                title: 'Error al cargar usuarios',
+                description: error.response?.data?.error || 'Error desconocido',
+                status: 'error',
+                duration: 5000,
+                isClosable: true,
+            });
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handleEdit = (usuario) => {
         setEditingUser(usuario);
@@ -84,7 +104,7 @@ function Usuarios() {
         <Container maxW="container.xl" py={8}>
             <Flex justify="space-between" align="center" mb={6}>
                 <Box>
-                    <Heading size="lg" color="white">Gestion de Usuarios</Heading>
+                    <Heading size="lg" color="white">Gestión de Usuarios</Heading>
                     <Text color="gray.400" mt={1}>{usuarios.length} usuarios registrados</Text>
                 </Box>
                 <Button leftIcon={<Plus size={16} />} onClick={handleNew}>
@@ -92,58 +112,62 @@ function Usuarios() {
                 </Button>
             </Flex>
 
-            <Card bg="brand.800" borderColor="brand.700">
-                <CardBody p={0}>
-                    <Box overflowX="auto">
-                        <Table variant="simple">
-                            <Thead bg="brand.900">
-                                <Tr>
-                                    <Th color="gray.500" borderColor="brand.700">ID</Th>
-                                    <Th color="gray.500" borderColor="brand.700">Nombre</Th>
-                                    <Th color="gray.500" borderColor="brand.700">Email</Th>
-                                    <Th color="gray.500" borderColor="brand.700">Rol</Th>
-                                    <Th color="gray.500" borderColor="brand.700">Equipo</Th>
-                                    <Th color="gray.500" borderColor="brand.700">Acciones</Th>
-                                </Tr>
-                            </Thead>
-                            <Tbody>
-                                {usuarios.map(usuario => (
-                                    <Tr key={usuario.id} _hover={{ bg: 'brand.700' }}>
-                                        <Td color="gray.400" borderColor="brand.700">{usuario.id}</Td>
-                                        <Td color="white" borderColor="brand.700">{usuario.nombre}</Td>
-                                        <Td color="gray.300" borderColor="brand.700">{usuario.email}</Td>
-                                        <Td borderColor="brand.700">
-                                            <Badge colorScheme={getRolColorScheme(usuario.rol)} variant="subtle">
-                                                {usuario.rol}
-                                            </Badge>
-                                        </Td>
-                                        <Td color="gray.400" borderColor="brand.700">{usuario.equipo || '-'}</Td>
-                                        <Td borderColor="brand.700">
-                                            <HStack spacing={2}>
-                                                <IconButton
-                                                    icon={<Pencil size={16} />}
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    aria-label="Editar"
-                                                    onClick={() => handleEdit(usuario)}
-                                                />
-                                                <IconButton
-                                                    icon={<Trash2 size={16} />}
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    colorScheme="red"
-                                                    aria-label="Eliminar"
-                                                    onClick={() => handleDelete(usuario.id)}
-                                                />
-                                            </HStack>
-                                        </Td>
+            {loading ? (
+                <Center py={20}>
+                    <Spinner size="xl" color="red.500" />
+                </Center>
+            ) : (
+                <Card bg="brand.800" borderColor="brand.700">
+                    <CardBody p={0}>
+                        <Box overflowX="auto">
+                            <Table variant="simple">
+                                <Thead bg="brand.900">
+                                    <Tr>
+                                        <Th color="gray.500" borderColor="brand.700">ID</Th>
+                                        <Th color="gray.500" borderColor="brand.700">Email</Th>
+                                        <Th color="gray.500" borderColor="brand.700">Rol</Th>
+                                        <Th color="gray.500" borderColor="brand.700">Equipo</Th>
+                                        <Th color="gray.500" borderColor="brand.700">Acciones</Th>
                                     </Tr>
-                                ))}
-                            </Tbody>
-                        </Table>
-                    </Box>
-                </CardBody>
-            </Card>
+                                </Thead>
+                                <Tbody>
+                                    {usuarios.map(usuario => (
+                                        <Tr key={usuario.Id_usuario} _hover={{ bg: 'brand.700' }}>
+                                            <Td color="gray.400" borderColor="brand.700">{usuario.Id_usuario}</Td>
+                                            <Td color="white" borderColor="brand.700">{usuario.Correo_usuario}</Td>
+                                            <Td borderColor="brand.700">
+                                                <Badge colorScheme={getRolColorScheme(usuario.Rol)} variant="subtle">
+                                                    {usuario.Rol || 'Sin rol'}
+                                                </Badge>
+                                            </Td>
+                                            <Td color="gray.400" borderColor="brand.700">{usuario.Equipo || '-'}</Td>
+                                            <Td borderColor="brand.700">
+                                                <HStack spacing={2}>
+                                                    <IconButton
+                                                        icon={<Pencil size={16} />}
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        aria-label="Editar"
+                                                        onClick={() => handleEdit(usuario)}
+                                                    />
+                                                    <IconButton
+                                                        icon={<Trash2 size={16} />}
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        colorScheme="red"
+                                                        aria-label="Eliminar"
+                                                        onClick={() => handleDelete(usuario.Id_usuario)}
+                                                    />
+                                                </HStack>
+                                            </Td>
+                                        </Tr>
+                                    ))}
+                                </Tbody>
+                            </Table>
+                        </Box>
+                    </CardBody>
+                </Card>
+            )}
 
             {/* Modal para crear/editar */}
             <Modal isOpen={isOpen} onClose={onClose} isCentered>

@@ -92,14 +92,14 @@ router.post('/comprar', async (req, res) => {
         console.log('  cantidad:', cantidad, '(tipo:', typeof cantidad, ')');
         
         if (!idEquipo || !idParte || !cantidad) {
-            console.log('❌ ERROR: Faltan parámetros');
+            console.log('ERROR: Faltan parámetros');
             return res.status(400).json({ 
                 error: 'Faltan parámetros: idEquipo, idParte, cantidad' 
             });
         }
         
         if (cantidad <= 0) {
-            console.log('❌ ERROR: Cantidad inválida');
+            console.log('ERROR: Cantidad inválida');
             return res.status(400).json({ 
                 error: 'La cantidad debe ser mayor a 0' 
             });
@@ -123,7 +123,7 @@ router.post('/comprar', async (req, res) => {
         }
         
     } catch (error) {
-        console.error('❌ ERROR COMPLETO en comprar:', error);
+        console.error('ERROR COMPLETO en comprar:', error);
         console.error('Mensaje:', error.message);
         console.error('Stack:', error.stack);
         res.status(500).json({ 
@@ -150,7 +150,7 @@ router.post('/verificar-disponibilidad', async (req, res) => {
         console.log('  cantidad:', cantidad, '(tipo:', typeof cantidad, ')');
         
         if (!idEquipo || !idParte || !cantidad) {
-            console.log('❌ ERROR: Faltan parámetros');
+            console.log('ERROR: Faltan parámetros');
             console.log('  idEquipo válido?', !!idEquipo);
             console.log('  idParte válido?', !!idParte);
             console.log('  cantidad válido?', !!cantidad);
@@ -179,7 +179,7 @@ router.post('/verificar-disponibilidad', async (req, res) => {
         res.json(disponibilidad);
         
     } catch (error) {
-        console.error('❌ ERROR COMPLETO en verificar disponibilidad:', error);
+        console.error('ERROR COMPLETO en verificar disponibilidad:', error);
         console.error('Mensaje:', error.message);
         console.error('Stack:', error.stack);
         res.status(500).json({ error: 'Error al verificar disponibilidad' });

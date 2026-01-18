@@ -8,7 +8,7 @@ const { getConnection } = require('../src/config/database');
 
 async function cleanDB() {
     try {
-        console.log('🔄 Conectando a la base de datos...\n');
+        console.log('Conectando a la base de datos...\n');
         const pool = await getConnection();
         
         console.log('⚠️  LIMPIANDO DATOS DE PRUEBA...\n');
@@ -33,16 +33,16 @@ async function cleanDB() {
         for (const tabla of tablas) {
             try {
                 const result = await pool.request().query(`DELETE FROM ${tabla}`);
-                console.log(`  ✅ ${tabla}: ${result.rowsAffected[0]} registros eliminados`);
+                console.log(`${tabla}: ${result.rowsAffected[0]} registros eliminados`);
             } catch (e) {
-                console.log(`  ❌ ${tabla}: ${e.message}`);
+                console.log(` ${tabla}: ${e.message}`);
             }
         }
         
-        console.log('\n✅ Limpieza completada');
+        console.log('\n Limpieza completada');
         process.exit(0);
     } catch (error) {
-        console.error('❌ Error:', error.message);
+        console.error(' Error:', error.message);
         process.exit(1);
     }
 }
@@ -52,7 +52,7 @@ const args = process.argv.slice(2);
 if (args.includes('--confirm')) {
     cleanDB();
 } else {
-    console.log('⚠️  Este script eliminará todos los datos de prueba.');
+    console.log(' Este script eliminará todos los datos de prueba.');
     console.log('   Para confirmar, ejecuta: node scripts/clean-db.js --confirm');
     process.exit(0);
 }

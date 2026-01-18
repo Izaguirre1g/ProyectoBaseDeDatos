@@ -8,11 +8,11 @@ import api from './api';
 export const partesService = {
     /**
      * Obtener todas las partes o filtrar por categoría
-     * @param {string} categoria - Categoría para filtrar (opcional)
+     * @param {number} idCategoria - ID de la categoría para filtrar (opcional)
      * @returns {Promise} Lista de partes
      */
-    async getAll(categoria = null) {
-        const params = categoria ? { categoria } : {};
+    async getAll(idCategoria = null) {
+        const params = idCategoria ? { idCategoria } : {};
         const response = await api.get('/partes', { params });
         return response.data;
     },

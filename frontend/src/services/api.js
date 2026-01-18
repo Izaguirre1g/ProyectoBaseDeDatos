@@ -15,7 +15,7 @@ api.interceptors.response.use(
     (error) => {
         // Si el servidor responde con 401, el usuario no está autenticado o la sesión expiró
         if (error.response?.status === 401) {
-            console.log('⚠️ Sesión expirada o no autorizado');
+            console.log('Sesión expirada o no autorizado');
             
             // Limpiar localStorage
             localStorage.removeItem('usuario');

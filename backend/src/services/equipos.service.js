@@ -10,15 +10,34 @@ const equiposService = {
         const pool = await getConnection();
         const result = await pool.request().query(`
             SELECT 
-                e.Id_equipo,
-                e.Nombre,
-                dbo.fn_CalcularPresupuestoEquipo(e.Id_equipo) as Presupuesto,
-                (SELECT COUNT(*) FROM USUARIO WHERE Id_equipo = e.Id_equipo) as Miembros,
-                (SELECT COUNT(*) FROM CARRO WHERE Id_equipo = e.Id_equipo) as Carros
-            FROM EQUIPO e
-            ORDER BY e.Id_equipo
+                Id_equipo,
+                Nombre
+            FROM EQUIPO
+            ORDER BY Id_equipo
         `);
-        return result.recordset;
+        
+        // Ahora calcula presupuesto y otros datos en el código
+        const equiposConDetalles = await Promise.all(result.recordset.map(async (equipo) => {
+            try {
+                const presupuesto = await this.getPresupuesto(equipo.Id_equipo);
+                return {
+                    ...equipo,
+                    Presupuesto: presupuesto?.Presupuesto || 0,
+                    Miembros: presupuesto?.Miembros || 0,
+                    Carros: presupuesto?.Carros || 0
+                };
+            } catch (err) {
+                // Si hay error, devuelve con valores por defecto
+                return {
+                    ...equipo,
+                    Presupuesto: 0,
+                    Miembros: 0,
+                    Carros: 0
+                };
+            }
+        }));
+        
+        return equiposConDetalles;
     },
 
     async getById(id) {
@@ -26,10 +45,24 @@ const equiposService = {
         const result = await pool.request()
             .input('id', sql.Int, id)
             .query(`
+                DECLARE @TotalAportes DECIMAL(18,2)
+                DECLARE @TotalGastos DECIMAL(18,2)
+                DECLARE @Presupuesto DECIMAL(18,2)
+                
+                SELECT @TotalAportes = ISNULL(SUM(ISNULL(Monto, 0)), 0)
+                FROM APORTE
+                WHERE Id_equipo = @id
+                
+                SELECT @TotalGastos = ISNULL(SUM(ISNULL(Costo_total, 0)), 0)
+                FROM PEDIDO
+                WHERE Id_equipo = @id
+                
+                SET @Presupuesto = @TotalAportes - @TotalGastos
+                
                 SELECT 
                     e.Id_equipo,
                     e.Nombre,
-                    dbo.fn_CalcularPresupuestoEquipo(e.Id_equipo) as Presupuesto
+                    @Presupuesto as Presupuesto
                 FROM EQUIPO e
                 WHERE e.Id_equipo = @id
             `);
@@ -48,32 +81,37 @@ const equiposService = {
      */
     async getPresupuesto(idEquipo) {
         const pool = await getConnection();
-        const result = await pool.request()
-            .input('idEquipo', sql.Int, idEquipo)
-            .query(`
-                DECLARE @Presupuesto DECIMAL(18,2)
-                DECLARE @TotalAportes DECIMAL(18,2)
-                DECLARE @TotalGastos DECIMAL(18,2)
-                
-                -- Calcular presupuesto
-                SET @Presupuesto = dbo.fn_CalcularPresupuestoEquipo(@idEquipo)
-                
-                -- Calcular aportes
-                SELECT @TotalAportes = ISNULL(SUM(Monto), 0)
-                FROM APORTE
-                WHERE Id_equipo = @idEquipo
-                
-                -- Calcular gastos (de PEDIDO)
-                SELECT @TotalGastos = ISNULL(SUM(Costo_total), 0)
-                FROM PEDIDO
-                WHERE Id_equipo = @idEquipo
-                
-                SELECT 
-                    @Presupuesto as Presupuesto,
-                    @TotalAportes as TotalAportes,
-                    @TotalGastos as TotalGastos
-            `);
-        return result.recordset[0];
+        try {
+            const result = await pool.request()
+                .input('idEquipo', sql.Int, idEquipo)
+                .query(`
+                    DECLARE @TotalAportes DECIMAL(18,2)
+                    DECLARE @TotalGastos DECIMAL(18,2)
+                    DECLARE @Presupuesto DECIMAL(18,2)
+                    
+                    -- Calcular aportes
+                    SELECT @TotalAportes = ISNULL(SUM(ISNULL(Monto, 0)), 0)
+                    FROM APORTE
+                    WHERE Id_equipo = @idEquipo
+                    
+                    -- Calcular gastos
+                    SELECT @TotalGastos = ISNULL(SUM(ISNULL(Costo_total, 0)), 0)
+                    FROM PEDIDO
+                    WHERE Id_equipo = @idEquipo
+                    
+                    -- Presupuesto disponible
+                    SET @Presupuesto = @TotalAportes - @TotalGastos
+                    
+                    SELECT 
+                        @Presupuesto as Presupuesto,
+                        @TotalAportes as TotalAportes,
+                        @TotalGastos as TotalGastos
+                `);
+            return result.recordset[0];
+        } catch (err) {
+            console.log('Error en getPresupuesto:', err.message);
+            return { Presupuesto: 0, TotalAportes: 0, TotalGastos: 0 };
+        }
     },
 
     /**
@@ -92,7 +130,7 @@ const equiposService = {
                     a.Monto,
                     a.Fecha,
                     a.Id_patrocinador,
-                    p.Nombre as Patrocinador
+                    p.Nombre_patrocinador as Patrocinador
                 FROM APORTE a
                 LEFT JOIN PATROCINADOR p ON a.Id_patrocinador = p.Id_patrocinador
                 WHERE a.Id_equipo = @idEquipo
@@ -120,7 +158,7 @@ const equiposService = {
                 const patrocinadorResult = await transaction.request()
                     .input('nombre', sql.NVarChar, nombrePatrocinador)
                     .query(`
-                        SELECT Id_patrocinador FROM PATROCINADOR WHERE Nombre = @nombre
+                        SELECT Id_patrocinador FROM PATROCINADOR WHERE Nombre_patrocinador = @nombre
                     `);
                 
                 if (patrocinadorResult.recordset.length > 0) {
@@ -129,7 +167,7 @@ const equiposService = {
                     const nuevoPatrocinador = await transaction.request()
                         .input('nombre', sql.NVarChar, nombrePatrocinador)
                         .query(`
-                            INSERT INTO PATROCINADOR (Nombre)
+                            INSERT INTO PATROCINADOR (Nombre_patrocinador)
                             OUTPUT INSERTED.Id_patrocinador
                             VALUES (@nombre)
                         `);
@@ -176,13 +214,13 @@ const equiposService = {
             .query(`
                 SELECT 
                     p.Id_patrocinador,
-                    p.Nombre,
+                    p.Nombre_patrocinador as Nombre,
                     COUNT(a.Id_aporte) as TotalAportes,
-                    SUM(a.Monto) as MontoTotal
+                    ISNULL(SUM(ISNULL(a.Monto, 0)), 0) as MontoTotal
                 FROM PATROCINADOR p
                 INNER JOIN APORTE a ON p.Id_patrocinador = a.Id_patrocinador
                 WHERE a.Id_equipo = @idEquipo
-                GROUP BY p.Id_patrocinador, p.Nombre
+                GROUP BY p.Id_patrocinador, p.Nombre_patrocinador
                 ORDER BY MontoTotal DESC
             `);
         return result.recordset;

@@ -180,14 +180,14 @@ function Catalogo() {
                     </Button>
                 </WrapItem>
                 {categorias.map(cat => (
-                    <WrapItem key={cat.id || cat.Id_categoria}>
+                    <WrapItem key={cat.Id_categoria}>
                         <Button
-                            variant={categoriaActiva === (cat.id || cat.Id_categoria) ? 'solid' : 'outline'}
+                            variant={categoriaActiva === cat.Id_categoria ? 'solid' : 'outline'}
                             size="sm"
                             borderRadius="full"
-                            onClick={() => setCategoriaActiva(cat.id || cat.Id_categoria)}
+                            onClick={() => setCategoriaActiva(cat.Id_categoria)}
                         >
-                            {cat.nombre}
+                            {cat.Nombre}
                         </Button>
                     </WrapItem>
                 ))}
@@ -277,7 +277,7 @@ function Catalogo() {
             {/* Resumen */}
             <Text textAlign="center" mt={8} color="gray.600" fontSize="sm">
                 Mostrando {partes.length} partes
-                {categoriaActiva && ` en ${categorias.find(c => c.id === categoriaActiva)?.nombre}`}
+                {categoriaActiva && ` en ${categorias.find(c => c.Id_categoria === categoriaActiva)?.Nombre}`}
             </Text>
         </Container>
     );
