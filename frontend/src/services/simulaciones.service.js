@@ -68,6 +68,14 @@ const simulacionesService = {
     async getRanking() {
         const response = await api.get('/simulaciones/ranking/conductores');
         return response.data;
+    },
+
+    /**
+     * Obtener carros disponibles para simulaciones
+     */
+    async getCarrosDisponibles() {
+        const response = await api.get('/carros/disponibles');
+        return response.data;
     }
 };
 

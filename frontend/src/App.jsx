@@ -83,11 +83,11 @@ function AppRoutes() {
                     } 
                 />
 
-                {/* Simulaciones - Solo Driver */}
+                {/* Simulaciones - Admin, Engineer y Driver */}
                 <Route 
                     path="/simulaciones" 
                     element={
-                        <ProtectedRoute allowedRoles={['Driver']}>
+                        <ProtectedRoute allowedRoles={['Admin', 'Engineer', 'Driver']}>
                             <Simulaciones />
                         </ProtectedRoute>
                     } 

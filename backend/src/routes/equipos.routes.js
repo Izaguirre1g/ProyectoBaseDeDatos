@@ -51,17 +51,32 @@ router.get('/:id/aportes', async (req, res) => {
 });
 
 /**
+ * GET /api/equipos/:id/gastos
+ * Obtener lista de gastos/pedidos del equipo
+ */
+router.get('/:id/gastos', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const gastos = await equiposService.getGastos(parseInt(id));
+        res.json(gastos);
+    } catch (error) {
+        console.error('Error al obtener gastos:', error);
+        res.status(500).json({ error: 'Error al obtener gastos' });
+    }
+});
+
+/**
  * POST /api/equipos/:id/aportes
- * Agregar un nuevo aporte al equipo
+ * Agregar un nuevo aporte al equipo usando SP con transacción
  */
 router.post('/:id/aportes', async (req, res) => {
     try {
         const { id } = req.params;
-        const { monto, nombrePatrocinador } = req.body;
+        const { monto, idPatrocinador, descripcion } = req.body;
         
-        if (!monto || !nombrePatrocinador) {
+        if (!monto || !idPatrocinador) {
             return res.status(400).json({ 
-                error: 'monto y nombrePatrocinador son requeridos' 
+                error: 'monto e idPatrocinador son requeridos' 
             });
         }
         
@@ -71,13 +86,18 @@ router.post('/:id/aportes', async (req, res) => {
             });
         }
         
-        const aporte = await equiposService.addAporte({
+        const result = await equiposService.addAporte({
             idEquipo: parseInt(id),
             monto: parseFloat(monto),
-            nombrePatrocinador
+            idPatrocinador: parseInt(idPatrocinador),
+            descripcion: descripcion || null
         });
         
-        res.status(201).json(aporte);
+        if (result.success) {
+            res.status(201).json(result);
+        } else {
+            res.status(400).json({ error: result.mensaje });
+        }
     } catch (error) {
         console.error('Error al agregar aporte:', error);
         res.status(500).json({ 
@@ -144,6 +164,20 @@ router.get('/:id/inventario', async (req, res) => {
     } catch (error) {
         console.error('Error al obtener inventario:', error);
         res.status(500).json({ error: 'Error al obtener inventario del equipo' });
+    }
+});
+
+/**
+ * GET /api/equipos/patrocinadores
+ * Obtener todos los patrocinadores disponibles
+ */
+router.get('/patrocinadores', async (req, res) => {
+    try {
+        const patrocinadores = await equiposService.getAllPatrocinadores();
+        res.json(patrocinadores);
+    } catch (error) {
+        console.error('Error al obtener patrocinadores:', error);
+        res.status(500).json({ error: 'Error al obtener patrocinadores' });
     }
 });
 

@@ -30,6 +30,20 @@ router.get('/', async (req, res) => {
 });
 
 /**
+ * GET /api/carros/disponibles
+ * Obtener carros disponibles para simulaciones (con conductor y finalizados preferidos)
+ */
+router.get('/disponibles', async (req, res) => {
+    try {
+        const carros = await carrosService.getAll();
+        res.json(carros);
+    } catch (error) {
+        console.error('Error al obtener carros disponibles:', error);
+        res.status(500).json({ error: 'Error al obtener carros disponibles' });
+    }
+});
+
+/**
  * GET /api/carros/:id/configuracion
  * Obtener configuración completa del carro (5 categorías)
  */

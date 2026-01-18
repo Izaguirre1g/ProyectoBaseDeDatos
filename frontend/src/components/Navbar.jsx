@@ -112,6 +112,13 @@ function Navbar() {
                                     >
                                         Equipos
                                     </NavLink>
+                                    <NavLink 
+                                        to="/simulaciones" 
+                                        icon={Flag} 
+                                        isActive={isActive('/simulaciones')}
+                                    >
+                                        Simulaciones
+                                    </NavLink>
                                 </>
                             )}
 
@@ -123,6 +130,13 @@ function Navbar() {
                                         isActive={isActive('/equipos') || location.pathname.startsWith('/equipos/')}
                                     >
                                         Mi Equipo
+                                    </NavLink>
+                                    <NavLink 
+                                        to="/simulaciones" 
+                                        icon={Flag} 
+                                        isActive={isActive('/simulaciones')}
+                                    >
+                                        Simulaciones
                                     </NavLink>
                                 </>
                             )}

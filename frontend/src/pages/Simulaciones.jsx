@@ -24,6 +24,37 @@ import {
     Spinner,
     Alert,
     AlertIcon,
+    Button,
+    Modal,
+    ModalOverlay,
+    ModalContent,
+    ModalHeader,
+    ModalBody,
+    ModalFooter,
+    ModalCloseButton,
+    useDisclosure,
+    FormControl,
+    FormLabel,
+    Select,
+    Checkbox,
+    CheckboxGroup,
+    NumberInput,
+    NumberInputField,
+    NumberInputStepper,
+    NumberIncrementStepper,
+    NumberDecrementStepper,
+    useToast,
+    Table,
+    Thead,
+    Tbody,
+    Tr,
+    Th,
+    Td,
+    Tabs,
+    TabList,
+    TabPanels,
+    Tab,
+    TabPanel,
 } from '@chakra-ui/react';
 import { 
     Trophy, 
@@ -31,6 +62,9 @@ import {
     Flag,
     Timer,
     Gauge,
+    Play,
+    Plus,
+    MapPin,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import simulacionesService from '../services/simulaciones.service';
@@ -227,6 +261,933 @@ function SimulacionDetalle({ sim, podio }) {
 }
 
 function Simulaciones() {
+    const { usuario, isAdmin } = useAuth();
+    
+    // Si es admin, mostrar la pantalla de administración de simulaciones
+    if (isAdmin && isAdmin()) {
+        return <AdminSimulaciones />;
+    }
+    
+    // Si es ingeniero, mostrar vista del equipo
+    if (usuario?.rol === 'Engineer') {
+        return <EngineerSimulaciones />;
+    }
+    
+    // Para conductores, mostrar su historial
+    return <DriverSimulaciones />;
+}
+
+// =============================================
+// COMPONENTE ADMIN: Crear y gestionar simulaciones
+// =============================================
+function AdminSimulaciones() {
+    const toast = useToast();
+    const { isOpen, onOpen, onClose } = useDisclosure();
+    const [loading, setLoading] = useState(true);
+    const [ejecutando, setEjecutando] = useState(false);
+    const [circuitos, setCircuitos] = useState([]);
+    const [carrosDisponibles, setCarrosDisponibles] = useState([]);
+    const [simulaciones, setSimulaciones] = useState([]);
+    const [resultados, setResultados] = useState({});
+    
+    // Estado del formulario
+    const [circuitoSeleccionado, setCircuitoSeleccionado] = useState('');
+    const [carrosSeleccionados, setCarrosSeleccionados] = useState([]);
+    const [habilidades, setHabilidades] = useState({});
+    
+    useEffect(() => {
+        loadData();
+    }, []);
+    
+    const loadData = async () => {
+        try {
+            setLoading(true);
+            const [circuitosData, carrosData, simsData] = await Promise.all([
+                simulacionesService.getCircuitos().catch(err => {
+                    console.error('Error cargando circuitos:', err);
+                    return [];
+                }),
+                simulacionesService.getCarrosDisponibles().catch(err => {
+                    console.error('Error cargando carros:', err);
+                    return [];
+                }),
+                simulacionesService.getDashboard().catch(err => {
+                    console.error('Error cargando dashboard:', err);
+                    return { simulaciones: [] };
+                })
+            ]);
+            
+            setCircuitos(circuitosData || []);
+            setCarrosDisponibles(carrosData || []);
+            setSimulaciones(simsData?.simulaciones || []);
+        } catch (err) {
+            console.error('Error cargando datos:', err);
+            toast({
+                title: 'Error al cargar datos',
+                description: err?.message || 'No se pudieron cargar los datos',
+                status: 'error',
+                duration: 3000
+            });
+        } finally {
+            setLoading(false);
+        }
+    };
+    
+    const handleCarroToggle = (carroId, carro) => {
+        const id = parseInt(carroId);
+        if (carrosSeleccionados.includes(id)) {
+            setCarrosSeleccionados(prev => prev.filter(c => c !== id));
+        } else {
+            setCarrosSeleccionados(prev => [...prev, id]);
+            if (!habilidades[id]) {
+                // Usar la habilidad del conductor de la base de datos si existe, sino 85
+                const habilidad = carro?.Habilidad_conductor || 85;
+                setHabilidades(prev => ({ ...prev, [id]: habilidad }));
+            }
+        }
+    };
+    
+    const handleHabilidadChange = (carroId, value) => {
+        setHabilidades(prev => ({ ...prev, [carroId]: parseInt(value) || 85 }));
+    };
+    
+    const handleEjecutarSimulacion = async () => {
+        if (!circuitoSeleccionado) {
+            toast({ title: 'Selecciona un circuito', status: 'warning', duration: 3000 });
+            return;
+        }
+        if (carrosSeleccionados.length < 2) {
+            toast({ title: 'Selecciona al menos 2 carros', status: 'warning', duration: 3000 });
+            return;
+        }
+        
+        try {
+            setEjecutando(true);
+            
+            const carros = carrosSeleccionados.map(id => ({
+                idCarro: id,
+                habilidad: habilidades[id] || 85
+            }));
+            
+            const resultado = await simulacionesService.ejecutarSimulacion(
+                parseInt(circuitoSeleccionado),
+                carros
+            );
+            
+            toast({
+                title: '¡Simulación ejecutada!',
+                description: resultado.mensaje || 'La simulación se completó correctamente',
+                status: 'success',
+                duration: 5000
+            });
+            
+            // Recargar datos y cerrar modal
+            await loadData();
+            onClose();
+            setCarrosSeleccionados([]);
+            setCircuitoSeleccionado('');
+            setHabilidades({});
+            
+        } catch (err) {
+            console.error('Error ejecutando simulación:', err);
+            toast({
+                title: 'Error al ejecutar simulación',
+                description: err.response?.data?.error || err.message,
+                status: 'error',
+                duration: 5000
+            });
+        } finally {
+            setEjecutando(false);
+        }
+    };
+    
+    const loadResultados = async (simId) => {
+        if (resultados[simId]) return;
+        try {
+            const data = await simulacionesService.getResultados(simId);
+            setResultados(prev => ({ ...prev, [simId]: data }));
+        } catch (err) {
+            console.error('Error cargando resultados:', err);
+        }
+    };
+    
+    if (loading) {
+        return (
+            <Container maxW="1400px" py={8}>
+                <VStack spacing={6} align="center" py={20}>
+                    <Spinner size="xl" color="accent.500" />
+                    <Text color="gray.400">Cargando datos...</Text>
+                </VStack>
+            </Container>
+        );
+    }
+    
+    return (
+        <Container maxW="1400px" py={8}>
+            <VStack spacing={6} align="stretch">
+                {/* Header */}
+                <HStack justify="space-between" flexWrap="wrap">
+                    <Box>
+                        <Heading size="lg" mb={2}>
+                            <Icon as={Timer} mr={3} />
+                            Administrar Simulaciones
+                        </Heading>
+                        <Text color="gray.400">
+                            Crea y gestiona simulaciones de carreras
+                        </Text>
+                    </Box>
+                    <Button
+                        leftIcon={<Plus size={18} />}
+                        colorScheme="green"
+                        onClick={onOpen}
+                    >
+                        Nueva Simulación
+                    </Button>
+                </HStack>
+                
+                {/* Estadísticas rápidas */}
+                <SimpleGrid columns={{ base: 2, md: 4 }} spacing={4}>
+                    <StatCard 
+                        icon={Timer}
+                        label="Total Simulaciones"
+                        value={simulaciones.length}
+                        color="blue.500"
+                    />
+                    <StatCard 
+                        icon={MapPin}
+                        label="Circuitos"
+                        value={circuitos.length}
+                        color="green.500"
+                    />
+                    <StatCard 
+                        icon={Flag}
+                        label="Carros Disponibles"
+                        value={carrosDisponibles.filter(c => c.Finalizado).length}
+                        color="purple.500"
+                    />
+                    <StatCard 
+                        icon={Trophy}
+                        label="Carros Listos"
+                        value={carrosDisponibles.filter(c => c.Finalizado && c.Id_conductor).length}
+                        color="yellow.500"
+                    />
+                </SimpleGrid>
+                
+                {/* Tabs: Historial y Circuitos */}
+                <Tabs colorScheme="red" variant="soft-rounded">
+                    <TabList>
+                        <Tab _selected={{ bg: 'accent.600', color: 'white' }}>Historial</Tab>
+                        <Tab _selected={{ bg: 'accent.600', color: 'white' }}>Circuitos</Tab>
+                        <Tab _selected={{ bg: 'accent.600', color: 'white' }}>Carros</Tab>
+                    </TabList>
+                    
+                    <TabPanels>
+                        {/* Tab Historial */}
+                        <TabPanel px={0}>
+                            <Card bg="brand.800" borderColor="brand.700">
+                                <CardBody>
+                                    {simulaciones.length === 0 ? (
+                                        <Text color="gray.500" textAlign="center" py={8}>
+                                            No hay simulaciones registradas
+                                        </Text>
+                                    ) : (
+                                        <Accordion allowMultiple>
+                                            {simulaciones.map((sim) => {
+                                                // Usar Distancia_total del backend
+                                                const circInfo = getNombreCircuito(sim.Distancia_total);
+                                                return (
+                                                    <AccordionItem key={`sim-${sim.Id_simulacion}`} border="none" mb={2}>
+                                                        <AccordionButton 
+                                                            bg="brand.900" 
+                                                            borderRadius="md"
+                                                            _hover={{ bg: 'brand.700' }}
+                                                            onClick={() => loadResultados(sim.Id_simulacion)}
+                                                        >
+                                                            <HStack flex={1} spacing={4}>
+                                                                <Text fontSize="xl">{circInfo.imagen}</Text>
+                                                                <Box flex={1} textAlign="left">
+                                                                    <Text color="white" fontWeight="bold">
+                                                                        {circInfo.nombre} - Simulación #{sim.Id_simulacion}
+                                                                    </Text>
+                                                                    <Text color="gray.500" fontSize="xs">
+                                                                        {new Date(sim.Fecha).toLocaleString()}
+                                                                    </Text>
+                                                                </Box>
+                                                            </HStack>
+                                                            <AccordionIcon color="gray.400" />
+                                                        </AccordionButton>
+                                                        <AccordionPanel bg="brand.850" borderRadius="0 0 md md">
+                                                            {resultados[sim.Id_simulacion] ? (
+                                                                <Table size="sm" variant="simple">
+                                                                    <Thead>
+                                                                        <Tr>
+                                                                            <Th color="gray.400">Pos</Th>
+                                                                            <Th color="gray.400">Conductor</Th>
+                                                                            <Th color="gray.400">Equipo</Th>
+                                                                            <Th color="gray.400" isNumeric>Tiempo</Th>
+                                                                            <Th color="gray.400" isNumeric>V.Recta</Th>
+                                                                            <Th color="gray.400" isNumeric>V.Curva</Th>
+                                                                        </Tr>
+                                                                    </Thead>
+                                                                    <Tbody>
+                                                                        {resultados[sim.Id_simulacion].map((r, idx) => (
+                                                                            <Tr key={`${sim.Id_simulacion}-${r.Id_carro}-${idx}`}>
+                                                                                <Td>
+                                                                                    <Badge 
+                                                                                        bg={getPosicionColor(r.Posicion)}
+                                                                                        color={r.Posicion === 2 ? 'black' : 'white'}
+                                                                                    >
+                                                                                        P{r.Posicion}
+                                                                                    </Badge>
+                                                                                </Td>
+                                                                                <Td>{r.Conductor?.split('@')[0] || 'N/A'}</Td>
+                                                                                <Td>{r.Equipo}</Td>
+                                                                                <Td isNumeric fontWeight="bold" color="accent.400">
+                                                                                    {formatTiempo(parseFloat(r.Tiempo_segundos))}
+                                                                                </Td>
+                                                                                <Td isNumeric>{parseFloat(r.Vrecta).toFixed(1)}</Td>
+                                                                                <Td isNumeric>{parseFloat(r.Vcurva).toFixed(1)}</Td>
+                                                                            </Tr>
+                                                                        ))}
+                                                                    </Tbody>
+                                                                </Table>
+                                                            ) : (
+                                                                <Spinner color="accent.500" />
+                                                            )}
+                                                        </AccordionPanel>
+                                                    </AccordionItem>
+                                                );
+                                            })}
+                                        </Accordion>
+                                    )}
+                                </CardBody>
+                            </Card>
+                        </TabPanel>
+                        
+                        {/* Tab Circuitos */}
+                        <TabPanel px={0}>
+                            <Card bg="brand.800" borderColor="brand.700">
+                                <CardBody>
+                                    <Table size="sm" variant="simple">
+                                        <Thead>
+                                            <Tr>
+                                                <Th color="gray.400">ID</Th>
+                                                <Th color="gray.400">Circuito</Th>
+                                                <Th color="gray.400" isNumeric>Distancia (km)</Th>
+                                                <Th color="gray.400" isNumeric>Curvas</Th>
+                                            </Tr>
+                                        </Thead>
+                                        <Tbody>
+                                            {circuitos.map((c) => {
+                                                const info = getNombreCircuito(parseFloat(c.Distancia_total));
+                                                return (
+                                                    <Tr key={c.Id_circuito}>
+                                                        <Td>{c.Id_circuito}</Td>
+                                                        <Td>
+                                                            <HStack>
+                                                                <Text>{info.imagen}</Text>
+                                                                <Text fontWeight="bold">{info.nombre}</Text>
+                                                            </HStack>
+                                                        </Td>
+                                                        <Td isNumeric>{c.Distancia_total}</Td>
+                                                        <Td isNumeric>{c.Cantidad_curvas}</Td>
+                                                    </Tr>
+                                                );
+                                            })}
+                                        </Tbody>
+                                    </Table>
+                                </CardBody>
+                            </Card>
+                        </TabPanel>
+                        
+                        {/* Tab Carros */}
+                        <TabPanel px={0}>
+                            <Card bg="brand.800" borderColor="brand.700">
+                                <CardBody>
+                                    <Table size="sm" variant="simple">
+                                        <Thead>
+                                            <Tr>
+                                                <Th color="gray.400">ID</Th>
+                                                <Th color="gray.400">Equipo</Th>
+                                                <Th color="gray.400">Conductor</Th>
+                                                <Th color="gray.400" isNumeric>P</Th>
+                                                <Th color="gray.400" isNumeric>A</Th>
+                                                <Th color="gray.400" isNumeric>M</Th>
+                                                <Th color="gray.400">Estado</Th>
+                                            </Tr>
+                                        </Thead>
+                                        <Tbody>
+                                            {carrosDisponibles.map((c) => (
+                                                <Tr key={c.Id_carro}>
+                                                    <Td>{c.Id_carro}</Td>
+                                                    <Td>{c.Equipo}</Td>
+                                                    <Td>{c.Conductor?.split('@')[0] || <Text color="orange.400">Sin asignar</Text>}</Td>
+                                                    <Td isNumeric><Badge colorScheme="yellow">{c.P_total}</Badge></Td>
+                                                    <Td isNumeric><Badge colorScheme="blue">{c.A_total}</Badge></Td>
+                                                    <Td isNumeric><Badge colorScheme="green">{c.M_total}</Badge></Td>
+                                                    <Td>
+                                                        <Badge colorScheme={c.Finalizado ? 'green' : 'orange'}>
+                                                            {c.Finalizado ? 'Listo' : 'Incompleto'}
+                                                        </Badge>
+                                                    </Td>
+                                                </Tr>
+                                            ))}
+                                        </Tbody>
+                                    </Table>
+                                </CardBody>
+                            </Card>
+                        </TabPanel>
+                    </TabPanels>
+                </Tabs>
+            </VStack>
+            
+            {/* Modal Nueva Simulación */}
+            <Modal isOpen={isOpen} onClose={onClose} size="xl" scrollBehavior="inside">
+                <ModalOverlay bg="blackAlpha.800" />
+                <ModalContent bg="brand.800" borderColor="brand.700">
+                    <ModalHeader color="white">
+                        <HStack>
+                            <Icon as={Play} color="green.400" />
+                            <Text>Ejecutar Nueva Simulación</Text>
+                        </HStack>
+                    </ModalHeader>
+                    <ModalCloseButton />
+                    <ModalBody>
+                        <VStack spacing={6} align="stretch">
+                            {/* Seleccionar Circuito */}
+                            <FormControl isRequired>
+                                <FormLabel color="gray.300">Circuito</FormLabel>
+                                <Select
+                                    placeholder="Selecciona un circuito"
+                                    value={circuitoSeleccionado}
+                                    onChange={(e) => setCircuitoSeleccionado(e.target.value)}
+                                    bg="brand.900"
+                                    borderColor="brand.700"
+                                >
+                                    {circuitos.map((c) => {
+                                        const info = getNombreCircuito(parseFloat(c.Distancia_total));
+                                        return (
+                                            <option key={c.Id_circuito} value={c.Id_circuito}>
+                                                {info.imagen} {info.nombre} - {c.Distancia_total}km, {c.Cantidad_curvas} curvas
+                                            </option>
+                                        );
+                                    })}
+                                </Select>
+                            </FormControl>
+                            
+                            {/* Seleccionar Carros */}
+                            <FormControl isRequired>
+                                <FormLabel color="gray.300">
+                                    Carros Participantes ({carrosSeleccionados.length} seleccionados)
+                                </FormLabel>
+                                <Text fontSize="xs" color="gray.500" mb={2}>
+                                    Solo carros finalizados con conductor asignado pueden participar
+                                </Text>
+                                <VStack align="stretch" spacing={2} maxH="300px" overflowY="auto">
+                                    {carrosDisponibles
+                                        .filter(c => c.Finalizado && c.Id_conductor)
+                                        .map((c) => (
+                                            <HStack
+                                                key={c.Id_carro}
+                                                p={3}
+                                                bg={carrosSeleccionados.includes(c.Id_carro) ? 'green.900' : 'brand.900'}
+                                                borderRadius="md"
+                                                borderWidth="1px"
+                                                borderColor={carrosSeleccionados.includes(c.Id_carro) ? 'green.500' : 'brand.700'}
+                                                cursor="pointer"
+                                                onClick={() => handleCarroToggle(c.Id_carro, c)}
+                                            >
+                                                <Checkbox
+                                                    isChecked={carrosSeleccionados.includes(c.Id_carro)}
+                                                    onChange={() => {}}
+                                                    colorScheme="green"
+                                                />
+                                                <VStack align="start" spacing={0} flex={1}>
+                                                    <Text fontWeight="bold" color="white">
+                                                        {c.Conductor?.split('@')[0]} - {c.Equipo}
+                                                    </Text>
+                                                    <HStack spacing={2}>
+                                                        <Badge colorScheme="yellow" size="sm">P:{c.P_total}</Badge>
+                                                        <Badge colorScheme="blue" size="sm">A:{c.A_total}</Badge>
+                                                        <Badge colorScheme="green" size="sm">M:{c.M_total}</Badge>
+                                                        <Badge colorScheme="purple" size="sm">H:{c.Habilidad_conductor || 75}</Badge>
+                                                    </HStack>
+                                                </VStack>
+                                                {carrosSeleccionados.includes(c.Id_carro) && (
+                                                    <FormControl w="100px" onClick={(e) => e.stopPropagation()}>
+                                                        <NumberInput
+                                                            size="sm"
+                                                            value={habilidades[c.Id_carro] || c.Habilidad_conductor || 75}
+                                                            min={50}
+                                                            max={100}
+                                                            onChange={(val) => handleHabilidadChange(c.Id_carro, val)}
+                                                        >
+                                                            <NumberInputField bg="brand.800" />
+                                                            <NumberInputStepper>
+                                                                <NumberIncrementStepper />
+                                                                <NumberDecrementStepper />
+                                                            </NumberInputStepper>
+                                                        </NumberInput>
+                                                        <Text fontSize="xs" color="gray.500" textAlign="center">Habilidad</Text>
+                                                    </FormControl>
+                                                )}
+                                            </HStack>
+                                        ))}
+                                </VStack>
+                            </FormControl>
+                        </VStack>
+                    </ModalBody>
+                    <ModalFooter>
+                        <Button variant="ghost" mr={3} onClick={onClose}>
+                            Cancelar
+                        </Button>
+                        <Button
+                            colorScheme="green"
+                            leftIcon={<Play size={18} />}
+                            onClick={handleEjecutarSimulacion}
+                            isLoading={ejecutando}
+                            isDisabled={!circuitoSeleccionado || carrosSeleccionados.length < 2}
+                        >
+                            Ejecutar Simulación
+                        </Button>
+                    </ModalFooter>
+                </ModalContent>
+            </Modal>
+        </Container>
+    );
+}
+
+// =============================================
+// COMPONENTE DRIVER: Historial de simulaciones
+// =============================================
+//========================================
+// COMPONENTE ENGINEER: Vista del equipo
+//========================================
+function EngineerSimulaciones() {
+    const { usuario } = useAuth();
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [teamData, setTeamData] = useState(null);
+    const [selectedConductor, setSelectedConductor] = useState('all');
+    const [podios, setPodios] = useState({});
+    const [loadingPodio, setLoadingPodio] = useState({});
+
+    useEffect(() => {
+        loadTeamData();
+    }, []);
+
+    const loadTeamData = async () => {
+        try {
+            setLoading(true);
+            setError(null);
+            
+            const data = await simulacionesService.getSimulaciones();
+            setTeamData(data);
+            
+            if (data.conductores && data.conductores.length > 0) {
+                setSelectedConductor(data.conductores[0].id.toString());
+            }
+        } catch (err) {
+            console.error('Error cargando datos del equipo:', err);
+            setError(err.response?.data?.error || 'Error al cargar datos del equipo');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const loadPodio = async (simId) => {
+        if (podios[simId] || loadingPodio[simId]) return;
+        
+        try {
+            setLoadingPodio(prev => ({ ...prev, [simId]: true }));
+            const data = await simulacionesService.getSimulacion(simId);
+            const podio = (data.resultados || []).map(r => ({
+                posicion: r.Posicion,
+                piloto: r.Conductor?.split('@')[0] || 'Piloto',
+                equipo: r.Equipo || 'Equipo',
+                tiempoSegundos: parseFloat(r.Tiempo_segundos)
+            }));
+            setPodios(prev => ({ ...prev, [simId]: podio }));
+        } catch (err) {
+            console.error('Error cargando podio:', err);
+        } finally {
+            setLoadingPodio(prev => ({ ...prev, [simId]: false }));
+        }
+    };
+
+    const getFilteredSimulations = () => {
+        if (!teamData?.simulaciones) return [];
+        if (selectedConductor === 'all') return teamData.simulaciones;
+        return teamData.simulaciones.filter(sim => sim.conductorId.toString() === selectedConductor);
+    };
+
+    const getConductorStats = (conductorId) => {
+        if (!teamData?.simulaciones) return { victorias: 0, podios: 0, carreras: 0, mejorTiempo: null };
+        
+        const simsConductor = teamData.simulaciones.filter(s => s.conductorId === conductorId);
+        const victorias = simsConductor.filter(s => s.posicion === 1).length;
+        const podios = simsConductor.filter(s => s.posicion <= 3).length;
+        const mejorTiempo = Math.min(...simsConductor.map(s => s.tiempo).filter(t => t > 0));
+        
+        return {
+            victorias,
+            podios,
+            carreras: simsConductor.length,
+            mejorTiempo: isFinite(mejorTiempo) ? mejorTiempo : null
+        };
+    };
+
+    if (loading) {
+        return (
+            <Container maxW="1400px" py={8}>
+                <VStack spacing={6} align="center" py={20}>
+                    <Spinner size="xl" color="accent.500" />
+                    <Text color="gray.400">Cargando datos del equipo...</Text>
+                </VStack>
+            </Container>
+        );
+    }
+
+    if (error) {
+        return (
+            <Container maxW="1400px" py={8}>
+                <Alert status="error" bg="red.900" borderRadius="md">
+                    <AlertIcon />
+                    {error}
+                </Alert>
+            </Container>
+        );
+    }
+
+    if (!teamData?.equipo) {
+        return (
+            <Container maxW="1400px" py={8}>
+                <Alert status="warning" bg="orange.900" borderRadius="md">
+                    <AlertIcon />
+                    No tienes un equipo asignado. Contacta al administrador.
+                </Alert>
+            </Container>
+        );
+    }
+
+    const filteredSimulations = getFilteredSimulations();
+
+    return (
+        <Container maxW="1400px" py={8}>
+            <VStack spacing={6} align="stretch">
+                {/* Header */}
+                <Box>
+                    <Heading size="lg" mb={2}>
+                        <Icon as={Timer} mr={3} />
+                        Simulaciones del Equipo {teamData.equipo.nombre}
+                    </Heading>
+                    <Text color="gray.400">
+                        Panel de análisis para ingenieros - Rendimiento de todos los conductores del equipo
+                    </Text>
+                </Box>
+
+                {/* Stats del equipo */}
+                <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={4}>
+                    <Card bg="brand.800" borderColor="brand.700">
+                        <CardBody>
+                            <Stat>
+                                <StatLabel>Victorias del Equipo</StatLabel>
+                                <StatNumber color="yellow.400">{teamData.stats.totalVictorias}</StatNumber>
+                                <StatHelpText>En {teamData.stats.totalCarreras} carreras</StatHelpText>
+                            </Stat>
+                        </CardBody>
+                    </Card>
+                    <Card bg="brand.800" borderColor="brand.700">
+                        <CardBody>
+                            <Stat>
+                                <StatLabel>Podios del Equipo</StatLabel>
+                                <StatNumber color="orange.400">{teamData.stats.totalPodios}</StatNumber>
+                                <StatHelpText>{teamData.stats.totalCarreras > 0 ? ((teamData.stats.totalPodios / teamData.stats.totalCarreras) * 100).toFixed(1) : 0}% éxito</StatHelpText>
+                            </Stat>
+                        </CardBody>
+                    </Card>
+                    <Card bg="brand.800" borderColor="brand.700">
+                        <CardBody>
+                            <Stat>
+                                <StatLabel>Conductores Activos</StatLabel>
+                                <StatNumber color="blue.400">{teamData.conductores?.length || 0}</StatNumber>
+                                <StatHelpText>En competición</StatHelpText>
+                            </Stat>
+                        </CardBody>
+                    </Card>
+                    <Card bg="brand.800" borderColor="brand.700">
+                        <CardBody>
+                            <Stat>
+                                <StatLabel>Posición Promedio</StatLabel>
+                                <StatNumber color="purple.400">
+                                    {teamData.stats.posicionPromedio || 'N/A'}
+                                </StatNumber>
+                                <StatHelpText>Del equipo</StatHelpText>
+                            </Stat>
+                        </CardBody>
+                    </Card>
+                </SimpleGrid>
+
+                {/* Conductores del equipo */}
+                <Card bg="brand.800" borderColor="brand.700">
+                    <CardBody>
+                        <Heading size="md" mb={4}>Conductores del Equipo</Heading>
+                        <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
+                            {teamData.conductores?.map((conductor) => {
+                                const stats = getConductorStats(conductor.id);
+                                return (
+                                    <Box 
+                                        key={conductor.id}
+                                        p={4} 
+                                        bg="brand.900" 
+                                        borderRadius="lg"
+                                        borderLeft="4px solid"
+                                        borderLeftColor="accent.500"
+                                    >
+                                        <HStack justify="space-between" mb={3}>
+                                            <VStack align="start" spacing={1}>
+                                                <Text fontWeight="bold" fontSize="lg">{conductor.nombre}</Text>
+                                                <Text color="gray.400" fontSize="sm">{conductor.correo}</Text>
+                                            </VStack>
+                                            <Badge colorScheme="blue">H: {conductor.habilidad}</Badge>
+                                        </HStack>
+                                        
+                                        <HStack spacing={4} fontSize="sm" color="gray.400" mb={3}>
+                                            <HStack>
+                                                <Trophy size={14} />
+                                                <Text>{stats.victorias} victorias</Text>
+                                            </HStack>
+                                            <HStack>
+                                                <Flag size={14} />
+                                                <Text>{stats.podios} podios</Text>
+                                            </HStack>
+                                        </HStack>
+
+                                        {conductor.carro ? (
+                                            <HStack justify="space-between">
+                                                <Text fontSize="sm" color="green.400">
+                                                    Carro #{conductor.carro.id} - {conductor.carro.finalizado ? 'Completo' : 'En desarrollo'}
+                                                </Text>
+                                                <HStack fontSize="xs" color="gray.500">
+                                                    <Text>P:{conductor.carro.stats.P}</Text>
+                                                    <Text>A:{conductor.carro.stats.A}</Text>
+                                                    <Text>M:{conductor.carro.stats.M}</Text>
+                                                </HStack>
+                                            </HStack>
+                                        ) : (
+                                            <Text fontSize="sm" color="red.400">Sin carro asignado</Text>
+                                        )}
+                                    </Box>
+                                );
+                            })}
+                        </SimpleGrid>
+                    </CardBody>
+                </Card>
+
+                {/* Filtros */}
+                <Card bg="brand.800" borderColor="brand.700">
+                    <CardBody>
+                        <HStack spacing={4} align="center">
+                            <Text fontWeight="medium">Filtrar por conductor:</Text>
+                            <Select 
+                                value={selectedConductor} 
+                                onChange={(e) => setSelectedConductor(e.target.value)}
+                                width="200px"
+                                bg="brand.900"
+                            >
+                                <option value="all">Todos los conductores</option>
+                                {teamData.conductores?.map((conductor) => (
+                                    <option key={conductor.id} value={conductor.id.toString()}>
+                                        {conductor.nombre}
+                                    </option>
+                                ))}
+                            </Select>
+                            <Text color="gray.400">
+                                {filteredSimulations.length} simulaciones
+                            </Text>
+                        </HStack>
+                    </CardBody>
+                </Card>
+
+                {/* Lista de simulaciones */}
+                {filteredSimulations.length === 0 ? (
+                    <Alert status="info" bg="blue.900" borderRadius="md">
+                        <AlertIcon />
+                        {selectedConductor === 'all' 
+                            ? 'No hay simulaciones registradas para este equipo'
+                            : 'No hay simulaciones registradas para este conductor'
+                        }
+                    </Alert>
+                ) : (
+                    <VStack spacing={4} align="stretch">
+                        {filteredSimulations.map((simulacion) => {
+                            const circuito = getNombreCircuito(simulacion.circuito.distancia);
+                            const podioData = podios[simulacion.id] || [];
+                            const isLoadingPodio = loadingPodio[simulacion.id];
+                            
+                            return (
+                                <Card key={simulacion.id} bg="brand.800" borderColor="brand.700">
+                                    <CardBody>
+                                        <Accordion allowToggle>
+                                            <AccordionItem border="none">
+                                                <AccordionButton 
+                                                    p={0} 
+                                                    _hover={{ bg: 'transparent' }}
+                                                    onClick={() => loadPodio(simulacion.id)}
+                                                >
+                                                    <HStack flex="1" spacing={4} align="center">
+                                                        {/* Posición */}
+                                                        <Badge 
+                                                            colorScheme={
+                                                                simulacion.posicion === 1 ? 'yellow' : 
+                                                                simulacion.posicion <= 3 ? 'orange' : 'gray'
+                                                            }
+                                                            fontSize="md" 
+                                                            px={3} 
+                                                            py={1}
+                                                        >
+                                                            #{simulacion.posicion}
+                                                        </Badge>
+
+                                                        {/* Info de la simulación */}
+                                                        <VStack align="start" spacing={1} flex={1}>
+                                                            <HStack>
+                                                                <Text fontWeight="bold">
+                                                                    {circuito.imagen} {circuito.nombre}
+                                                                </Text>
+                                                                <Badge colorScheme="blue">{simulacion.conductor}</Badge>
+                                                            </HStack>
+                                                            <HStack fontSize="sm" color="gray.400">
+                                                                <Icon as={MapPin} size={14} />
+                                                                <Text>{simulacion.circuito.distancia}km • {simulacion.circuito.curvas} curvas</Text>
+                                                                <Text>•</Text>
+                                                                <Text>{new Date(simulacion.fecha).toLocaleDateString()}</Text>
+                                                            </HStack>
+                                                        </VStack>
+
+                                                        {/* Tiempo */}
+                                                        <VStack align="end" spacing={1}>
+                                                            <HStack>
+                                                                <Icon as={Clock} size={16} />
+                                                                <Text fontWeight="medium">
+                                                                    {formatTiempo(simulacion.tiempo)}
+                                                                </Text>
+                                                            </HStack>
+                                                            <HStack fontSize="sm" color="gray.400">
+                                                                <Text>Vmax: {simulacion.vrecta.toFixed(0)} km/h</Text>
+                                                            </HStack>
+                                                        </VStack>
+
+                                                        <AccordionIcon />
+                                                    </HStack>
+                                                </AccordionButton>
+
+                                                <AccordionPanel pt={4}>
+                                                    <Divider mb={4} borderColor="brand.700" />
+                                                    
+                                                    <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={6}>
+                                                        {/* Detalles técnicos */}
+                                                        <VStack align="stretch" spacing={3}>
+                                                            <Text fontWeight="bold" color="accent.400">Detalles Técnicos</Text>
+                                                            
+                                                            <SimpleGrid columns={2} spacing={3}>
+                                                                <Box bg="brand.900" p={3} borderRadius="md">
+                                                                    <Text fontSize="sm" color="gray.400">Vel. en Recta</Text>
+                                                                    <Text fontWeight="bold">{simulacion.vrecta.toFixed(1)} km/h</Text>
+                                                                </Box>
+                                                                <Box bg="brand.900" p={3} borderRadius="md">
+                                                                    <Text fontSize="sm" color="gray.400">Vel. en Curva</Text>
+                                                                    <Text fontWeight="bold">{simulacion.vcurva.toFixed(1)} km/h</Text>
+                                                                </Box>
+                                                                <Box bg="brand.900" p={3} borderRadius="md">
+                                                                    <Text fontSize="sm" color="gray.400">Penalización</Text>
+                                                                    <Text fontWeight="bold">+{simulacion.penalizacion.toFixed(1)}s</Text>
+                                                                </Box>
+                                                                <Box bg="brand.900" p={3} borderRadius="md">
+                                                                    <Text fontSize="sm" color="gray.400">Tiempo Final</Text>
+                                                                    <Text fontWeight="bold">{formatTiempo(simulacion.tiempo)}</Text>
+                                                                </Box>
+                                                            </SimpleGrid>
+
+                                                            <Box bg="brand.900" p={3} borderRadius="md">
+                                                                <Text fontSize="sm" color="gray.400" mb={2}>Configuración del Carro</Text>
+                                                                <HStack spacing={4}>
+                                                                    <Text fontSize="sm">P: <Text as="span" fontWeight="bold">{simulacion.stats.P}</Text></Text>
+                                                                    <Text fontSize="sm">A: <Text as="span" fontWeight="bold">{simulacion.stats.A}</Text></Text>
+                                                                    <Text fontSize="sm">M: <Text as="span" fontWeight="bold">{simulacion.stats.M}</Text></Text>
+                                                                </HStack>
+                                                            </Box>
+                                                        </VStack>
+
+                                                        {/* Podio */}
+                                                        <VStack align="stretch" spacing={3}>
+                                                            <Text fontWeight="bold" color="accent.400">Clasificación General</Text>
+                                                            {isLoadingPodio ? (
+                                                                <HStack justify="center" py={4}>
+                                                                    <Spinner size="sm" />
+                                                                    <Text fontSize="sm" color="gray.400">Cargando resultados...</Text>
+                                                                </HStack>
+                                                            ) : podioData.length > 0 ? (
+                                                                <VStack spacing={2} align="stretch">
+                                                                    {podioData.slice(0, 5).map((resultado, idx) => (
+                                                                        <HStack 
+                                                                            key={idx}
+                                                                            justify="space-between" 
+                                                                            p={2} 
+                                                                            bg={resultado.posicion <= 3 ? 'brand.700' : 'brand.900'} 
+                                                                            borderRadius="md"
+                                                                            borderLeft="3px solid"
+                                                                            borderLeftColor={
+                                                                                resultado.posicion === 1 ? 'yellow.400' :
+                                                                                resultado.posicion === 2 ? 'gray.300' :
+                                                                                resultado.posicion === 3 ? 'orange.400' : 'transparent'
+                                                                            }
+                                                                        >
+                                                                            <HStack>
+                                                                                <Badge 
+                                                                                    colorScheme={
+                                                                                        resultado.posicion === 1 ? 'yellow' :
+                                                                                        resultado.posicion === 2 ? 'gray' :
+                                                                                        resultado.posicion === 3 ? 'orange' : 'blue'
+                                                                                    }
+                                                                                    minW="6"
+                                                                                >
+                                                                                    {resultado.posicion}
+                                                                                </Badge>
+                                                                                <VStack align="start" spacing={0}>
+                                                                                    <Text fontSize="sm" fontWeight="medium">{resultado.piloto}</Text>
+                                                                                    <Text fontSize="xs" color="gray.400">{resultado.equipo}</Text>
+                                                                                </VStack>
+                                                                            </HStack>
+                                                                            <Text fontSize="sm" fontWeight="medium">{formatTiempo(resultado.tiempoSegundos)}</Text>
+                                                                        </HStack>
+                                                                    ))}
+                                                                </VStack>
+                                                            ) : (
+                                                                <Text fontSize="sm" color="gray.400" textAlign="center">
+                                                                    Haz clic para cargar resultados
+                                                                </Text>
+                                                            )}
+                                                        </VStack>
+                                                    </SimpleGrid>
+                                                </AccordionPanel>
+                                            </AccordionItem>
+                                        </Accordion>
+                                    </CardBody>
+                                </Card>
+                            );
+                        })}
+                    </VStack>
+                )}
+            </VStack>
+        </Container>
+    );
+}
+
+//========================================
+// COMPONENTE DRIVER: Historial personal  
+//========================================
+function DriverSimulaciones() {
     const { usuario } = useAuth();
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);

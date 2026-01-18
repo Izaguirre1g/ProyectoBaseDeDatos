@@ -9,19 +9,39 @@ const simulacionesService = require('../services/simulaciones.service');
 /**
  * GET /api/simulaciones
  * Obtener dashboard completo del conductor (carro, simulaciones, stats)
- * Si no hay sesión, devuelve todas las simulaciones
+ * Si es Admin, devuelve todas las simulaciones del sistema
+ * Si es Engineer, devuelve datos de todo su equipo
  */
 router.get('/', async (req, res) => {
     try {
         const idUsuario = req.session?.userId;
+        const userRole = req.session?.rol;
         
-        // Si hay usuario logueado, devolver su dashboard
+        console.log(`[SIMULACIONES] userId: ${idUsuario}, rol: ${userRole}`);
+        
+        // Si es Admin, devolver todas las simulaciones
+        if (userRole === 'Admin') {
+            console.log(`[SIMULACIONES] Admin detectado, devolviendo todas las simulaciones`);
+            const simulaciones = await simulacionesService.getAll();
+            return res.json({ simulaciones });
+        }
+        
+        // Si es Engineer, devolver datos de todo su equipo
+        if (userRole === 'Engineer') {
+            console.log(`[SIMULACIONES] Ingeniero detectado, devolviendo dashboard del equipo`);
+            const teamDashboard = await simulacionesService.getTeamDashboard(idUsuario);
+            return res.json(teamDashboard);
+        }
+        
+        // Si hay usuario logueado (conductor), devolver su dashboard
         if (idUsuario) {
+            console.log(`[SIMULACIONES] Conductor detectado, devolviendo su dashboard`);
             const dashboard = await simulacionesService.getDriverDashboard(idUsuario);
             return res.json(dashboard);
         }
         
-        // Si no hay sesión, devolver todas las simulaciones (para admin)
+        // Si no hay sesión, devolver todas las simulaciones (para debugging/testing)
+        console.log(`[SIMULACIONES] Sin sesión, devolviendo todas las simulaciones`);
         const simulaciones = await simulacionesService.getAll();
         res.json({ simulaciones });
     } catch (error) {
@@ -88,7 +108,7 @@ router.post('/ejecutar', async (req, res) => {
         }
         
         // Ejecutar simulación con SP (transaccional)
-        const resultado = await simulacionesService.ejecutarSimulacionSP({
+        const resultado = await simulacionesService.ejecutarSimulacion({
             idCircuito,
             carros,
             fecha: fecha ? new Date(fecha) : new Date()

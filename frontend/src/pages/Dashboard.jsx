@@ -95,7 +95,41 @@ function StatCard({ icon: IconComponent, label, value, color }) {
 
 function AdminDashboard() {
     const navigate = useNavigate();
+    const [simulaciones, setSimulaciones] = useState([]);
+    const [loadingSimulaciones, setLoadingSimulaciones] = useState(true);
     
+    useEffect(() => {
+        loadSimulaciones();
+    }, []);
+
+    const loadSimulaciones = async () => {
+        try {
+            const data = await simulacionesService.getSimulaciones();
+            // Asegurar que data es un array
+            const simulacionesArray = Array.isArray(data) ? data : data?.simulaciones || [];
+            setSimulaciones(simulacionesArray.slice(0, 5)); // Últimas 5 simulaciones
+        } catch (error) {
+            console.error('Error al cargar simulaciones:', error);
+        } finally {
+            setLoadingSimulaciones(false);
+        }
+    };
+
+    const formatearFecha = (fecha) => {
+        if (!fecha) return 'Sin fecha';
+        const date = new Date(fecha);
+        const ahora = new Date();
+        const diff = ahora - date;
+        const minutos = Math.floor(diff / 60000);
+        const horas = Math.floor(diff / 3600000);
+        const dias = Math.floor(diff / 86400000);
+        
+        if (minutos < 60) return `Hace ${minutos} min`;
+        if (horas < 24) return `Hace ${horas}h`;
+        if (dias === 1) return 'Ayer';
+        return date.toLocaleDateString();
+    };
+
     // Datos que coinciden con los dummy de equipos
     const stats = [
         { label: 'Usuarios', value: 3, icon: Users, color: 'blue.500' },
@@ -110,13 +144,6 @@ function AdminDashboard() {
         { nombre: 'Mercedes', presupuesto: 145, campeonatos: 8, color: '#00D2BE' },
         { nombre: 'Ferrari', presupuesto: 140, campeonatos: 16, color: '#DC0000' },
         { nombre: 'McLaren', presupuesto: 135, campeonatos: 8, color: '#FF8700' },
-    ];
-
-    const activities = [
-        { time: 'Hace 1h', text: 'Lewis Hamilton se unió a Ferrari', type: 'transfer' },
-        { time: 'Hace 3h', text: 'Red Bull Racing compró Power Unit Honda RBPT', type: 'purchase' },
-        { time: 'Hace 5h', text: 'McLaren actualizó paquete aerodinámico Silverstone', type: 'update' },
-        { time: 'Ayer', text: 'Mercedes renovó contrato con Petronas ($32M)', type: 'sponsor' },
     ];
 
     return (
@@ -159,6 +186,14 @@ function AdminDashboard() {
                             onClick={() => navigate('/catalogo')}
                         >
                             Catálogo de Partes
+                        </Button>
+                        <Button 
+                            leftIcon={<Flag size={16} />} 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => navigate('/simulaciones')}
+                        >
+                            Simulaciones
                         </Button>
                         <Button 
                             leftIcon={<BarChart3 size={16} />} 
@@ -219,23 +254,53 @@ function AdminDashboard() {
                     </CardBody>
                 </Card>
 
-                {/* Actividad reciente */}
+                {/* Simulaciones Recientes */}
                 <Card bg="brand.800" borderColor="brand.700">
                     <CardBody>
-                        <Heading size="md" color="white" mb={4}>Actividad Reciente</Heading>
-                        <VStack spacing={0} align="stretch" divider={<Divider borderColor="brand.700" />}>
-                            {activities.map((activity, index) => (
-                                <HStack key={index} py={3} spacing={4}>
-                                    <HStack spacing={2}>
-                                        <Clock size={14} color="#718096" />
-                                        <Text fontSize="sm" color="gray.500" minW="70px">
-                                            {activity.time}
-                                        </Text>
+                        <HStack justify="space-between" mb={4}>
+                            <Heading size="md" color="white">Simulaciones Recientes</Heading>
+                            <Button 
+                                size="xs" 
+                                variant="ghost" 
+                                color="accent.400"
+                                onClick={() => navigate('/simulaciones')}
+                            >
+                                Ver todas
+                            </Button>
+                        </HStack>
+                        {loadingSimulaciones ? (
+                            <Flex justify="center" py={4}>
+                                <Spinner color="accent.400" />
+                            </Flex>
+                        ) : simulaciones.length === 0 ? (
+                            <Text color="gray.500" textAlign="center" py={4}>
+                                No hay simulaciones registradas
+                            </Text>
+                        ) : (
+                            <VStack spacing={0} align="stretch" divider={<Divider borderColor="brand.700" />}>
+                                {simulaciones.map((sim, index) => (
+                                    <HStack key={index} py={3} spacing={4}>
+                                        <HStack spacing={2}>
+                                            <Flag size={14} color="#718096" />
+                                            <Text fontSize="sm" color="gray.500" minW="70px">
+                                                {formatearFecha(sim.Fecha)}
+                                            </Text>
+                                        </HStack>
+                                        <Box flex={1}>
+                                            <Text color="gray.300" fontSize="sm">
+                                                Circuito #{sim.Id_circuito}
+                                            </Text>
+                                            <Text color="gray.500" fontSize="xs">
+                                                {sim.Distancia_total}km, {sim.Cantidad_curvas} curvas
+                                            </Text>
+                                        </Box>
+                                        <Badge colorScheme="green" fontSize="xs">
+                                            Completada
+                                        </Badge>
                                     </HStack>
-                                    <Text color="gray.300" fontSize="sm">{activity.text}</Text>
-                                </HStack>
-                            ))}
-                        </VStack>
+                                ))}
+                            </VStack>
+                        )}
                     </CardBody>
                 </Card>
             </SimpleGrid>
@@ -245,59 +310,96 @@ function AdminDashboard() {
 
 function EngineerDashboard() {
     const navigate = useNavigate();
-    
-    // Datos de Ferrari (equipo asignado al ingeniero de prueba)
-    const equipo = {
-        id: 2,
-        nombre: 'Ferrari',
-        nombreCompleto: 'Scuderia Ferrari HP',
-        presupuesto: 140000000,
-        gastado: 92000000,
-        disponible: 48000000,
-        sponsors: 78000000,
-        carros: 2,
-        partes: 6,
-        color: '#DC0000'
-    };
+    const { usuario } = useAuth();
+    const [loading, setLoading] = useState(true);
+    const [equipo, setEquipo] = useState(null);
+    const [carros, setCarros] = useState([]);
+    const [inventario, setInventario] = useState([]);
+    const [patrocinadores, setPatrocinadores] = useState([]);
+    const [presupuesto, setPresupuesto] = useState({});
 
-    const carros = [
-        { 
-            id: 3,
-            nombre: 'SF-24-01', 
-            piloto: 'Charles Leclerc', 
-            numero: 16,
-            partes: 5,
-            total: 5,
-            status: 'completo'
-        },
-        { 
-            id: 4,
-            nombre: 'SF-24-02', 
-            piloto: 'Lewis Hamilton', 
-            numero: 44,
-            partes: 4,
-            total: 5,
-            status: 'incompleto'
-        },
-    ];
+    useEffect(() => {
+        const loadData = async () => {
+            if (!usuario?.equipoId) {
+                setLoading(false);
+                return;
+            }
+            try {
+                setLoading(true);
+                const { equiposService } = await import('../services/equipos.service');
+                const equipoId = usuario.equipoId;
 
-    const pilotos = [
-        { nombre: 'Charles Leclerc', numero: 16, victorias: 7, campeonatos: 0 },
-        { nombre: 'Lewis Hamilton', numero: 44, victorias: 104, campeonatos: 7 },
-    ];
+                const [equipoData, carrosData, inventarioData, patroData, presupuestoData] = await Promise.all([
+                    equiposService.getById(equipoId),
+                    equiposService.getCarros(equipoId),
+                    equiposService.getInventario(equipoId),
+                    equiposService.getPatrocinadores(equipoId),
+                    equiposService.getPresupuesto(equipoId)
+                ]);
 
-    const inventarioResumen = [
-        { categoria: 'Power Unit', cantidad: 3, valor: '$54M' },
-        { categoria: 'Aerodinámica', cantidad: 2, valor: '$5.6M' },
-        { categoria: 'Suspensión', cantidad: 5, valor: '$4.6M' },
-        { categoria: 'Caja de Cambios', cantidad: 3, valor: '$4.2M' },
-    ];
+                setEquipo({
+                    id: equipoData.Id_equipo,
+                    nombre: equipoData.Nombre,
+                    color: '#DC0000'
+                });
 
-    const patrocinadores = [
-        { nombre: 'HP', aporte: 28 },
-        { nombre: 'Shell', aporte: 20 },
-        { nombre: 'Santander', aporte: 15 },
-    ];
+                setCarros(carrosData.map(c => ({
+                    id: c.Id_carro,
+                    nombre: `Carro #${c.Id_carro}`,
+                    piloto: c.Conductor || 'Sin asignar',
+                    numero: c.Id_carro,
+                    partes: c.NumPartes || 0,
+                    total: 5,
+                    status: c.Finalizado ? 'completo' : 'incompleto'
+                })));
+
+                // Agrupar inventario por categoría
+                const inventarioAgrupado = inventarioData.reduce((acc, item) => {
+                    const cat = item.Categoria || 'Otros';
+                    if (!acc[cat]) acc[cat] = { categoria: cat, cantidad: 0, valor: 0 };
+                    acc[cat].cantidad += item.Cantidad || 1;
+                    acc[cat].valor += (item.Precio || 0) * (item.Cantidad || 1);
+                    return acc;
+                }, {});
+                setInventario(Object.values(inventarioAgrupado));
+
+                setPatrocinadores(patroData.slice(0, 3).map(p => ({
+                    nombre: p.Nombre,
+                    aporte: Math.round((p.MontoTotal || 0) / 1000000)
+                })));
+
+                setPresupuesto({
+                    total: presupuestoData.TotalAportes || 0,
+                    gastado: presupuestoData.TotalGastos || 0,
+                    disponible: presupuestoData.Presupuesto || 0
+                });
+            } catch (error) {
+                console.error('Error cargando datos del ingeniero:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        loadData();
+    }, [usuario?.equipoId]);
+
+    if (loading) {
+        return (
+            <VStack spacing={4} align="center" justify="center" minH="50vh">
+                <Spinner size="xl" color="accent.500" />
+                <Text color="gray.400">Cargando datos del equipo...</Text>
+            </VStack>
+        );
+    }
+
+    if (!equipo) {
+        return (
+            <Alert status="warning">
+                <AlertIcon />
+                No tienes un equipo asignado. Contacta al administrador.
+            </Alert>
+        );
+    }
 
     return (
         <VStack spacing={6} align="stretch">
@@ -306,7 +408,7 @@ function EngineerDashboard() {
                     <Heading size="lg" color="white">Panel de Ingeniero</Heading>
                     <HStack mt={1}>
                         <Box w="12px" h="12px" bg={equipo.color} borderRadius="sm" />
-                        <Text color="gray.400">{equipo.nombreCompleto}</Text>
+                        <Text color="gray.400">{equipo.nombre}</Text>
                     </HStack>
                 </Box>
                 <Button
@@ -322,65 +424,28 @@ function EngineerDashboard() {
                 <StatCard 
                     icon={DollarSign} 
                     label="Presupuesto Total" 
-                    value={`$${(equipo.presupuesto / 1000000).toFixed(0)}M`} 
+                    value={`$${(presupuesto.total / 1000000).toFixed(0)}M`} 
                     color="green.500" 
                 />
                 <StatCard 
                     icon={TrendingUp} 
                     label="Disponible" 
-                    value={`$${(equipo.disponible / 1000000).toFixed(0)}M`} 
+                    value={`$${(presupuesto.disponible / 1000000).toFixed(0)}M`} 
                     color="blue.500" 
                 />
                 <StatCard 
                     icon={Car} 
                     label="Carros" 
-                    value={`${equipo.carros}`} 
+                    value={`${carros.length}`} 
                     color="yellow.500" 
                 />
                 <StatCard 
                     icon={Package} 
                     label="Partes en Inventario" 
-                    value={equipo.partes} 
+                    value={inventario.reduce((acc, i) => acc + i.cantidad, 0)} 
                     color="purple.500" 
                 />
             </SimpleGrid>
-
-            {/* Pilotos del equipo */}
-            <Card bg="brand.800" borderColor="brand.700">
-                <CardBody>
-                    <Heading size="md" color="white" mb={4}>Pilotos del Equipo</Heading>
-                    <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
-                        {pilotos.map((piloto, idx) => (
-                            <HStack 
-                                key={idx}
-                                p={4}
-                                bg="brand.900"
-                                borderRadius="lg"
-                                borderLeft="4px solid"
-                                borderLeftColor={equipo.color}
-                            >
-                                <Avatar name={piloto.nombre} bg="accent.600" />
-                                <VStack align="start" spacing={0} flex={1}>
-                                    <HStack>
-                                        <Text fontWeight="bold" color="white">{piloto.nombre}</Text>
-                                        <Badge colorScheme="purple">#{piloto.numero}</Badge>
-                                    </HStack>
-                                    <HStack spacing={4} fontSize="sm" color="gray.400">
-                                        <HStack>
-                                            <Trophy size={14} />
-                                            <Text>{piloto.campeonatos} títulos</Text>
-                                        </HStack>
-                                        <HStack>
-                                            <Flag size={14} />
-                                            <Text>{piloto.victorias} victorias</Text>
-                                        </HStack>
-                                    </HStack>
-                                </VStack>
-                            </HStack>
-                        ))}
-                    </SimpleGrid>
-                </CardBody>
-            </Card>
 
             <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={4}>
                 {/* Carros del equipo */}
@@ -449,7 +514,7 @@ function EngineerDashboard() {
                             </Button>
                         </HStack>
                         <VStack spacing={2} align="stretch">
-                            {inventarioResumen.map((item, idx) => (
+                            {inventario.length > 0 ? inventario.map((item, idx) => (
                                 <HStack 
                                     key={idx} 
                                     p={3} 
@@ -464,22 +529,26 @@ function EngineerDashboard() {
                                     <HStack spacing={4}>
                                         <Badge colorScheme="purple">{item.cantidad} unid.</Badge>
                                         <Text color="green.400" fontSize="sm" fontWeight="bold">
-                                            {item.valor}
+                                            ${(item.valor / 1000).toFixed(0)}K
                                         </Text>
                                     </HStack>
                                 </HStack>
-                            ))}
+                            )) : (
+                                <Text color="gray.500" textAlign="center">Sin partes en inventario</Text>
+                            )}
                         </VStack>
                         
                         {/* Patrocinadores resumen */}
                         <Divider my={4} borderColor="brand.700" />
                         <Text fontSize="sm" color="gray.400" mb={2}>Principales Patrocinadores</Text>
                         <HStack spacing={2} flexWrap="wrap">
-                            {patrocinadores.map((p, idx) => (
+                            {patrocinadores.length > 0 ? patrocinadores.map((p, idx) => (
                                 <Badge key={idx} colorScheme="green" variant="subtle">
-                                    {p.nombre} (${p.aporte}M)
+                                    {p.nombre} {p.aporte > 0 ? `($${p.aporte}M)` : ''}
                                 </Badge>
-                            ))}
+                            )) : (
+                                <Text color="gray.500" fontSize="sm">Sin patrocinadores</Text>
+                            )}
                         </HStack>
                     </CardBody>
                 </Card>
@@ -497,22 +566,17 @@ function EngineerDashboard() {
                         >
                             Catálogo de Partes
                         </Button>
-                        <Button 
-                            leftIcon={<Wrench size={16} />} 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => navigate(`/equipos/${equipo.id}/carros/3`)}
-                        >
-                            Configurar SF-24-01
-                        </Button>
-                        <Button 
-                            leftIcon={<Wrench size={16} />} 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => navigate(`/equipos/${equipo.id}/carros/4`)}
-                        >
-                            Configurar SF-24-02
-                        </Button>
+                        {carros.slice(0, 2).map((carro) => (
+                            <Button 
+                                key={carro.id}
+                                leftIcon={<Wrench size={16} />} 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => navigate(`/equipos/${equipo.id}/carros/${carro.id}`)}
+                            >
+                                Configurar {carro.nombre}
+                            </Button>
+                        ))}
                         <Button 
                             leftIcon={<Package size={16} />} 
                             variant="outline" 

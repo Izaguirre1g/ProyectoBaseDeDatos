@@ -48,4 +48,28 @@ export const equiposService = {
         const response = await api.get(`/equipos/${equipoId}/presupuesto`);
         return response.data;
     },
+
+    // Obtener todos los patrocinadores disponibles
+    getAllPatrocinadores: async () => {
+        const response = await api.get('/equipos/patrocinadores');
+        return response.data;
+    },
+
+    // Agregar aporte a un equipo
+    agregarAporte: async (equipoId, data) => {
+        const response = await api.post(`/equipos/${equipoId}/aportes`, data);
+        return response.data;
+    },
+
+    // Obtener aportes de un equipo
+    getAportes: async (equipoId) => {
+        const response = await api.get(`/equipos/${equipoId}/aportes`);
+        return response.data;
+    },
+
+    // Obtener gastos/pedidos de un equipo
+    getGastos: async (equipoId) => {
+        const response = await api.get(`/equipos/${equipoId}/gastos`);
+        return response.data;
+    },
 };

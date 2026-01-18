@@ -156,7 +156,9 @@ router.get('/me', (req, res) => {
             usuario: {
                 id: req.session.userId,
                 nombre: req.session.nombre,
-                rol: req.session.rol
+                rol: req.session.rol,
+                equipo: req.session.equipo,
+                equipoId: req.session.equipoId
             }
         });
     } else {

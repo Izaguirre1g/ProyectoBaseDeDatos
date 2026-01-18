@@ -208,9 +208,9 @@ function Equipos() {
     const { isOpen: isAporteOpen, onOpen: onAporteOpen, onClose: onAporteClose } = useDisclosure();
     const { usuario, isEngineer } = useAuth();
     
-    // Los ingenieros solo pueden ver su equipo asignado (Ferrari id: 2)
+    // Los ingenieros solo pueden ver su equipo asignado
     const esIngeniero = isEngineer();
-    const equipoAsignadoId = 2; // Ferrari
+    const equipoAsignadoId = usuario?.equipoId || null;
     
     // Estado para nuevo equipo
     const [nuevoEquipo, setNuevoEquipo] = useState({
@@ -223,9 +223,13 @@ function Equipos() {
     
     // Estado para nuevo aporte
     const [nuevoAporte, setNuevoAporte] = useState({
-        origen: '',
+        idPatrocinador: '',
         monto: ''
     });
+    
+    // Estado para patrocinadores disponibles
+    const [patrocinadores, setPatrocinadores] = useState([]);
+    const [loadingPatrocinadores, setLoadingPatrocinadores] = useState(false);
 
 
     useEffect(() => {
@@ -245,12 +249,13 @@ function Equipos() {
 
             // Para cada equipo, cargar detalles
             const equiposDetallados = await Promise.all(equiposRaw.map(async (eq) => {
-                const [pilotos, carros, inventario, patrocinadores, presupuesto] = await Promise.all([
+                const [pilotos, carros, inventario, patrocinadores, presupuestoData, gastos] = await Promise.all([
                     equiposService.getPilotos(eq.Id_equipo),
                     equiposService.getCarros(eq.Id_equipo),
                     equiposService.getInventario(eq.Id_equipo),
                     equiposService.getPatrocinadores(eq.Id_equipo),
-                    equiposService.getById(eq.Id_equipo)
+                    equiposService.getPresupuesto(eq.Id_equipo),
+                    equiposService.getGastos(eq.Id_equipo)
                 ]);
 
                 // Transformar datos para la UI
@@ -260,9 +265,10 @@ function Equipos() {
                     pais: '', // No disponible en BD
                     colorPrimario: '#e10600', // Default, no disponible en BD
                     presupuesto: {
-                        total: presupuesto.presupuestoDisponible || eq.Presupuesto,
-                        gastado: 0, // No disponible en BD
-                        sponsors: patrocinadores.reduce((acc, p) => acc + (p.Monto || 0), 0),
+                        total: presupuestoData.TotalAportes || 0,
+                        gastado: presupuestoData.TotalGastos || 0,
+                        disponible: presupuestoData.Presupuesto || 0,
+                        sponsors: patrocinadores.reduce((acc, p) => acc + (p.MontoTotal || 0), 0),
                         distribucion: [] // No disponible en BD
                     },
                     pilotos: pilotos.map(p => ({
@@ -290,7 +296,13 @@ function Equipos() {
                         id: p.Id_patrocinador,
                         nombre: p.Nombre,
                         tipo: 'Aporte',
-                        aporte: p.Monto || 0
+                        aporte: p.MontoTotal || 0
+                    })),
+                    gastos: gastos.map(g => ({
+                        id: g.Id_pedido,
+                        fecha: g.Fecha,
+                        monto: g.Costo_total,
+                        descripcion: g.Partes || 'Compra de partes'
                     })),
                     campeonatos: 0,
                     fundacion: 2026,
@@ -318,11 +330,31 @@ function Equipos() {
         navigate(`/equipos/${selectedEquipo.id}/carros/${carroId}`);
     };
 
-    const handleAgregarAporte = () => {
-        if (!nuevoAporte.origen || !nuevoAporte.monto) {
+    // Cargar patrocinadores al abrir el modal de aporte
+    const handleOpenAporteModal = async () => {
+        setLoadingPatrocinadores(true);
+        try {
+            const data = await equiposService.getAllPatrocinadores();
+            setPatrocinadores(data);
+        } catch (error) {
+            console.error('Error cargando patrocinadores:', error);
+            toast({
+                title: 'Error',
+                description: 'No se pudieron cargar los patrocinadores',
+                status: 'error',
+                duration: 3000,
+            });
+        } finally {
+            setLoadingPatrocinadores(false);
+        }
+        onAporteOpen();
+    };
+
+    const handleAgregarAporte = async () => {
+        if (!nuevoAporte.idPatrocinador || !nuevoAporte.monto) {
             toast({
                 title: 'Campos incompletos',
-                description: 'Por favor completa todos los campos',
+                description: 'Por favor selecciona un patrocinador y monto',
                 status: 'warning',
                 duration: 3000,
             });
@@ -340,43 +372,43 @@ function Equipos() {
             return;
         }
         
-        // Crear nuevo patrocinador
-        const nuevoPatrocinador = {
-            id: Date.now(),
-            nombre: nuevoAporte.origen,
-            tipo: 'Aporte',
-            aporte: montoNumerico
-        };
-        
-        // Actualizar el presupuesto y patrocinadores del equipo seleccionado
-        const equiposActualizados = equipos.map(eq => {
-            if (eq.id === selectedEquipo.id) {
-                return {
-                    ...eq,
-                    presupuesto: {
-                        ...eq.presupuesto,
-                        total: eq.presupuesto.total + montoNumerico,
-                        sponsors: eq.presupuesto.sponsors + montoNumerico
-                    },
-                    patrocinadores: [...(eq.patrocinadores || []), nuevoPatrocinador]
-                };
-            }
-            return eq;
-        });
-        
-        setEquipos(equiposActualizados);
-        setSelectedEquipo(equiposActualizados.find(eq => eq.id === selectedEquipo.id));
-        
-        // Limpiar formulario y cerrar modal
-        setNuevoAporte({ origen: '', monto: '' });
-        onAporteClose();
-        
-        toast({
-            title: 'Aporte agregado',
-            description: `$${(montoNumerico / 1000000).toFixed(1)}M agregados desde ${nuevoAporte.origen}`,
-            status: 'success',
-            duration: 3000,
-        });
+        try {
+            // Obtener nombre del patrocinador seleccionado
+            const patrocinadorSeleccionado = patrocinadores.find(
+                p => p.Id_patrocinador === parseInt(nuevoAporte.idPatrocinador)
+            );
+            
+            // Llamar al backend para agregar el aporte usando SP
+            const result = await equiposService.agregarAporte(selectedEquipo.id, {
+                monto: montoNumerico,
+                idPatrocinador: parseInt(nuevoAporte.idPatrocinador),
+                descripcion: nuevoAporte.descripcion || null
+            });
+            
+            console.log('Resultado agregar aporte:', result);
+            
+            // Recargar los equipos para reflejar el cambio
+            await loadEquipos();
+            
+            // Limpiar formulario y cerrar modal
+            setNuevoAporte({ idPatrocinador: '', monto: '' });
+            onAporteClose();
+            
+            toast({
+                title: 'Aporte agregado',
+                description: `$${(montoNumerico / 1000000).toFixed(1)}M agregados desde ${patrocinadorSeleccionado?.Nombre}`,
+                status: 'success',
+                duration: 3000,
+            });
+        } catch (error) {
+            console.error('Error agregando aporte:', error);
+            toast({
+                title: 'Error',
+                description: 'No se pudo agregar el aporte',
+                status: 'error',
+                duration: 3000,
+            });
+        }
     };
     
     const handleCrearEquipo = () => {
@@ -556,7 +588,7 @@ function Equipos() {
                                                 leftIcon={<Plus size={16} />}
                                                 size="sm"
                                                 colorScheme="green"
-                                                onClick={onAporteOpen}
+                                                onClick={handleOpenAporteModal}
                                             >
                                                 Agregar Aporte
                                             </Button>
@@ -594,29 +626,31 @@ function Equipos() {
 
                                         <Card bg="brand.700" borderColor="brand.600">
                                             <CardBody>
-                                                <Text fontWeight="bold" mb={4}>Distribución del Presupuesto</Text>
-                                                <VStack spacing={3} align="stretch">
-                                                    {selectedEquipo.presupuesto?.distribucion?.map((item, idx) => (
-                                                        <Box key={idx}>
-                                                            <HStack justify="space-between" mb={1}>
-                                                                <Text fontSize="sm">{item.categoria}</Text>
-                                                                <Text fontSize="sm" color="gray.400">
-                                                                    ${(item.monto / 1000000).toFixed(1)}M ({item.porcentaje}%)
-                                                                </Text>
-                                                            </HStack>
-                                                            <Progress 
-                                                                value={item.porcentaje} 
-                                                                colorScheme={
-                                                                    item.categoria === 'Power Unit' ? 'red' :
-                                                                    item.categoria === 'Aerodinámica' ? 'blue' :
-                                                                    item.categoria === 'Personal' ? 'green' : 'purple'
-                                                                }
-                                                                size="sm"
-                                                                borderRadius="full"
-                                                            />
-                                                        </Box>
-                                                    ))}
-                                                </VStack>
+                                                <Text fontWeight="bold" mb={4}>Historial de Gastos/Compras</Text>
+                                                {selectedEquipo.gastos?.length > 0 ? (
+                                                    <Table variant="simple" size="sm">
+                                                        <Thead>
+                                                            <Tr>
+                                                                <Th color="gray.400">Fecha</Th>
+                                                                <Th color="gray.400">Descripción</Th>
+                                                                <Th color="gray.400" isNumeric>Monto</Th>
+                                                            </Tr>
+                                                        </Thead>
+                                                        <Tbody>
+                                                            {selectedEquipo.gastos.map((gasto) => (
+                                                                <Tr key={gasto.id} _hover={{ bg: 'brand.600' }}>
+                                                                    <Td>{new Date(gasto.fecha).toLocaleDateString()}</Td>
+                                                                    <Td>{gasto.descripcion}</Td>
+                                                                    <Td isNumeric color="red.400">
+                                                                        -${gasto.monto?.toLocaleString()}
+                                                                    </Td>
+                                                                </Tr>
+                                                            ))}
+                                                        </Tbody>
+                                                    </Table>
+                                                ) : (
+                                                    <Text color="gray.500" textAlign="center">No hay gastos registrados</Text>
+                                                )}
                                             </CardBody>
                                         </Card>
                                     </TabPanel>
@@ -857,16 +891,25 @@ function Equipos() {
                     <ModalBody pb={6}>
                         <VStack spacing={4} align="stretch">
                             <FormControl isRequired>
-                                <FormLabel color="gray.300">Origen del Aporte</FormLabel>
-                                <Input
-                                    placeholder="Ej: Sponsor Principal, Inversión, etc."
-                                    value={nuevoAporte.origen}
-                                    onChange={(e) => setNuevoAporte({...nuevoAporte, origen: e.target.value})}
-                                    bg="brand.900"
-                                    borderColor="brand.700"
-                                    _focus={{ borderColor: 'accent.500' }}
-                                    _placeholder={{ color: 'gray.500' }}
-                                />
+                                <FormLabel color="gray.300">Patrocinador</FormLabel>
+                                {loadingPatrocinadores ? (
+                                    <Spinner size="sm" color="accent.500" />
+                                ) : (
+                                    <Select
+                                        placeholder="Selecciona un patrocinador"
+                                        value={nuevoAporte.idPatrocinador}
+                                        onChange={(e) => setNuevoAporte({...nuevoAporte, idPatrocinador: e.target.value})}
+                                        bg="brand.900"
+                                        borderColor="brand.700"
+                                        _focus={{ borderColor: 'accent.500' }}
+                                    >
+                                        {patrocinadores.map((p) => (
+                                            <option key={p.Id_patrocinador} value={p.Id_patrocinador} style={{background: '#1a1a2e'}}>
+                                                {p.Nombre}
+                                            </option>
+                                        ))}
+                                    </Select>
+                                )}
                             </FormControl>
 
                             <FormControl isRequired>
@@ -916,7 +959,7 @@ function Equipos() {
                         <Button 
                             colorScheme="green" 
                             onClick={handleAgregarAporte}
-                            isDisabled={!nuevoAporte.origen || !nuevoAporte.monto}
+                            isDisabled={!nuevoAporte.idPatrocinador || !nuevoAporte.monto}
                             leftIcon={<Plus size={16} />}
                         >
                             Agregar Aporte

@@ -13,7 +13,8 @@ const carrosService = {
                 c.Id_carro, c.Id_equipo, c.Finalizado,
                 c.M_total, c.P_total, c.A_total, c.Id_conductor,
                 e.Nombre as Equipo,
-                u.Correo_usuario as Conductor
+                u.Correo_usuario as Conductor,
+                u.Habilidad as Habilidad_conductor
             FROM CARRO c
             LEFT JOIN EQUIPO e ON c.Id_equipo = e.Id_equipo
             LEFT JOIN USUARIO u ON c.Id_conductor = u.Id_usuario
@@ -31,7 +32,8 @@ const carrosService = {
                     c.Id_carro, c.Id_equipo, c.Finalizado,
                     c.M_total, c.P_total, c.A_total, c.Id_conductor,
                     e.Nombre as Equipo,
-                    u.Correo_usuario as Conductor
+                    u.Correo_usuario as Conductor,
+                    u.Habilidad as Habilidad_conductor
                 FROM CARRO c
                 LEFT JOIN EQUIPO e ON c.Id_equipo = e.Id_equipo
                 LEFT JOIN USUARIO u ON c.Id_conductor = u.Id_usuario

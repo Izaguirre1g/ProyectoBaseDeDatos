@@ -141,63 +141,77 @@ const equiposService = {
 
     /**
      * ============================================
-     * MÉTODO: addAporte()
-     * Agregar un nuevo aporte
+     * MÉTODO: getGastos()
+     * Obtener lista de gastos/pedidos del equipo
      * ============================================
      */
-    async addAporte({ idEquipo, monto, nombrePatrocinador }) {
+    async getGastos(idEquipo) {
+        const pool = await getConnection();
+        const result = await pool.request()
+            .input('idEquipo', sql.Int, idEquipo)
+            .query(`
+                SELECT 
+                    p.Id_pedido,
+                    p.Fecha_adquisicion as Fecha,
+                    p.Costo_total,
+                    STRING_AGG(pa.Nombre, ', ') as Partes
+                FROM PEDIDO p
+                LEFT JOIN DETALLE_PEDIDO d ON p.Id_pedido = d.Id_pedido
+                LEFT JOIN PARTE pa ON d.Id_parte = pa.Id_parte
+                WHERE p.Id_equipo = @idEquipo
+                GROUP BY p.Id_pedido, p.Fecha_adquisicion, p.Costo_total
+                ORDER BY p.Fecha_adquisicion DESC
+            `);
+        return result.recordset;
+    },
+
+    /**
+     * ============================================
+     * MÉTODO: addAporte()
+     * Agregar un nuevo aporte usando SP con transacción
+     * ============================================
+     */
+    async addAporte({ idEquipo, monto, idPatrocinador, descripcion }) {
         const pool = await getConnection();
         
+        console.log('💰 SERVICIO AGREGAR APORTE:');
+        console.log('  idEquipo:', idEquipo);
+        console.log('  monto:', monto);
+        console.log('  idPatrocinador:', idPatrocinador);
+        console.log('  descripcion:', descripcion);
+        
         try {
-            const transaction = pool.transaction();
-            await transaction.begin();
+            const result = await pool.request()
+                .input('Id_equipo', sql.Int, idEquipo)
+                .input('Monto', sql.Decimal(12, 4), monto)
+                .input('Id_patrocinador', sql.Int, idPatrocinador)
+                .input('Descripcion', sql.NVarChar(200), descripcion || null)
+                .output('Resultado', sql.VarChar(500))
+                .output('Id_aporte_generado', sql.Int)
+                .execute('SP_AgregarAporte');
             
-            try {
-                // 1. Buscar o crear patrocinador
-                let idPatrocinador;
-                const patrocinadorResult = await transaction.request()
-                    .input('nombre', sql.NVarChar, nombrePatrocinador)
-                    .query(`
-                        SELECT Id_patrocinador FROM PATROCINADOR WHERE Nombre_patrocinador = @nombre
-                    `);
-                
-                if (patrocinadorResult.recordset.length > 0) {
-                    idPatrocinador = patrocinadorResult.recordset[0].Id_patrocinador;
-                } else {
-                    const nuevoPatrocinador = await transaction.request()
-                        .input('nombre', sql.NVarChar, nombrePatrocinador)
-                        .query(`
-                            INSERT INTO PATROCINADOR (Nombre_patrocinador)
-                            OUTPUT INSERTED.Id_patrocinador
-                            VALUES (@nombre)
-                        `);
-                    idPatrocinador = nuevoPatrocinador.recordset[0].Id_patrocinador;
-                }
-                
-                // 2. Crear el aporte
-                const aporteResult = await transaction.request()
-                    .input('monto', sql.Decimal(18, 2), monto)
-                    .input('fecha', sql.Date, new Date())
-                    .input('idEquipo', sql.Int, idEquipo)
-                    .input('idPatrocinador', sql.Int, idPatrocinador)
-                    .query(`
-                        INSERT INTO APORTE (Monto, Fecha, Id_equipo, Id_patrocinador)
-                        OUTPUT INSERTED.*
-                        VALUES (@monto, @fecha, @idEquipo, @idPatrocinador)
-                    `);
-                
-                await transaction.commit();
-                
-                return aporteResult.recordset[0];
-                
-            } catch (error) {
-                await transaction.rollback();
-                throw error;
+            const mensaje = result.output.Resultado;
+            const idAporte = result.output.Id_aporte_generado;
+            const returnValue = result.returnValue;
+            
+            console.log('Respuesta del SP:');
+            console.log('  returnValue:', returnValue);
+            console.log('  mensaje:', mensaje);
+            console.log('  idAporte:', idAporte);
+            
+            if (returnValue === 0 && idAporte) {
+                return { 
+                    success: true, 
+                    mensaje, 
+                    idAporte,
+                    Id_aporte: idAporte
+                };
+            } else {
+                return { success: false, mensaje: mensaje || 'Error al agregar aporte' };
             }
-            
         } catch (error) {
-            console.error('Error al agregar aporte:', error);
-            throw new Error('Error al agregar aporte: ' + error.message);
+            console.error('Error en agregar aporte (servicio):', error);
+            throw new Error(error.message || 'Error al agregar aporte');
         }
     },
 
@@ -336,6 +350,25 @@ const equiposService = {
             .input('id', sql.Int, id)
             .query('DELETE FROM EQUIPO WHERE Id_equipo = @id');
         return true;
+    },
+
+    /**
+     * ============================================
+     * MÉTODO: getAllPatrocinadores()
+     * Obtener todos los patrocinadores disponibles
+     * ============================================
+     */
+    async getAllPatrocinadores() {
+        const pool = await getConnection();
+        const result = await pool.request()
+            .query(`
+                SELECT 
+                    Id_patrocinador,
+                    Nombre_patrocinador as Nombre
+                FROM PATROCINADOR
+                ORDER BY Nombre_patrocinador
+            `);
+        return result.recordset;
     }
 };
 
