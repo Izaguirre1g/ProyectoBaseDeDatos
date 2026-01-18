@@ -81,7 +81,7 @@ router.get('/inventario/:idEquipo', async (req, res) => {
  */
 router.post('/comprar', async (req, res) => {
     try {
-        console.log('=== COMPRAR PARTE - INICIO ===');
+        console.log('COMPRAR PARTE INICIO');
         console.log('Body recibido:', req.body);
         
         const { idEquipo, idParte, cantidad } = req.body;
@@ -105,7 +105,7 @@ router.post('/comprar', async (req, res) => {
             });
         }
         
-        console.log('✓ Parámetros válidos, llamando al servicio de compra...');
+        console.log('Parámetros válidos, llamando al servicio de compra...');
         
         const resultado = await partesService.comprar(
             parseInt(idEquipo),
@@ -113,8 +113,8 @@ router.post('/comprar', async (req, res) => {
             parseInt(cantidad)
         );
         
-        console.log('✓ Resultado del servicio:', resultado);
-        console.log('=== COMPRAR PARTE - FIN ===');
+        console.log('Resultado del servicio:', resultado);
+        console.log('COMPRAR PARTE FIN');
         
         if (resultado.success) {
             res.json(resultado);
@@ -139,7 +139,7 @@ router.post('/comprar', async (req, res) => {
  */
 router.post('/verificar-disponibilidad', async (req, res) => {
     try {
-        console.log('=== VERIFICAR DISPONIBILIDAD - INICIO ===');
+        console.log('VERIFICAR DISPONIBILIDAD INICIO');
         console.log('Body recibido:', req.body);
         
         const { idEquipo, idParte, cantidad } = req.body;
@@ -165,7 +165,7 @@ router.post('/verificar-disponibilidad', async (req, res) => {
             });
         }
         
-        console.log('✓ Parámetros válidos, llamando al servicio...');
+        console.log('Parámetros válidos, llamando al servicio...');
         
         const disponibilidad = await partesService.verificarDisponibilidad(
             parseInt(idEquipo),
@@ -173,8 +173,8 @@ router.post('/verificar-disponibilidad', async (req, res) => {
             parseInt(cantidad)
         );
         
-        console.log('✓ Respuesta del servicio:', disponibilidad);
-        console.log('=== VERIFICAR DISPONIBILIDAD - FIN ===');
+        console.log('Respuesta del servicio:', disponibilidad);
+        console.log('VERIFICAR DISPONIBILIDAD FIN ');
         
         res.json(disponibilidad);
         
@@ -264,6 +264,136 @@ router.delete('/:id', async (req, res) => {
     } catch (error) {
         console.error('Error al eliminar parte:', error);
         res.status(500).json({ error: 'Error al eliminar parte' });
+    }
+});
+
+/**
+ * POST /api/partes/stock/agregar
+ * Agregar stock al inventario general (solo Admin)
+ */
+router.post('/stock/agregar', async (req, res) => {
+    try {
+        console.log('AGREGAR STOCK INICIO ');
+        console.log('Usuario rol:', req.session.rol);
+        console.log('Body recibido:', req.body);
+        
+        // Verificar que el usuario es Admin
+        if (req.session.rol !== 'Admin') {
+            console.log('Acceso denegado: usuario no es Admin');
+            return res.status(403).json({ 
+                error: 'Solo los administradores pueden modificar el stock de la tienda' 
+            });
+        }
+        
+        const { idParte, cantidad, motivo } = req.body;
+        
+        console.log('Parametros extraídos:');
+        console.log('  idParte:', idParte);
+        console.log('  cantidad:', cantidad);
+        console.log('  motivo:', motivo);
+        
+        if (!idParte || !cantidad) {
+            console.log('Faltan parámetros');
+            return res.status(400).json({ 
+                error: 'ID de parte y cantidad son requeridos' 
+            });
+        }
+        
+        if (cantidad <= 0) {
+            console.log('Cantidad inválida');
+            return res.status(400).json({ 
+                error: 'La cantidad debe ser mayor a 0' 
+            });
+        }
+        
+        console.log('Parámetros válidos, llamando al servicio...');
+        
+        const resultado = await partesService.agregarStock(
+            parseInt(idParte),
+            parseInt(cantidad),
+            motivo || 'Reposición de inventario'
+        );
+        
+        console.log('Resultado:', resultado);
+        console.log('AGREGAR STOCK FIN ');
+        
+        if (resultado.success) {
+            res.json(resultado);
+        } else {
+            res.status(400).json(resultado);
+        }
+        
+    } catch (error) {
+        console.error('ERROR en agregar stock:', error);
+        res.status(500).json({ 
+            error: 'Error al agregar stock',
+            detalle: error.message 
+        });
+    }
+});
+
+/**
+ * POST /api/partes/stock/quitar
+ * Quitar stock del inventario general (solo Admin)
+ */
+router.post('/stock/quitar', async (req, res) => {
+    try {
+        console.log('QUITAR STOCK INICIO ');
+        console.log('Usuario rol:', req.session.rol);
+        console.log('Body recibido:', req.body);
+        
+        // Verificar que el usuario es Admin
+        if (req.session.rol !== 'Admin') {
+            console.log('Acceso denegado: usuario no es Admin');
+            return res.status(403).json({ 
+                error: 'Solo los administradores pueden modificar el stock de la tienda' 
+            });
+        }
+        
+        const { idParte, cantidad, motivo } = req.body;
+        
+        console.log('Parámetros extraídos:');
+        console.log('  idParte:', idParte);
+        console.log('  cantidad:', cantidad);
+        console.log('  motivo:', motivo);
+        
+        if (!idParte || !cantidad) {
+            console.log('Faltan parámetros');
+            return res.status(400).json({ 
+                error: 'ID de parte y cantidad son requeridos' 
+            });
+        }
+        
+        if (cantidad <= 0) {
+            console.log('Cantidad inválida');
+            return res.status(400).json({ 
+                error: 'La cantidad debe ser mayor a 0' 
+            });
+        }
+        
+        console.log('Parámetros válidos, llamando al servicio...');
+        
+        const resultado = await partesService.quitarStock(
+            parseInt(idParte),
+            parseInt(cantidad),
+            motivo || 'Ajuste de inventario'
+        );
+        
+        console.log('Resultado:', resultado);
+        console.log('QUITAR STOCK FIN ');
+        
+        if (resultado.success) {
+            res.json(resultado);
+        } else {
+            res.status(400).json(resultado);
+        }
+        
+    } catch (error) {
+        console.error('ERROR en quitar stock:', error);
+        res.status(500).json({ 
+            error: 'Error al quitar stock',
+            detalle: error.message 
+        });
     }
 });
 

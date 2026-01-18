@@ -31,7 +31,6 @@ import { ShoppingCart, DollarSign, Package, AlertCircle } from 'lucide-react';
 /**
  * Modal de Compra de Partes
  * 
- * Props:
  * - isOpen: boolean - Si el modal está abierto
  * - onClose: function - Función para cerrar el modal
  * - parte: object - La parte seleccionada { Id_parte, Nombre, Precio, Marca, ... }

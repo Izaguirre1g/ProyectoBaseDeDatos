@@ -85,7 +85,46 @@ export const partesService = {
             cantidad
         });
         return response.data;
+    },
+
+    /**
+     * Gestión del stock (Solo Admin)
+     */
+
+    /**
+     * Añadir stock al inventario general
+     * Solo accesible por Admin
+     * @param {number} idParte - ID de la parte
+     * @param {number} cantidad - Cantidad a añadir (debe ser positivo)
+     * @param {string} motivo - Razón del ajuste
+     * @returns {Promise<Object>} - Resultado de la operación
+     */
+    async agregarStock(idParte, cantidad, motivo = 'Reposición de inventario') {
+        const response = await api.post('/partes/stock/agregar', {
+            idParte,
+            cantidad,
+            motivo
+        });
+        return response.data;
+    },
+
+    /**
+     * Quitar stock del inventario general
+     * Solo accesible por Admin
+     * @param {number} idParte - ID de la parte
+     * @param {number} cantidad - Cantidad a quitar (debe ser positivo)
+     * @param {string} motivo - Razón del ajuste
+     * @returns {Promise<Object>} - Resultado de la operación
+     */
+    async quitarStock(idParte, cantidad, motivo = 'Ajuste de inventario') {
+        const response = await api.post('/partes/stock/quitar', {
+            idParte,
+            cantidad,
+            motivo
+        });
+        return response.data;
     }
 };
 
 export default partesService;
+

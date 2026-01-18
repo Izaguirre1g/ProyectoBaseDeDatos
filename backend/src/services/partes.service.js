@@ -228,8 +228,65 @@ const partesService = {
             .input('id', sql.Int, id)
             .query('DELETE FROM PARTE WHERE Id_parte = @id');
         return true;
+    },
+
+    /**
+     * Modificar stock de una parte (añadir o quitar)
+     * @param {number} idParte - ID de la parte
+     * @param {number} cantidad - Cantidad a modificar (positivo para añadir, negativo para quitar)
+     * @param {string} motivo - Razón del ajuste
+     */
+    async modificarStock(idParte, cantidad, motivo) {
+        const pool = await getConnection();
+        
+        console.log('MODIFICAR STOCK:');
+        console.log('  idParte:', idParte);
+        console.log('  cantidad:', cantidad);
+        console.log('  motivo:', motivo);
+        
+        try {
+            const result = await pool.request()
+                .input('Id_parte', sql.Int, idParte)
+                .input('Cantidad', sql.Int, cantidad)
+                .input('Motivo', sql.VarChar(200), motivo || 'No especificado')
+                .output('Resultado', sql.VarChar(500))
+                .execute('SP_ModificarStock');
+            
+            const mensaje = result.output.Resultado;
+            const returnValue = result.returnValue;
+            
+            console.log('Respuesta del SP:');
+            console.log('  returnValue:', returnValue);
+            console.log('  mensaje:', mensaje);
+            
+            if (returnValue === 0) {
+                return { success: true, mensaje };
+            } else {
+                return { success: false, mensaje: mensaje || 'Error al modificar stock' };
+            }
+        } catch (error) {
+            console.error('Error en modificarStock:', error);
+            throw new Error(error.message || 'Error al modificar stock');
+        }
+    },
+
+    /**
+     * Añadir stock a una parte (wrapper para modificarStock con cantidad positiva)
+     */
+    async agregarStock(idParte, cantidad, motivo = 'Reposición de inventario') {
+        // Asegurar que la cantidad sea positiva
+        const cantidadPositiva = Math.abs(cantidad);
+        return this.modificarStock(idParte, cantidadPositiva, motivo);
+    },
+
+    /**
+     * Quitar stock de una parte (wrapper para modificarStock con cantidad negativa)
+     */
+    async quitarStock(idParte, cantidad, motivo = 'Ajuste de inventario') {
+        // Asegurar que la cantidad sea negativa
+        const cantidadNegativa = -Math.abs(cantidad);
+        return this.modificarStock(idParte, cantidadNegativa, motivo);
     }
 };
 
 module.exports = partesService;
-

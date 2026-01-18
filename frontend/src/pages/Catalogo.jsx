@@ -25,7 +25,8 @@ import {
 import { Package, Zap, Wind, Target, ShoppingCart } from 'lucide-react';
 import partesService from '../services/partes.service';
 import ModalCompra from '../components/ModalCompra';
-import { useAuth } from '../context/AuthContext'; // ← AGREGAR ESTE IMPORT
+import { ModalGestionStock } from '../components/ModalGestionStock';
+import { useAuth } from '../context/AuthContext';
 
 function Catalogo() {
     const [partes, setPartes] = useState([]);
@@ -34,12 +35,16 @@ function Catalogo() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const toast = useToast();
-    const { usuario } = useAuth(); // ← AGREGAR ESTE HOOK
+    const { usuario } = useAuth();
 
     // Estados para el modal de compra
     const [modalCompraOpen, setModalCompraOpen] = useState(false);
     const [parteSeleccionada, setParteSeleccionada] = useState(null);
     const [presupuestoDisponible, setPresupuestoDisponible] = useState(0);
+
+    // NUEVOS ESTADOS PARA GESTIÓN DE STOCK
+    const [modalStockOpen, setModalStockOpen] = useState(false);
+    const [parteParaStock, setParteParaStock] = useState(null);
 
     useEffect(() => {
         const fetchCategorias = async () => {
@@ -57,7 +62,7 @@ function Catalogo() {
     const fetchPartes = async () => {
         setLoading(true);
         try {
-            const data = await partesService.getAll(categoriaActiva);
+            const data = await partesService.getCatalogo(); // Cambiado a getCatalogo para obtener stock
             setPartes(data);
             setError(null);
         } catch (err) {
@@ -98,8 +103,6 @@ function Catalogo() {
         if (value >= 4) return 'yellow';
         return 'red';
     };
-
-    
 
     const StatBar = ({ label, value, icon: IconComponent }) => (
         <HStack spacing={3} w="full">
@@ -150,6 +153,28 @@ function Catalogo() {
         }
     };
 
+    // NUEVAS FUNCIONES PARA GESTIÓN DE STOCK
+    const handleGestionarStock = (parte) => {
+        console.log('Abriendo gestión de stock para:', parte);
+        setParteParaStock(parte);
+        setModalStockOpen(true);
+    };
+
+    const handleStockModificado = () => {
+        console.log('Stock modificado, recargando catálogo...');
+        
+        toast({
+            title: 'Catálogo actualizado',
+            description: 'El inventario se ha actualizado correctamente',
+            status: 'info',
+            duration: 2000,
+            isClosable: true,
+        });
+        
+        // Recargar el catálogo para ver los cambios
+        fetchPartes();
+    };
+
     const getCategoriaIcon = (catId) => {
         const icons = {
             'Motor': Zap,
@@ -157,6 +182,13 @@ function Catalogo() {
             'Transmision': Target,
         };
         return icons[catId] || Package;
+    };
+
+    // Función para obtener el color del badge según el stock
+    const getStockColorScheme = (stock) => {
+        if (!stock || stock === 0) return 'red';
+        if (stock < 10) return 'yellow';
+        return 'green';
     };
 
     return (
@@ -235,7 +267,19 @@ function Catalogo() {
                                         Marca: {parte.Marca}
                                     </Badge>
                                 </Flex>
-                                <Heading size="sm" color="white" mb={1}>{parte.Nombre}</Heading>
+                                
+                                {/* Badge de Stock */}
+                                <Flex justify="space-between" align="center" mb={2}>
+                                    <Heading size="sm" color="white">{parte.Nombre}</Heading>
+                                    <Badge 
+                                        colorScheme={getStockColorScheme(parte.Stock_total)}
+                                        fontSize="xs"
+                                        px={2}
+                                    >
+                                        {parte.Stock_total || 0} stock
+                                    </Badge>
+                                </Flex>
+                                
                                 <Text fontSize="sm" color="gray.500" mb={4}>{parte.Descripcion || 'Sin descripción'}</Text>
 
                                 <VStack spacing={2} mb={4}>
@@ -246,17 +290,39 @@ function Catalogo() {
 
                                 <Divider borderColor="brand.700" mb={4} />
 
-                                <Flex justify="space-between" align="center">
+                                <Flex justify="space-between" align="center" mb={3}>
                                     <Text fontSize="lg" fontWeight="bold" color="green.400">
                                         {formatPrecio(parte.Precio)}
                                     </Text>
-                                    <Button 
-                                        size="sm" 
-                                        leftIcon={<ShoppingCart size={14} />}
-                                        onClick={() => handleComprar(parte)}
-                                    >
-                                        Comprar
-                                    </Button>
+                                </Flex>
+
+                                {/* Botones según rol*/}
+                                <Flex gap={2} flexWrap="wrap">
+                                    {/* Botón COMPRAR - Solo Engineer */}
+                                    {usuario?.rol === 'Engineer' && (
+                                        <Button 
+                                            size="sm" 
+                                            colorScheme="red"
+                                            leftIcon={<ShoppingCart size={14} />}
+                                            onClick={() => handleComprar(parte)}
+                                            flex={1}
+                                        >
+                                            Comprar
+                                        </Button>
+                                    )}
+
+                                    {/* Botón GESTIONAR STOCK - Solo Admin */}
+                                    {usuario?.rol === 'Admin' && (
+                                        <Button 
+                                            size="sm" 
+                                            colorScheme="purple"
+                                            leftIcon={<Package size={14} />}
+                                            onClick={() => handleGestionarStock(parte)}
+                                            flex={1}
+                                        >
+                                            Gestionar Stock
+                                        </Button>
+                                    )}
                                 </Flex>
                             </CardBody>
                         </Card>
@@ -264,7 +330,7 @@ function Catalogo() {
                 </SimpleGrid>
             )}
 
-            {/* Modal de Compra */}
+            {/* Modal de Compra (Engineer) */}
             <ModalCompra
                 isOpen={modalCompraOpen}
                 onClose={() => setModalCompraOpen(false)}
@@ -272,6 +338,14 @@ function Catalogo() {
                 idEquipo={usuario?.equipoId}
                 presupuestoDisponible={presupuestoDisponible}
                 onCompraExitosa={handleCompraExitosa}
+            />
+
+            {/*Modal de Gestión de Stock (Admin)*/}
+            <ModalGestionStock
+                isOpen={modalStockOpen}
+                onClose={() => setModalStockOpen(false)}
+                parte={parteParaStock}
+                onSuccess={handleStockModificado}
             />
 
             {/* Resumen */}
