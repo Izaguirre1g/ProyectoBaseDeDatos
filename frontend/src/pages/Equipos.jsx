@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { carrosService } from '../services/carros.service';
 import {
     Box,
     Container,
@@ -120,7 +121,7 @@ function PilotoCard({ piloto }) {
 
 // Componente para tarjeta de carro
 function CarroCard({ carro, onClick }) {
-    const completitud = Object.values(carro.configuracion || {}).filter(Boolean).length;
+    const completitud = carro.partes || 0;
     const total = 5;
     const porcentaje = (completitud / total) * 100;
 
@@ -258,6 +259,34 @@ function Equipos() {
                     equiposService.getGastos(eq.Id_equipo)
                 ]);
 
+                // Obtener conteo de partes para cada carro
+                const carrosConPartes = await Promise.all(
+                    carros.map(async (c) => {
+                        try {
+                            const partesData = await carrosService.getPartes(c.Id_carro);
+                            const numPartes = partesData ? (Array.isArray(partesData) ? partesData.length : (partesData.Count || 0)) : 0;
+                            return {
+                                id: c.Id_carro,
+                                nombre: c.Equipo + ' Carro #' + c.Id_carro,
+                                piloto: c.Conductor,
+                                configuracion: {},
+                                finalizado: c.Finalizado,
+                                partes: numPartes
+                            };
+                        } catch (error) {
+                            console.error(`Error al obtener partes del carro ${c.Id_carro}:`, error);
+                            return {
+                                id: c.Id_carro,
+                                nombre: c.Equipo + ' Carro #' + c.Id_carro,
+                                piloto: c.Conductor,
+                                configuracion: {},
+                                finalizado: c.Finalizado,
+                                partes: 0
+                            };
+                        }
+                    })
+                );
+
                 // Transformar datos para la UI
                 return {
                     id: eq.Id_equipo,
@@ -279,13 +308,7 @@ function Equipos() {
                         victorias: 0,
                         numero: p.Id_usuario
                     })),
-                    carros: carros.map(c => ({
-                        id: c.Id_carro,
-                        nombre: c.Equipo + ' Carro #' + c.Id_carro,
-                        piloto: c.Conductor,
-                        configuracion: {},
-                        finalizado: c.Finalizado
-                    })),
+                    carros: carrosConPartes,
                     inventario: inventario.map(i => ({
                         nombre: i.Nombre,
                         categoria: i.Categoria,

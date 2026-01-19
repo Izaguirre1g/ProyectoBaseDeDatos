@@ -18,7 +18,7 @@ import {
     useToast,
 } from '@chakra-ui/react';
 import { Car, Zap, Wind, Target, User, Building2 } from 'lucide-react';
-import carrosService from '../services/carros.service';
+import { carrosService } from '../services/carros.service';
 
 function Carros() {
     const [carros, setCarros] = useState([]);
@@ -34,7 +34,51 @@ function Carros() {
         try {
             setLoading(true);
             const data = await carrosService.getAll();
-            setCarros(data);
+            
+            // Obtener conteo real de partes para cada carro
+            const carrosEnriquecidos = await Promise.all(
+                data.map(async (c) => {
+                    try {
+                        const partesData = await carrosService.getPartes(c.Id_carro);
+                        const numPartes = partesData ? (Array.isArray(partesData) ? partesData.length : (partesData.Count || 0)) : 0;
+                        
+                        // Crear slots con información de partes
+                        const configuracion = {};
+                        const partesArray = Array.isArray(partesData) ? partesData : (partesData.value || []);
+                        partesArray.forEach(parte => {
+                            if (parte.Id_categoria === 1) configuracion.powerUnit = { potencia: parte.Potencia };
+                            if (parte.Id_categoria === 2) configuracion.aerodinamica = { aerodinamica: parte.Aerodinamica };
+                            if (parte.Id_categoria === 3) configuracion.neumaticos = { manejo: parte.Manejo };
+                            if (parte.Id_categoria === 4) configuracion.suspension = { manejo: parte.Manejo };
+                            if (parte.Id_categoria === 5) configuracion.cajaCambios = { manejo: parte.Manejo };
+                        });
+                        
+                        return {
+                            id: c.Id_carro,
+                            numero: c.Id_carro,
+                            modelo: c.Equipo,
+                            conductor: c.Conductor || 'Sin asignar',
+                            equipo: c.Equipo,
+                            configuracion,
+                            finalizado: c.Finalizado === 1,
+                            numPartes
+                        };
+                    } catch (error) {
+                        console.error(`Error al obtener partes del carro ${c.Id_carro}:`, error);
+                        return {
+                            id: c.Id_carro,
+                            numero: c.Id_carro,
+                            modelo: c.Equipo,
+                            conductor: c.Conductor || 'Sin asignar',
+                            equipo: c.Equipo,
+                            configuracion: {},
+                            finalizado: c.Finalizado === 1,
+                            numPartes: 0
+                        };
+                    }
+                })
+            );
+            setCarros(carrosEnriquecidos);
         } catch (error) {
             toast({
                 title: 'Error al cargar carros',

@@ -32,23 +32,21 @@ import { ArrowLeft, Check, Zap, Wind, Target, AlertCircle, Trash2 } from 'lucide
 import { carrosService } from '../services/carros.service';
 
 // Mapeo de categorías de DB a slots del frontend
+// Las categorías en BD: Power unit(1), Paquete aerodinámico(2), Neumáticos(3), Suspensión(4), Caja de cambios(5)
 const CATEGORIA_TO_SLOT = {
-    'Power Unit': 'powerUnit',
-    'Aerodinámica': 'aerodinamica', 
-    'Aerodinamica': 'aerodinamica',
-    'Caja de Cambios': 'cajaCambios',
-    'Suspensión': 'suspension',
-    'Suspension': 'suspension',
+    'Power unit': 'powerUnit',
+    'Paquete aerodinámico': 'aerodinamica', 
     'Neumáticos': 'neumaticos',
-    'Neumaticos': 'neumaticos'
+    'Suspensión': 'suspension',
+    'Caja de cambios': 'cajaCambios'
 };
 
-const SLOT_TO_CATEGORIA = {
-    'powerUnit': ['Power Unit'],
-    'aerodinamica': ['Aerodinámica', 'Aerodinamica'],
-    'cajaCambios': ['Caja de Cambios'],
-    'suspension': ['Suspensión', 'Suspension'],
-    'neumaticos': ['Neumáticos', 'Neumaticos']
+const SLOT_TO_CATEGORIA_ID = {
+    'powerUnit': 1,
+    'aerodinamica': 2,
+    'neumaticos': 3,
+    'suspension': 4,
+    'cajaCambios': 5
 };
 
 // Configuración de slots
@@ -57,31 +55,36 @@ const SLOTS_CONFIG = {
         nombre: 'Power Unit', 
         icon: '⚡',
         posicion: { x: 200, y: 180 },
-        color: '#e10600'
+        color: '#e10600',
+        categoriaId: 1
     },
     aerodinamica: { 
         nombre: 'Aerodinámica', 
         icon: '💨',
         posicion: { x: 200, y: 60 },
-        color: '#3b82f6'
+        color: '#3b82f6',
+        categoriaId: 2
     },
-    cajaCambios: { 
-        nombre: 'Caja Cambios', 
-        icon: '⚙️',
-        posicion: { x: 200, y: 240 },
-        color: '#8b5cf6'
+    neumaticos: { 
+        nombre: 'Neumáticos', 
+        icon: '🏎',
+        posicion: { x: 320, y: 150 },
+        color: '#eab308',
+        categoriaId: 3
     },
     suspension: { 
         nombre: 'Suspensión', 
         icon: '🔧',
         posicion: { x: 80, y: 150 },
-        color: '#22c55e'
+        color: '#22c55e',
+        categoriaId: 4
     },
-    neumaticos: { 
-        nombre: 'Neumáticos', 
-        icon: '🛞',
-        posicion: { x: 320, y: 150 },
-        color: '#eab308'
+    cajaCambios: { 
+        nombre: 'Caja Cambios', 
+        icon: '⚙️',
+        posicion: { x: 200, y: 240 },
+        color: '#8b5cf6',
+        categoriaId: 5
     },
 };
 
@@ -145,14 +148,19 @@ function ArmadoCarro() {
         });
         
         partes.forEach(parte => {
-            const slot = CATEGORIA_TO_SLOT[parte.Categoria];
-            if (slot) {
+            // Buscar el slot por Id_categoria
+            const slotEntry = Object.entries(SLOTS_CONFIG).find(
+                ([_, cfg]) => cfg.categoriaId === parte.Id_categoria
+            );
+            
+            if (slotEntry) {
+                const [slot] = slotEntry;
                 config[slot] = {
                     id: parte.Id_parte,
                     nombre: parte.Nombre,
-                    p: parte.Potencia || parte.P || 0,
-                    a: parte.Aerodinamica || parte.A || 0,
-                    m: parte.Manejo || parte.M || 0
+                    p: parte.Potencia || 0,
+                    a: parte.Aerodinamica || 0,
+                    m: parte.Manejo || 0
                 };
             }
         });
@@ -170,8 +178,18 @@ function ArmadoCarro() {
         
         setInstalando(true);
         try {
-            // Usar el stored procedure SP_InstalarParteEnCarro
-            const resultado = await carrosService.instalarParte(carroId, parte.Id_parte);
+            // Verificar si ya hay una parte instalada en la misma categoría
+            const configuracion = getConfiguracion();
+            const parteInstalada = configuracion[slotActivo];
+            
+            let resultado;
+            if (parteInstalada) {
+                // Usar reemplazar si ya hay parte instalada
+                resultado = await carrosService.reemplazarParte(carroId, parte.Id_parte);
+            } else {
+                // Usar instalar si el slot está vacío
+                resultado = await carrosService.instalarParte(carroId, parte.Id_parte);
+            }
             
             toast({
                 title: '✅ Parte instalada',
@@ -189,7 +207,7 @@ function ArmadoCarro() {
             console.error('Error instalando parte:', error);
             toast({
                 title: 'Error al instalar parte',
-                description: error.message || 'No se pudo instalar la parte',
+                description: error.response?.data?.mensaje || error.message || 'No se pudo instalar la parte',
                 status: 'error',
                 duration: 4000,
             });
@@ -217,7 +235,7 @@ function ArmadoCarro() {
             console.error('Error desinstalando parte:', error);
             toast({
                 title: 'Error al desinstalar',
-                description: error.message,
+                description: error.response?.data?.mensaje || error.message,
                 status: 'error',
                 duration: 4000,
             });
@@ -317,8 +335,8 @@ function ArmadoCarro() {
                             Click en una zona para cambiar la parte
                         </Text>
                         
-                        <Box position="relative" mx="auto" maxW="450px">
-                            <svg viewBox="0 0 340 280" style={{ width: '100%', height: 'auto' }}>
+                        <Box position="relative" mx="auto" maxW="500px">
+                            <svg key={carro?.Id_carro} viewBox="0 0 280 360" style={{ width: '100%', height: 'auto' }}>
                                 {/* Definiciones */}
                                 <defs>
                                     <linearGradient id="bodyGradient" x1="0%" y1="0%" x2="0%" y2="100%">
@@ -337,20 +355,20 @@ function ArmadoCarro() {
                                 </defs>
                                 
                                 {/* Fondo */}
-                                <rect width="340" height="280" fill="#0d0d0d" rx="8"/>
+                                <rect width="280" height="360" fill="#0d0d0d" rx="8"/>
                                 
                                 {/* Grid sutil */}
                                 <g opacity="0.08">
-                                    {[...Array(17)].map((_, i) => (
-                                        <line key={`v${i}`} x1={i * 20} y1="0" x2={i * 20} y2="280" stroke="#fff" strokeWidth="0.5"/>
-                                    ))}
                                     {[...Array(14)].map((_, i) => (
-                                        <line key={`h${i}`} x1="0" y1={i * 20} x2="340" y2={i * 20} stroke="#fff" strokeWidth="0.5"/>
+                                        <line key={`v${i}`} x1={i * 20} y1="0" x2={i * 20} y2="360" stroke="#fff" strokeWidth="0.5"/>
+                                    ))}
+                                    {[...Array(18)].map((_, i) => (
+                                        <line key={`h${i}`} x1="0" y1={i * 20} x2="280" y2={i * 20} stroke="#fff" strokeWidth="0.5"/>
                                     ))}
                                 </g>
                                 
                                 {/* ===== F1 COMPACTO ===== */}
-                                <g id="f1-car" transform="translate(170, 140)">
+                                <g id="f1-car" transform="translate(140, 180)">
                                     
                                     {/* RUEDAS TRASERAS */}
                                     <g id="rear-wheels">
@@ -448,7 +466,7 @@ function ArmadoCarro() {
                                 </g>
                                 
                                 {/* ===== ZONAS CLICKEABLES ===== */}
-                                <g id="zones" transform="translate(170, 140)">
+                                <g id="zones" transform="translate(140, 180)">
                                 {Object.entries(SLOTS_CONFIG).map(([slot, config]) => {
                                     const parte = configuracion[slot];
                                     const isHovered = hoveredSlot === slot;
@@ -481,10 +499,10 @@ function ArmadoCarro() {
                                     return (
                                         <g 
                                             key={slot}
-                                            onClick={() => !isFinalizado && handleSlotClick(slot)}
+                                            onClick={() => handleSlotClick(slot)}
                                             onMouseEnter={() => setHoveredSlot(slot)}
                                             onMouseLeave={() => setHoveredSlot(null)}
-                                            style={{ cursor: isFinalizado ? 'not-allowed' : 'pointer' }}
+                                            style={{ cursor: 'pointer' }}
                                         >
                                             <path
                                                 d={pathData}
@@ -516,11 +534,11 @@ function ArmadoCarro() {
                                 {/* Leyenda hover */}
                                 {hoveredSlot && (
                                     <g>
-                                        <rect x="10" y="240" width="160" height="32" fill="#1a1a1a" rx="4" stroke="#333"/>
-                                        <text x="20" y="256" fill="white" fontSize="10" fontWeight="bold">
+                                        <rect x="10" y="320" width="160" height="32" fill="#1a1a1a" rx="4" stroke="#333"/>
+                                        <text x="20" y="336" fill="white" fontSize="10" fontWeight="bold">
                                             {SLOTS_CONFIG[hoveredSlot].icon} {SLOTS_CONFIG[hoveredSlot].nombre}
                                         </text>
-                                        <text x="20" y="267" fill="#888" fontSize="8">
+                                        <text x="20" y="347" fill="#888" fontSize="8">
                                             {configuracion[hoveredSlot]?.nombre || 'Click para añadir'}
                                         </text>
                                     </g>
@@ -611,10 +629,10 @@ function ArmadoCarro() {
                                             borderRadius="md"
                                             borderWidth="1px"
                                             borderColor={parte ? 'brand.700' : 'red.800'}
-                                            cursor={isFinalizado ? 'default' : 'pointer'}
-                                            _hover={!isFinalizado ? { borderColor: config.color } : {}}
-                                            onClick={() => !isFinalizado && handleSlotClick(slot)}
-                                            opacity={isFinalizado ? 0.8 : 1}
+                                            cursor="pointer"
+                                            _hover={{ borderColor: config.color }}
+                                            onClick={() => handleSlotClick(slot)}
+                                            opacity={1}
                                         >
                                             <HStack>
                                                 <Text fontSize="lg">{config.icon}</Text>
@@ -699,9 +717,9 @@ function ArmadoCarro() {
                             {/* Partes disponibles del inventario del equipo */}
                             {slotActivo && inventario
                                 .filter(item => {
-                                    // Filtrar por categoría que corresponde al slot
-                                    const categoriasSlot = SLOT_TO_CATEGORIA[slotActivo] || [];
-                                    return categoriasSlot.includes(item.Categoria);
+                                    // Filtrar por categoría ID que corresponde al slot
+                                    const categoriaId = SLOTS_CONFIG[slotActivo]?.categoriaId;
+                                    return item.Id_categoria === categoriaId;
                                 })
                                 .map((parte) => {
                                     const isInstalada = parteInstalada?.id === parte.Id_parte;
@@ -739,13 +757,13 @@ function ArmadoCarro() {
                                                     {/* Stats P, A, M */}
                                                     <HStack spacing={2} pt={1} borderTop="1px solid" borderColor="brand.700">
                                                         <Badge colorScheme="yellow" variant="subtle" flex={1} textAlign="center">
-                                                            P: {parte.P || 0}
+                                                            P: {parte.Potencia || 0}
                                                         </Badge>
                                                         <Badge colorScheme="blue" variant="subtle" flex={1} textAlign="center">
-                                                            A: {parte.A || 0}
+                                                            A: {parte.Aerodinamica || 0}
                                                         </Badge>
                                                         <Badge colorScheme="green" variant="subtle" flex={1} textAlign="center">
-                                                            M: {parte.M || 0}
+                                                            M: {parte.Manejo || 0}
                                                         </Badge>
                                                     </HStack>
                                                 </VStack>
@@ -755,8 +773,8 @@ function ArmadoCarro() {
                                 })}
                             
                             {slotActivo && inventario.filter(item => {
-                                const categoriasSlot = SLOT_TO_CATEGORIA[slotActivo] || [];
-                                return categoriasSlot.includes(item.Categoria);
+                                const categoriaId = SLOTS_CONFIG[slotActivo]?.categoriaId;
+                                return item.Id_categoria === categoriaId;
                             }).length === 0 && (
                                 <Text color="gray.500" textAlign="center" py={4}>
                                     No hay partes disponibles en el inventario para {SLOTS_CONFIG[slotActivo]?.nombre}. 

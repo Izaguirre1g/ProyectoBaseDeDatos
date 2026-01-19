@@ -18,8 +18,15 @@ export const carrosService = {
      * Obtener un carro por ID con sus partes instaladas
      */
     async getById(id) {
-        const response = await api.get(`/carros/${id}`);
-        return response.data;
+        // Obtener carro básico
+        const carroRes = await api.get(`/carros/${id}`);
+        const carro = carroRes.data;
+        
+        // Obtener partes instaladas
+        const partesRes = await api.get(`/carros/${id}/partes`);
+        carro.partes = partesRes.data;
+        
+        return carro;
     },
 
     /**
@@ -90,15 +97,25 @@ export const carrosService = {
     },
 
     /**
-     * Desinstalar parte de un carro (devuelve al inventario)
+     * Reemplazar parte en carro usando SP_ReemplazarParteEnCarro
+     * Automáticamente desinstala la parte vieja de la misma categoría
      * @param {number} carroId - ID del carro
-     * @param {number} idCategoria - ID de la categoría a desinstalar
-     * @param {number} idEquipo - ID del equipo
+     * @param {number} parteNuevaId - ID de la nueva parte
      */
-    async desinstalarParte(carroId, idCategoria, idEquipo) {
-        const response = await api.delete(`/carros/${carroId}/desinstalar/${idCategoria}`, {
-            data: { idEquipo }
+    async reemplazarParte(carroId, parteNuevaId) {
+        const response = await api.post(`/carros/${carroId}/reemplazar`, {
+            idParteNueva: parteNuevaId
         });
+        return response.data;
+    },
+
+    /**
+     * Desinstalar parte de un carro usando SP (devuelve al inventario)
+     * @param {number} carroId - ID del carro
+     * @param {number} parteId - ID de la parte a desinstalar
+     */
+    async desinstalarParte(carroId, parteId) {
+        const response = await api.delete(`/carros/${carroId}/desinstalar/${parteId}`);
         return response.data;
     },
 

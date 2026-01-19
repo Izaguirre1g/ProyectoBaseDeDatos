@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import simulacionesService from '../services/simulaciones.service';
+import { carrosService } from '../services/carros.service';
 import {
     Box,
     Container,
@@ -343,15 +344,36 @@ function EngineerDashboard() {
                     color: '#DC0000'
                 });
 
-                setCarros(carrosData.map(c => ({
-                    id: c.Id_carro,
-                    nombre: `Carro #${c.Id_carro}`,
-                    piloto: c.Conductor || 'Sin asignar',
-                    numero: c.Id_carro,
-                    partes: c.NumPartes || 0,
-                    total: 5,
-                    status: c.Finalizado ? 'completo' : 'incompleto'
-                })));
+                // Obtener conteo de partes para cada carro
+                const carrosConPartes = await Promise.all(
+                    carrosData.map(async (c) => {
+                        try {
+                            const partesData = await carrosService.getPartes(c.Id_carro);
+                            const numPartes = partesData ? (Array.isArray(partesData) ? partesData.length : (partesData.Count || 0)) : 0;
+                            return {
+                                id: c.Id_carro,
+                                nombre: `Carro #${c.Id_carro}`,
+                                piloto: c.Conductor || 'Sin asignar',
+                                numero: c.Id_carro,
+                                partes: numPartes,
+                                total: 5,
+                                status: c.Finalizado ? 'completo' : 'incompleto'
+                            };
+                        } catch (error) {
+                            console.error(`Error al contar partes del carro ${c.Id_carro}:`, error);
+                            return {
+                                id: c.Id_carro,
+                                nombre: `Carro #${c.Id_carro}`,
+                                piloto: c.Conductor || 'Sin asignar',
+                                numero: c.Id_carro,
+                                partes: 0,
+                                total: 5,
+                                status: c.Finalizado ? 'completo' : 'incompleto'
+                            };
+                        }
+                    })
+                );
+                setCarros(carrosConPartes);
 
                 // Agrupar inventario por categoría
                 const inventarioAgrupado = inventarioData.reduce((acc, item) => {

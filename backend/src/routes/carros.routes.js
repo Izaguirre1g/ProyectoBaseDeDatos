@@ -74,6 +74,21 @@ router.get('/:id/partes', async (req, res) => {
 });
 
 /**
+ * GET /api/carros/:id/inventario
+ * Obtener inventario disponible del equipo dueño del carro
+ */
+router.get('/:id/inventario', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const inventario = await carrosService.getInventarioParaCarro(parseInt(id));
+        res.json(inventario);
+    } catch (error) {
+        console.error('Error al obtener inventario:', error);
+        res.status(500).json({ error: 'Error al obtener inventario' });
+    }
+});
+
+/**
  * POST /api/carros/:id/instalar
  * INSTALAR PARTE EN EL CARRO - ENDPOINT CLAVE
  */
@@ -107,22 +122,16 @@ router.post('/:id/instalar', async (req, res) => {
 });
 
 /**
- * DELETE /api/carros/:id/desinstalar/:idCategoria
- * Desinstalar parte del carro
+ * DELETE /api/carros/:id/desinstalar/:idParte
+ * Desinstalar parte del carro usando SP
  */
-router.delete('/:id/desinstalar/:idCategoria', async (req, res) => {
+router.delete('/:id/desinstalar/:idParte', async (req, res) => {
     try {
-        const { id, idCategoria } = req.params;
-        const { idEquipo } = req.body;
-        
-        if (!idEquipo) {
-            return res.status(400).json({ error: 'idEquipo es requerido' });
-        }
+        const { id, idParte } = req.params;
         
         const resultado = await carrosService.desinstalarParte(
             parseInt(id),
-            parseInt(idCategoria),
-            parseInt(idEquipo)
+            parseInt(idParte)
         );
         
         if (resultado.success) {
@@ -135,6 +144,39 @@ router.delete('/:id/desinstalar/:idCategoria', async (req, res) => {
         console.error('Error al desinstalar parte:', error);
         res.status(500).json({ 
             error: 'Error al desinstalar parte',
+            detalle: error.message 
+        });
+    }
+});
+
+/**
+ * POST /api/carros/:id/reemplazar
+ * Reemplazar parte en el carro usando SP
+ */
+router.post('/:id/reemplazar', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { idParteNueva } = req.body;
+        
+        if (!idParteNueva) {
+            return res.status(400).json({ error: 'idParteNueva es requerido' });
+        }
+        
+        const resultado = await carrosService.reemplazarParte(
+            parseInt(id),
+            parseInt(idParteNueva)
+        );
+        
+        if (resultado.success) {
+            res.json(resultado);
+        } else {
+            res.status(400).json(resultado);
+        }
+        
+    } catch (error) {
+        console.error('Error al reemplazar parte:', error);
+        res.status(500).json({ 
+            error: 'Error al reemplazar parte',
             detalle: error.message 
         });
     }

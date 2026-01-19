@@ -120,6 +120,38 @@ const carrosService = {
 
     /**
      * ============================================
+     * MÉTODO: getInventarioParaCarro()
+     * Obtener inventario del equipo dueño del carro
+     * ============================================
+     */
+    async getInventarioParaCarro(idCarro) {
+        const pool = await getConnection();
+        const result = await pool.request()
+            .input('idCarro', sql.Int, idCarro)
+            .query(`
+                SELECT 
+                    ie.Id_parte,
+                    ie.Cantidad,
+                    p.Nombre,
+                    p.Marca,
+                    p.Manejo,
+                    p.Aerodinamica,
+                    p.Potencia,
+                    p.Precio,
+                    p.Id_categoria,
+                    c.Nombre as Categoria
+                FROM CARRO car
+                INNER JOIN INVENTARIO_EQUIPO ie ON car.Id_equipo = ie.Id_equipo
+                INNER JOIN PARTE p ON ie.Id_parte = p.Id_parte
+                LEFT JOIN CATEGORIA c ON p.Id_categoria = c.Id_categoria
+                WHERE car.Id_carro = @idCarro AND ie.Cantidad > 0
+                ORDER BY p.Id_categoria, p.Nombre
+            `);
+        return result.recordset;
+    },
+
+    /**
+     * ============================================
      * MÉTODO CLAVE: getConfiguracion()
      * Obtener configuración completa del carro
      * ============================================
@@ -204,121 +236,77 @@ const carrosService = {
 
     /**
      * ============================================
-     * MÉTODO: desinstalarParte()
+     * MÉTODO: desinstalarParte() usando SP
      * Desinstalar una parte del carro
      * ============================================
-     * Parámetros:
-     * @param {number} idCarro - ID del carro
-     * @param {number} idCategoria - Categoría de la parte a quitar
-     * @param {number} idEquipo - ID del equipo (para devolver al inventario)
      */
-    async desinstalarParte(idCarro, idCategoria, idEquipo) {
+    async desinstalarParte(idCarro, idParte) {
         const pool = await getConnection();
         
         try {
-            const transaction = pool.transaction();
-            await transaction.begin();
+            const result = await pool.request()
+                .input('Id_carro', sql.Int, idCarro)
+                .input('Id_parte', sql.Int, idParte)
+                .output('Resultado', sql.VarChar(500))
+                .execute('SP_DesinstalarParteDelCarro');
             
-            try {
-                // 1. Obtener la parte instalada en esa categoría
-                const parteResult = await transaction.request()
-                    .input('idCarro', sql.Int, idCarro)
-                    .input('idCategoria', sql.Int, idCategoria)
-                    .query(`
-                        SELECT ec.Id_parte, p.Manejo, p.Aerodinamica, p.Potencia
-                        FROM ESTRUCTURA_CARRO ec
-                        INNER JOIN PARTE p ON ec.Id_parte = p.Id_parte
-                        WHERE ec.Id_carro = @idCarro AND p.Id_categoria = @idCategoria
-                    `);
-                
-                if (parteResult.recordset.length === 0) {
-                    await transaction.rollback();
-                    return {
-                        success: false,
-                        mensaje: 'No hay parte instalada en esa categoría'
-                    };
-                }
-                
-                const parte = parteResult.recordset[0];
-                
-                // 2. Eliminar de ESTRUCTURA_CARRO
-                await transaction.request()
-                    .input('idCarro', sql.Int, idCarro)
-                    .input('idParte', sql.Int, parte.Id_parte)
-                    .query(`
-                        DELETE FROM ESTRUCTURA_CARRO 
-                        WHERE Id_carro = @idCarro AND Id_parte = @idParte
-                    `);
-                
-                // 3. Devolver al inventario del equipo
-                await transaction.request()
-                    .input('idEquipo', sql.Int, idEquipo)
-                    .input('idParte', sql.Int, parte.Id_parte)
-                    .query(`
-                        UPDATE INVENTARIO_EQUIPO
-                        SET Cantidad = Cantidad + 1
-                        WHERE Id_equipo = @idEquipo AND Id_parte = @idParte
-                        
-                        IF @@ROWCOUNT = 0
-                        BEGIN
-                            INSERT INTO INVENTARIO_EQUIPO (Id_equipo, Id_parte, Cantidad)
-                            VALUES (@idEquipo, @idParte, 1)
-                        END
-                    `);
-                
-                // 4. Recalcular totales del carro
-                await transaction.request()
-                    .input('idCarro', sql.Int, idCarro)
-                    .query(`
-                        UPDATE CARRO
-                        SET 
-                            P_total = ISNULL((
-                                SELECT SUM(p.Potencia)
-                                FROM ESTRUCTURA_CARRO ec
-                                JOIN PARTE p ON ec.Id_parte = p.Id_parte
-                                WHERE ec.Id_carro = @idCarro
-                            ), 0),
-                            A_total = ISNULL((
-                                SELECT SUM(p.Aerodinamica)
-                                FROM ESTRUCTURA_CARRO ec
-                                JOIN PARTE p ON ec.Id_parte = p.Id_parte
-                                WHERE ec.Id_carro = @idCarro
-                            ), 0),
-                            M_total = ISNULL((
-                                SELECT SUM(p.Manejo)
-                                FROM ESTRUCTURA_CARRO ec
-                                JOIN PARTE p ON ec.Id_parte = p.Id_parte
-                                WHERE ec.Id_carro = @idCarro
-                            ), 0),
-                            Finalizado = CASE 
-                                WHEN (
-                                    SELECT COUNT(DISTINCT p.Id_categoria)
-                                    FROM ESTRUCTURA_CARRO ec
-                                    JOIN PARTE p ON ec.Id_parte = p.Id_parte
-                                    WHERE ec.Id_carro = @idCarro
-                                ) = 5 THEN 1
-                                ELSE 0
-                            END
-                        WHERE Id_carro = @idCarro
-                    `);
-                
-                await transaction.commit();
-                
+            const mensaje = result.output.Resultado;
+            const returnValue = result.returnValue;
+            
+            if (returnValue === 0) {
                 const carroActualizado = await this.getById(idCarro);
                 return {
                     success: true,
-                    mensaje: 'Parte desinstalada exitosamente',
+                    mensaje,
                     carro: carroActualizado
                 };
-                
-            } catch (error) {
-                await transaction.rollback();
-                throw error;
+            } else {
+                return {
+                    success: false,
+                    mensaje: mensaje || 'Error al desinstalar parte'
+                };
             }
-            
         } catch (error) {
-            console.error('Error al desinstalar parte:', error);
-            throw new Error('Error al desinstalar parte: ' + error.message);
+            console.error('Error en SP_DesinstalarParteDelCarro:', error);
+            throw new Error(error.message || 'Error al desinstalar parte');
+        }
+    },
+
+    /**
+     * ============================================
+     * MÉTODO: reemplazarParte() usando SP
+     * Reemplazar una parte por otra de la misma categoría
+     * ============================================
+     */
+    async reemplazarParte(idCarro, idParteNueva) {
+        const pool = await getConnection();
+        
+        try {
+            const result = await pool.request()
+                .input('Id_carro', sql.Int, idCarro)
+                .input('Id_parte_nueva', sql.Int, idParteNueva)
+                .output('Resultado', sql.VarChar(500))
+                .execute('SP_ReemplazarParteEnCarro');
+            
+            const mensaje = result.output.Resultado;
+            const returnValue = result.returnValue;
+            
+            if (returnValue === 0) {
+                const carroActualizado = await this.getById(idCarro);
+                return {
+                    success: true,
+                    mensaje,
+                    carro: carroActualizado
+                };
+            } else {
+                return {
+                    success: false,
+                    mensaje: mensaje || 'Error al reemplazar parte'
+                };
+            }
+        } catch (error) {
+            console.error('Error en SP_ReemplazarParteEnCarro:', error);
+            throw new Error(error.message || 'Error al reemplazar parte');
         }
     },
 
