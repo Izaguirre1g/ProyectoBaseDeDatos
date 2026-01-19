@@ -52,9 +52,9 @@ const partesService = {
         return result.recordset;
     },
 
-    async getInventarioTotal() {
+    async getInventarioTotal(idCategoria = null) {
         const pool = await getConnection();
-        const result = await pool.request().query(`
+        let query = `
             SELECT 
                 p.Id_parte, p.Nombre, p.Marca,
                 p.Manejo, p.Aerodinamica, p.Potencia, p.Precio,
@@ -63,8 +63,20 @@ const partesService = {
             FROM PARTE p
             LEFT JOIN CATEGORIA c ON p.Id_categoria = c.Id_categoria
             LEFT JOIN INVENTARIO_TOTAL it ON p.Id_parte = it.Id_parte
-            ORDER BY p.Id_categoria, p.Id_parte
-        `);
+        `;
+        
+        if (idCategoria) {
+            query += ` WHERE p.Id_categoria = @idCategoria`;
+        }
+        
+        query += ` ORDER BY p.Id_categoria, p.Id_parte`;
+        
+        const request = pool.request();
+        if (idCategoria) {
+            request.input('idCategoria', sql.Int, idCategoria);
+        }
+        
+        const result = await request.query(query);
         return result.recordset;
     },
 

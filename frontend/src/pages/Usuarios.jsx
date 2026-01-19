@@ -35,31 +35,53 @@ import {
 } from '@chakra-ui/react';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
 import { usuariosService } from '../services/usuarios.service';
+import { equiposService } from '../services/equipos.service';
+import { useAuth } from '../context/AuthContext';
 
 /**
  * Vista de gestion de usuarios (Admin)
  */
 function Usuarios() {
     const [usuarios, setUsuarios] = useState([]);
+    const [equipos, setEquipos] = useState([]);
+    const { checkAuth, usuario: usuarioActual } = useAuth();
     const [loading, setLoading] = useState(true);
     const { isOpen, onOpen, onClose } = useDisclosure();
     const [editingUser, setEditingUser] = useState(null);
+    const [formData, setFormData] = useState({
+        nombre: '',
+        email: '',
+        password: '',
+        rol: 'Driver',
+        equipo: ''
+    });
     const toast = useToast();
 
-    // Cargar usuarios al montar el componente
+    // Cargar usuarios y equipos al montar el componente
     useEffect(() => {
-        loadUsuarios();
+        loadData();
     }, []);
 
-    const loadUsuarios = async () => {
+    const loadData = async () => {
         try {
             setLoading(true);
-            const data = await usuariosService.getAll();
-            setUsuarios(data);
+            const usuariosData = await usuariosService.getAll();
+            setUsuarios(usuariosData);
+            
+            // Obtener equipos disponibles para ingenieros
+            try {
+                const equiposDisponibles = await equiposService.getEquiposDisponibles();
+                setEquipos(equiposDisponibles);
+            } catch (err) {
+                console.warn('No se pudieron obtener equipos disponibles, usando todos:', err);
+                // Fallback: si falla, obtener todos los equipos
+                const equiposTodos = await equiposService.getAll();
+                setEquipos(equiposTodos);
+            }
         } catch (error) {
-            console.error('Error al cargar usuarios:', error);
+            console.error('Error al cargar datos:', error);
             toast({
-                title: 'Error al cargar usuarios',
+                title: 'Error al cargar datos',
                 description: error.response?.data?.error || 'Error desconocido',
                 status: 'error',
                 duration: 5000,
@@ -70,24 +92,68 @@ function Usuarios() {
         }
     };
 
-    const handleEdit = (usuario) => {
+    const handleCloseModal = () => {
+        setFormData({
+            nombre: '',
+            email: '',
+            password: '',
+            rol: 'Driver',
+            equipo: ''
+        });
+        setEditingUser(null);
+        onClose();
+    };
+
+    const handleEdit = async (usuario) => {
         setEditingUser(usuario);
+        setFormData({
+            nombre: usuario.Nombre || usuario.Nombre_usuario || '',
+            email: usuario.Correo_usuario || '',
+            password: '',
+            rol: mapRolBDtoFrontend(usuario.Rol) || 'Driver',
+            equipo: usuario.Equipo || ''
+        });
+        
+        // Cargar equipos disponibles + el equipo actual del usuario
+        try {
+            const equiposDisponibles = await equiposService.getEquiposDisponibles();
+            // Agregar el equipo actual si existe
+            if (usuario.Equipo) {
+                const yaExiste = equiposDisponibles.some(e => e.Nombre === usuario.Equipo);
+                if (!yaExiste) {
+                    // Agregar equipo actual a la lista
+                    equiposDisponibles.push({
+                        Id_equipo: usuario.Id_equipo || 0,
+                        Nombre: usuario.Equipo
+                    });
+                }
+            }
+            setEquipos(equiposDisponibles);
+        } catch (err) {
+            console.warn('Error al cargar equipos disponibles:', err);
+        }
+        
         onOpen();
     };
 
-    const handleDelete = (id) => {
-        if (confirm('Estas seguro de eliminar este usuario?')) {
-            setUsuarios(usuarios.filter(u => u.id !== id));
-            toast({
-                title: 'Usuario eliminado',
-                status: 'success',
-                duration: 3000,
-            });
-        }
-    };
-
-    const handleNew = () => {
+    const handleNew = async () => {
         setEditingUser(null);
+        setFormData({
+            nombre: '',
+            email: '',
+            password: '',
+            rol: 'Driver',
+            equipo: ''
+        });
+        
+        // Cargar equipos disponibles para nuevo usuario
+        try {
+            const equiposDisponibles = await equiposService.getEquiposDisponibles();
+            setEquipos(equiposDisponibles);
+        } catch (err) {
+            console.warn('Error al cargar equipos disponibles:', err);
+        }
+        
         onOpen();
     };
 
@@ -97,6 +163,141 @@ function Usuarios() {
             case 'Engineer': return 'blue';
             case 'Driver': return 'green';
             default: return 'gray';
+        }
+    };
+
+    // Mapear nombres de roles de BD al frontend
+    const mapRolBDtoFrontend = (rolBD) => {
+        const rolMap = {
+            'Administrador': 'Admin',
+            'Ingeniero': 'Engineer',
+            'Conductor': 'Driver',
+            'Admin': 'Admin',
+            'Engineer': 'Engineer',
+            'Driver': 'Driver'
+        };
+        return rolMap[rolBD] || rolBD;
+    };
+
+    // Mapear nombres de roles del frontend a BD
+    const mapRolFrontendToBD = (rolFrontend) => {
+        const rolMap = {
+            'Admin': 'Admin',
+            'Engineer': 'Engineer',
+            'Driver': 'Driver'
+        };
+        return rolMap[rolFrontend] || rolFrontend;
+    };
+
+    const handleFormChange = (field, value) => {
+        setFormData(prev => ({
+            ...prev,
+            [field]: value
+        }));
+    };
+
+    const handleDelete = (id) => {
+        if (confirm('Estas seguro de eliminar este usuario?')) {
+            setUsuarios(usuarios.filter(u => u.Id_usuario !== id));
+            toast({
+                title: 'Usuario eliminado',
+                status: 'success',
+                duration: 3000,
+            });
+        }
+    };
+
+    const handleSubmit = async () => {
+        try {
+            // Validar campos requeridos
+            if (!formData.nombre.trim()) {
+                toast({
+                    title: 'Error',
+                    description: 'El nombre es requerido',
+                    status: 'error',
+                    duration: 3000,
+                });
+                return;
+            }
+            if (!formData.email.trim()) {
+                toast({
+                    title: 'Error',
+                    description: 'El email es requerido',
+                    status: 'error',
+                    duration: 3000,
+                });
+                return;
+            }
+
+            if (editingUser) {
+                // Actualizar usuario existente
+                const updateData = {
+                    nombre: formData.nombre,
+                    email: formData.email,
+                    rol: formData.rol,
+                    equipo: formData.equipo && formData.equipo !== '' ? formData.equipo : null
+                };
+                
+                // Solo enviar password si se proporciona una nueva
+                if (formData.password.trim()) {
+                    updateData.password = formData.password;
+                }
+
+                console.log('Datos a enviar:', updateData);
+                console.log('Valor equipo:', formData.equipo, 'Tipo:', typeof formData.equipo);
+                await usuariosService.update(editingUser.Id_usuario, updateData);
+                toast({
+                    title: 'Usuario actualizado',
+                    status: 'success',
+                    duration: 3000,
+                });
+                
+                // Si se actualizó el usuario actual, refrescar la sesión
+                if (usuarioActual?.id === editingUser.Id_usuario) {
+                    console.log('Actualizando sesión del usuario actual...');
+                    await checkAuth();
+                }
+                
+                // Recargar usuarios
+                await loadData();
+                onClose();
+            } else {
+                // Crear nuevo usuario
+                if (!formData.password.trim()) {
+                    toast({
+                        title: 'Error',
+                        description: 'La contraseña es requerida para nuevos usuarios',
+                        status: 'error',
+                        duration: 3000,
+                    });
+                    return;
+                }
+
+                await usuariosService.create({
+                    nombre: formData.nombre,
+                    email: formData.email,
+                    password: formData.password,
+                    rol: formData.rol,
+                    equipo: formData.equipo && formData.equipo !== '' ? formData.equipo : null
+                });
+                toast({
+                    title: 'Usuario creado',
+                    status: 'success',
+                    duration: 3000,
+                });
+                
+                // Recargar usuarios
+                await loadData();
+                onClose();
+            }
+        } catch (error) {
+            console.error('Error al guardar usuario:', error);
+            toast({
+                title: 'Error al guardar usuario',
+                description: error.response?.data?.error || error.message || 'Error desconocido',
+                status: 'error',
+                duration: 5000,
+            });
         }
     };
 
@@ -124,6 +325,7 @@ function Usuarios() {
                                 <Thead bg="brand.900">
                                     <Tr>
                                         <Th color="gray.500" borderColor="brand.700">ID</Th>
+                                        <Th color="gray.500" borderColor="brand.700">Nombre</Th>
                                         <Th color="gray.500" borderColor="brand.700">Email</Th>
                                         <Th color="gray.500" borderColor="brand.700">Rol</Th>
                                         <Th color="gray.500" borderColor="brand.700">Equipo</Th>
@@ -134,7 +336,9 @@ function Usuarios() {
                                     {usuarios.map(usuario => (
                                         <Tr key={usuario.Id_usuario} _hover={{ bg: 'brand.700' }}>
                                             <Td color="gray.400" borderColor="brand.700">{usuario.Id_usuario}</Td>
+                                            <Td color="white" borderColor="brand.700">{usuario.Nombre || usuario.Nombre_usuario || '-'}</Td>
                                             <Td color="white" borderColor="brand.700">{usuario.Correo_usuario}</Td>
+                                            
                                             <Td borderColor="brand.700">
                                                 <Badge colorScheme={getRolColorScheme(usuario.Rol)} variant="subtle">
                                                     {usuario.Rol || 'Sin rol'}
@@ -170,7 +374,7 @@ function Usuarios() {
             )}
 
             {/* Modal para crear/editar */}
-            <Modal isOpen={isOpen} onClose={onClose} isCentered>
+            <Modal isOpen={isOpen} onClose={handleCloseModal} isCentered>
                 <ModalOverlay bg="blackAlpha.800" />
                 <ModalContent bg="brand.800" borderColor="brand.700">
                     <ModalHeader color="white">
@@ -182,7 +386,8 @@ function Usuarios() {
                             <FormControl>
                                 <FormLabel color="gray.400" fontSize="sm">Nombre</FormLabel>
                                 <Input 
-                                    defaultValue={editingUser?.nombre || ''}
+                                    value={formData.nombre}
+                                    onChange={(e) => handleFormChange('nombre', e.target.value)}
                                     placeholder="Nombre completo"
                                 />
                             </FormControl>
@@ -190,40 +395,50 @@ function Usuarios() {
                                 <FormLabel color="gray.400" fontSize="sm">Email</FormLabel>
                                 <Input 
                                     type="email"
-                                    defaultValue={editingUser?.email || ''}
+                                    value={formData.email}
+                                    onChange={(e) => handleFormChange('email', e.target.value)}
                                     placeholder="email@f1.com"
                                 />
                             </FormControl>
                             <FormControl>
-                                <FormLabel color="gray.400" fontSize="sm">Contrasena</FormLabel>
+                                <FormLabel color="gray.400" fontSize="sm">Contraseña</FormLabel>
                                 <Input 
                                     type="password"
-                                    placeholder={editingUser ? '(dejar vacio para mantener)' : 'Contrasena'}
+                                    value={formData.password}
+                                    onChange={(e) => handleFormChange('password', e.target.value)}
+                                    placeholder={editingUser ? '(dejar vacio para mantener)' : 'Contraseña'}
                                 />
                             </FormControl>
                             <FormControl>
                                 <FormLabel color="gray.400" fontSize="sm">Rol</FormLabel>
-                                <Select defaultValue={editingUser?.rol || 'Driver'}>
-                                    <option value="Admin">Admin</option>
-                                    <option value="Engineer">Engineer</option>
-                                    <option value="Driver">Driver</option>
+                                <Select 
+                                    value={formData.rol}
+                                    onChange={(e) => handleFormChange('rol', e.target.value)}
+                                >
+                                    <option value="Admin">Administrador</option>
+                                    <option value="Engineer">Ingeniero</option>
+                                    <option value="Driver">Conductor</option>
                                 </Select>
                             </FormControl>
                             <FormControl>
                                 <FormLabel color="gray.400" fontSize="sm">Equipo (opcional)</FormLabel>
-                                <Select defaultValue={editingUser?.equipo || ''}>
+                                <Select 
+                                    value={formData.equipo}
+                                    onChange={(e) => handleFormChange('equipo', e.target.value)}
+                                >
                                     <option value="">Sin equipo</option>
-                                    <option value="Ferrari">Ferrari</option>
-                                    <option value="Red Bull Racing">Red Bull Racing</option>
-                                    <option value="Mercedes">Mercedes</option>
-                                    <option value="McLaren">McLaren</option>
+                                    {equipos.map(equipo => (
+                                        <option key={equipo.Id_equipo} value={equipo.Nombre}>
+                                            {equipo.Nombre}
+                                        </option>
+                                    ))}
                                 </Select>
                             </FormControl>
                             <HStack w="full" justify="flex-end" spacing={3} pt={4}>
-                                <Button variant="ghost" onClick={onClose}>
+                                <Button variant="ghost" onClick={handleCloseModal}>
                                     Cancelar
                                 </Button>
-                                <Button type="submit">
+                                <Button colorScheme="red" onClick={handleSubmit}>
                                     {editingUser ? 'Guardar Cambios' : 'Crear Usuario'}
                                 </Button>
                             </HStack>

@@ -38,10 +38,12 @@ export const partesService = {
 
     /**
      * Obtener catálogo con inventario total
+     * @param {number} idCategoria - ID de la categoría para filtrar (opcional)
      * @returns {Promise} Lista de partes con stock disponible
      */
-    async getCatalogo() {
-        const response = await api.get('/partes/inventario/total');
+    async getCatalogo(idCategoria = null) {
+        const params = idCategoria ? { idCategoria } : {};
+        const response = await api.get('/partes/inventario/total', { params });
         return response.data;
     },
 

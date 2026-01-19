@@ -21,6 +21,21 @@ router.get('/', async (req, res) => {
 });
 
 /**
+ * GET /api/equipos/disponibles/ingenieros
+ * Listar equipos disponibles (sin ingeniero asignado)
+ * IMPORTANTE: Esta ruta debe ir ANTES de /:id para evitar conflictos
+ */
+router.get('/disponibles/ingenieros', async (req, res) => {
+    try {
+        const equipos = await equiposService.getEquiposDisponibles();
+        res.json(equipos);
+    } catch (error) {
+        console.error('Error al obtener equipos disponibles:', error);
+        res.status(500).json({ error: 'Error al obtener equipos disponibles' });
+    }
+});
+
+/**
  * GET /api/equipos/:id/presupuesto
  * Obtener presupuesto detallado del equipo
  */

@@ -62,7 +62,7 @@ function Catalogo() {
     const fetchPartes = async () => {
         setLoading(true);
         try {
-            const data = await partesService.getCatalogo(); // Cambiado a getCatalogo para obtener stock
+            const data = await partesService.getCatalogo(categoriaActiva); // Pasar categoría al obtener catálogo
             setPartes(data);
             setError(null);
         } catch (err) {

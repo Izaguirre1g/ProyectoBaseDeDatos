@@ -17,7 +17,7 @@ const usuariosService = {
     async getAll() {
         const pool = await getConnection();
         const result = await pool.request().query(`
-            SELECT u.Id_usuario, u.Correo_usuario, u.Id_equipo, u.Id_rol,
+            SELECT u.Id_usuario, u.Correo_usuario, u.Nombre_usuario as Nombre, u.Id_equipo, u.Id_rol,
                    r.Nombre as Rol, e.Nombre as Equipo
             FROM USUARIO u
             LEFT JOIN ROL r ON u.Id_rol = r.Id_rol
@@ -137,22 +137,89 @@ const usuariosService = {
     /**
      * Actualizar usuario (sin cambiar contraseña)
      */
-    async update(id, { nombre, correo, idRol, idEquipo }) {
+    async update(id, { nombre, email, rol, equipo, password }) {
         const pool = await getConnection();
-        await pool.request()
+        
+        // Mapear rol del frontend al nombre en BD
+        const rolMap = {
+            'Admin': 'Administrador',
+            'Engineer': 'Ingeniero',
+            'Driver': 'Conductor'
+        };
+        const rolBD = rolMap[rol] || rol;
+        
+        // Buscar ID del rol por nombre
+        let idRol = null;
+        if (rol) {
+            const rolResult = await pool.request()
+                .input('rolNombre', sql.NVarChar, rolBD)
+                .query('SELECT Id_rol FROM ROL WHERE Nombre = @rolNombre');
+            idRol = rolResult.recordset[0]?.Id_rol;
+            console.log(`Buscando rol "${rolBD}" (recibido "${rol}"):`, idRol);
+        }
+
+        // Buscar ID del equipo por nombre
+        let idEquipo = null;
+        if (equipo && equipo.trim()) {
+            const equipoResult = await pool.request()
+                .input('equipoNombre', sql.NVarChar, `%${equipo}%`)
+                .query(`
+                    SELECT TOP 1 Id_equipo, Nombre 
+                    FROM EQUIPO 
+                    WHERE Nombre LIKE @equipoNombre
+                `);
+            idEquipo = equipoResult.recordset[0]?.Id_equipo || null;
+            console.log(`Buscando equipo "${equipo}":`, idEquipo, equipoResult.recordset[0]);
+            
+            // Validación: Si es Ingeniero y se asigna un equipo, verificar que no esté ya asignado
+            if (rolBD === 'Ingeniero' && idEquipo) {
+                const equipoEnUsoResult = await pool.request()
+                    .input('idEquipo', sql.Int, idEquipo)
+                    .input('idUsuario', sql.Int, id)
+                    .query(`
+                        SELECT COUNT(*) as count 
+                        FROM USUARIO u
+                        INNER JOIN ROL r ON u.Id_rol = r.Id_rol
+                        WHERE u.Id_equipo = @idEquipo 
+                        AND u.Id_usuario != @idUsuario 
+                        AND r.Nombre = 'Ingeniero'
+                    `);
+                
+                if (equipoEnUsoResult.recordset[0].count > 0) {
+                    throw new Error(`Este equipo ya está asignado a otro ingeniero. Un ingeniero solo puede estar en un equipo.`);
+                }
+            }
+        }
+
+        console.log('Update query:', { id, nombre, email, idRol, idEquipo });
+
+        const request = pool.request()
             .input('id', sql.Int, id)
             .input('nombre', sql.NVarChar, nombre)
-            .input('correo', sql.NVarChar, correo)
-            .input('idRol', sql.Int, idRol)
-            .input('idEquipo', sql.Int, idEquipo)
-            .query(`
+            .input('email', sql.NVarChar, email)
+            .input('idRol', sql.Int, idRol);
+        
+        // Importante: Si idEquipo es null, pasarlo como SQL.NULL explícitamente
+        if (idEquipo !== null) {
+            request.input('idEquipo', sql.Int, idEquipo);
+        } else {
+            request.input('idEquipo', sql.Int, null);
+        }
+        
+        await request.query(`
                 UPDATE USUARIO 
                 SET Nombre_usuario = @nombre,
-                    Correo_usuario = @correo,
+                    Correo_usuario = @email,
                     Id_rol = @idRol,
                     Id_equipo = @idEquipo
                 WHERE Id_usuario = @id
             `);
+        
+        // Si se proporciona nueva contraseña, actualizarla
+        if (password && password.trim()) {
+            await this.updatePassword(id, password);
+        }
+        
         return await this.getById(id);
     },
 

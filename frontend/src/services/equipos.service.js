@@ -7,6 +7,12 @@ export const equiposService = {
         return response.data;
     },
 
+    // Obtener solo equipos disponibles (sin ingeniero asignado)
+    getEquiposDisponibles: async () => {
+        const response = await api.get('/equipos/disponibles/ingenieros');
+        return response.data;
+    },
+
     // Obtener equipo por ID
     getById: async (id) => {
         const response = await api.get(`/equipos/${id}`);

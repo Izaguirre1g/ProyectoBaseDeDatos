@@ -40,6 +40,29 @@ const equiposService = {
         return equiposConDetalles;
     },
 
+    /**
+     * Obtener equipos disponibles (sin ingeniero asignado)
+     * Solo devuelve equipos que no tienen un usuario con rol Ingeniero
+     */
+    async getEquiposDisponibles() {
+        const pool = await getConnection();
+        const result = await pool.request().query(`
+            SELECT DISTINCT
+                e.Id_equipo,
+                e.Nombre
+            FROM EQUIPO e
+            WHERE e.Id_equipo NOT IN (
+                SELECT DISTINCT u.Id_equipo 
+                FROM USUARIO u
+                INNER JOIN ROL r ON u.Id_rol = r.Id_rol
+                WHERE u.Id_equipo IS NOT NULL 
+                AND r.Nombre = 'Ingeniero'
+            )
+            ORDER BY e.Nombre
+        `);
+        return result.recordset;
+    },
+
     async getById(id) {
         const pool = await getConnection();
         const result = await pool.request()

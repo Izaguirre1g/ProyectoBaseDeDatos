@@ -49,10 +49,12 @@ router.get('/categorias/todas', async (req, res) => {
 /**
  * GET /api/partes/inventario/total
  * Catálogo con stock disponible
+ * Query params: idCategoria (opcional)
  */
 router.get('/inventario/total', async (req, res) => {
     try {
-        const inventario = await partesService.getInventarioTotal();
+        const { idCategoria } = req.query;
+        const inventario = await partesService.getInventarioTotal(idCategoria ? parseInt(idCategoria) : null);
         res.json(inventario);
     } catch (error) {
         console.error('Error al obtener inventario total:', error);

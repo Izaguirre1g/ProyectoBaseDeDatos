@@ -43,14 +43,24 @@ router.get('/:id', async (req, res) => {
 router.put('/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const { nombre, email, rol, equipo } = req.body;
+        const { nombre, email, rol, equipo, password } = req.body;
         
         const usuario = await usuariosService.update(parseInt(id), {
             nombre,
             email,
             rol,
-            equipo
+            equipo,
+            password
         });
+        
+        // Si el usuario actualizado es el de la sesión activa, actualizar la sesión
+        if (req.session.userId === parseInt(id)) {
+            console.log(`[UPDATE] Actualizando sesión para usuario ${id}`);
+            req.session.nombre = usuario.Nombre_usuario;
+            req.session.equipo = usuario.Equipo || 'Sin equipo';
+            req.session.equipoId = usuario.Id_equipo || null;
+            req.session.rol = rol;
+        }
         
         res.json(usuario);
     } catch (error) {
