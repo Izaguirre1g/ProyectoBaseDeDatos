@@ -18,7 +18,7 @@ const usuariosService = {
         const pool = await getConnection();
         const result = await pool.request().query(`
             SELECT u.Id_usuario, u.Correo_usuario, u.Nombre_usuario as Nombre, u.Id_equipo, u.Id_rol,
-                   r.Nombre as Rol, e.Nombre as Equipo
+                   u.Habilidad, r.Nombre as Rol, e.Nombre as Equipo
             FROM USUARIO u
             LEFT JOIN ROL r ON u.Id_rol = r.Id_rol
             LEFT JOIN EQUIPO e ON u.Id_equipo = e.Id_equipo
@@ -73,7 +73,7 @@ const usuariosService = {
     /**
      * Crear nuevo usuario
      */
-    async create({ nombre, correo, password, idEquipo, idRol }) {
+    async create({ nombre, correo, password, idEquipo, idRol, habilidad = null }) {
         const pool = await getConnection();
         const hash = await argon2.hash(password, ARGON2_CONFIG);
         const nextId = await this.getNextId();
@@ -85,9 +85,10 @@ const usuariosService = {
             .input('hash', sql.NVarChar, hash)
             .input('idEquipo', sql.Int, idEquipo)
             .input('idRol', sql.Int, idRol)
+            .input('habilidad', sql.TinyInt, habilidad)
             .query(`
-                INSERT INTO USUARIO (Id_usuario, Nombre_usuario, Correo_usuario, Contrasena_hash, Id_equipo, Id_rol)
-                VALUES (@id, @nombre, @correo, @hash, @idEquipo, @idRol);
+                INSERT INTO USUARIO (Id_usuario, Nombre_usuario, Correo_usuario, Contrasena_hash, Id_equipo, Id_rol, Habilidad)
+                VALUES (@id, @nombre, @correo, @hash, @idEquipo, @idRol, @habilidad);
                 SELECT @id as Id_usuario;
             `);
         
@@ -137,7 +138,7 @@ const usuariosService = {
     /**
      * Actualizar usuario (sin cambiar contraseña)
      */
-    async update(id, { nombre, email, rol, equipo, password }) {
+    async update(id, { nombre, email, rol, equipo, password, habilidad }) {
         const pool = await getConnection();
         
         // Mapear rol del frontend al nombre en BD
@@ -206,12 +207,20 @@ const usuariosService = {
             request.input('idEquipo', sql.Int, null);
         }
         
+        // Agregar habilidad
+        if (habilidad !== undefined && habilidad !== null && habilidad !== '') {
+            request.input('habilidad', sql.TinyInt, parseInt(habilidad));
+        } else {
+            request.input('habilidad', sql.TinyInt, null);
+        }
+        
         await request.query(`
                 UPDATE USUARIO 
                 SET Nombre_usuario = @nombre,
                     Correo_usuario = @email,
                     Id_rol = @idRol,
-                    Id_equipo = @idEquipo
+                    Id_equipo = @idEquipo,
+                    Habilidad = @habilidad
                 WHERE Id_usuario = @id
             `);
         

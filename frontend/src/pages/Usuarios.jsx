@@ -53,7 +53,8 @@ function Usuarios() {
         email: '',
         password: '',
         rol: 'Driver',
-        equipo: ''
+        equipo: '',
+        habilidad: ''
     });
     const toast = useToast();
 
@@ -98,7 +99,8 @@ function Usuarios() {
             email: '',
             password: '',
             rol: 'Driver',
-            equipo: ''
+            equipo: '',
+            habilidad: ''
         });
         setEditingUser(null);
         onClose();
@@ -111,7 +113,8 @@ function Usuarios() {
             email: usuario.Correo_usuario || '',
             password: '',
             rol: mapRolBDtoFrontend(usuario.Rol) || 'Driver',
-            equipo: usuario.Equipo || ''
+            equipo: usuario.Equipo || '',
+            habilidad: usuario.Habilidad !== null && usuario.Habilidad !== undefined ? usuario.Habilidad.toString() : ''
         });
         
         // Cargar equipos disponibles + el equipo actual del usuario
@@ -143,7 +146,8 @@ function Usuarios() {
             email: '',
             password: '',
             rol: 'Driver',
-            equipo: ''
+            equipo: '',
+            habilidad: ''
         });
         
         // Cargar equipos disponibles para nuevo usuario
@@ -230,12 +234,24 @@ function Usuarios() {
             }
 
             if (editingUser) {
+                // Validar habilidad para conductores
+                if (formData.rol === 'Driver' && (formData.habilidad === '' || formData.habilidad === null)) {
+                    toast({
+                        title: 'Error',
+                        description: 'La habilidad es requerida para conductores (0-100)',
+                        status: 'error',
+                        duration: 3000,
+                    });
+                    return;
+                }
+                
                 // Actualizar usuario existente
                 const updateData = {
                     nombre: formData.nombre,
                     email: formData.email,
                     rol: formData.rol,
-                    equipo: formData.equipo && formData.equipo !== '' ? formData.equipo : null
+                    equipo: formData.equipo && formData.equipo !== '' ? formData.equipo : null,
+                    habilidad: formData.habilidad !== '' ? parseInt(formData.habilidad) : null
                 };
                 
                 // Solo enviar password si se proporciona una nueva
@@ -272,13 +288,25 @@ function Usuarios() {
                     });
                     return;
                 }
+                
+                // Validar habilidad para conductores
+                if (formData.rol === 'Driver' && (formData.habilidad === '' || formData.habilidad === null)) {
+                    toast({
+                        title: 'Error',
+                        description: 'La habilidad es requerida para conductores (0-100)',
+                        status: 'error',
+                        duration: 3000,
+                    });
+                    return;
+                }
 
                 await usuariosService.create({
                     nombre: formData.nombre,
                     email: formData.email,
                     password: formData.password,
                     rol: formData.rol,
-                    equipo: formData.equipo && formData.equipo !== '' ? formData.equipo : null
+                    equipo: formData.equipo && formData.equipo !== '' ? formData.equipo : null,
+                    habilidad: formData.habilidad !== '' ? parseInt(formData.habilidad) : null
                 });
                 toast({
                     title: 'Usuario creado',
@@ -329,6 +357,7 @@ function Usuarios() {
                                         <Th color="gray.500" borderColor="brand.700">Email</Th>
                                         <Th color="gray.500" borderColor="brand.700">Rol</Th>
                                         <Th color="gray.500" borderColor="brand.700">Equipo</Th>
+                                        <Th color="gray.500" borderColor="brand.700">Habilidad</Th>
                                         <Th color="gray.500" borderColor="brand.700">Acciones</Th>
                                     </Tr>
                                 </Thead>
@@ -345,6 +374,13 @@ function Usuarios() {
                                                 </Badge>
                                             </Td>
                                             <Td color="gray.400" borderColor="brand.700">{usuario.Equipo || '-'}</Td>
+                                            <Td borderColor="brand.700">
+                                                {usuario.Habilidad !== null && usuario.Habilidad !== undefined ? (
+                                                    <Badge colorScheme="green">{usuario.Habilidad}</Badge>
+                                                ) : (
+                                                    <Text color="gray.500">-</Text>
+                                                )}
+                                            </Td>
                                             <Td borderColor="brand.700">
                                                 <HStack spacing={2}>
                                                     <IconButton
@@ -419,6 +455,22 @@ function Usuarios() {
                                     <option value="Engineer">Ingeniero</option>
                                     <option value="Driver">Conductor</option>
                                 </Select>
+                            </FormControl>
+                            <FormControl isRequired={formData.rol === 'Driver'}>
+                                <FormLabel color="gray.400" fontSize="sm">
+                                    Habilidad (0-100) {formData.rol === 'Driver' && <Text as="span" color="red.400">*</Text>}
+                                </FormLabel>
+                                <Input 
+                                    type="number"
+                                    min="0"
+                                    max="100"
+                                    value={formData.habilidad}
+                                    onChange={(e) => handleFormChange('habilidad', e.target.value)}
+                                    placeholder={formData.rol === 'Driver' ? 'Requerido para conductores' : 'Opcional'}
+                                />
+                                <Text fontSize="xs" color="gray.500" mt={1}>
+                                    {formData.rol === 'Driver' ? 'Obligatorio para conductores' : 'Opcional para otros roles'}
+                                </Text>
                             </FormControl>
                             <FormControl>
                                 <FormLabel color="gray.400" fontSize="sm">Equipo (opcional)</FormLabel>
