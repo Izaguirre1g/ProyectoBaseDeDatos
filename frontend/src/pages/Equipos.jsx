@@ -267,7 +267,7 @@ function Equipos() {
                             const numPartes = partesData ? (Array.isArray(partesData) ? partesData.length : (partesData.Count || 0)) : 0;
                             return {
                                 id: c.Id_carro,
-                                nombre: c.Equipo + ' Carro #' + c.Id_carro,
+                                nombre: eq.Nombre + ' Carro #' + c.Id_carro,
                                 piloto: c.Conductor,
                                 configuracion: {},
                                 finalizado: c.Finalizado,
@@ -277,7 +277,7 @@ function Equipos() {
                             console.error(`Error al obtener partes del carro ${c.Id_carro}:`, error);
                             return {
                                 id: c.Id_carro,
-                                nombre: c.Equipo + ' Carro #' + c.Id_carro,
+                                nombre: eq.Nombre + ' Carro #' + c.Id_carro,
                                 piloto: c.Conductor,
                                 configuracion: {},
                                 finalizado: c.Finalizado,

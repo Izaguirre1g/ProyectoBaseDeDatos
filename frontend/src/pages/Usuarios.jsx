@@ -200,14 +200,26 @@ function Usuarios() {
         }));
     };
 
-    const handleDelete = (id) => {
-        if (confirm('Estas seguro de eliminar este usuario?')) {
-            setUsuarios(usuarios.filter(u => u.Id_usuario !== id));
-            toast({
-                title: 'Usuario eliminado',
-                status: 'success',
-                duration: 3000,
-            });
+    const handleDelete = async (id) => {
+        if (confirm('¿Estás seguro de eliminar este usuario?')) {
+            try {
+                await usuariosService.delete(id);
+                toast({
+                    title: 'Usuario eliminado',
+                    status: 'success',
+                    duration: 3000,
+                });
+                // Recargar lista de usuarios
+                await loadData();
+            } catch (error) {
+                console.error('Error al eliminar usuario:', error);
+                toast({
+                    title: 'Error al eliminar usuario',
+                    description: error.response?.data?.error || error.message || 'Error desconocido',
+                    status: 'error',
+                    duration: 5000,
+                });
+            }
         }
     };
 
