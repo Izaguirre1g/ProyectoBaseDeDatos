@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import simulacionesService from '../services/simulaciones.service';
 import { carrosService } from '../services/carros.service';
+import { equiposService } from '../services/equipos.service';
 import {
     Box,
     Container,
@@ -98,10 +99,79 @@ function AdminDashboard() {
     const navigate = useNavigate();
     const [simulaciones, setSimulaciones] = useState([]);
     const [loadingSimulaciones, setLoadingSimulaciones] = useState(true);
+    const [equipos, setEquipos] = useState([]);
+    const [loadingEquipos, setLoadingEquipos] = useState(true);
+    const [stats, setStats] = useState([
+        { label: 'Usuarios', value: '-', icon: Users, color: 'blue.500' },
+        { label: 'Equipos', value: '-', icon: Building2, color: 'green.500' },
+        { label: 'Pilotos', value: '-', icon: Car, color: 'yellow.500' },
+        { label: 'Presupuesto Total', value: '$0M', icon: DollarSign, color: 'accent.600' },
+    ]);
     
     useEffect(() => {
         loadSimulaciones();
+        loadEquipos();
     }, []);
+
+    const loadEquipos = async () => {
+        try {
+            const equiposRaw = await equiposService.getAll();
+            
+            // Para cada equipo, cargar su presupuesto real
+            const equiposConPresupuesto = await Promise.all(equiposRaw.map(async (eq) => {
+                try {
+                    const presupuestoData = await equiposService.getPresupuesto(eq.Id_equipo);
+                    return {
+                        id: eq.Id_equipo,
+                        nombre: eq.Nombre,
+                        presupuesto: presupuestoData?.TotalAportes || 0,
+                        disponible: presupuestoData?.Presupuesto || 0,
+                        color: getColorEquipo(eq.Nombre)
+                    };
+                } catch (err) {
+                    return {
+                        id: eq.Id_equipo,
+                        nombre: eq.Nombre,
+                        presupuesto: 0,
+                        disponible: 0,
+                        color: '#666'
+                    };
+                }
+            }));
+            
+            // Ordenar por presupuesto descendente y tomar los top 4
+            const equiposOrdenados = equiposConPresupuesto
+                .sort((a, b) => b.presupuesto - a.presupuesto)
+                .slice(0, 4);
+            
+            setEquipos(equiposOrdenados);
+            
+            // Actualizar stats con el presupuesto total real
+            const presupuestoTotal = equiposConPresupuesto.reduce((acc, e) => acc + e.presupuesto, 0);
+            setStats([
+                { label: 'Usuarios', value: '-', icon: Users, color: 'blue.500' },
+                { label: 'Equipos', value: equiposRaw.length, icon: Building2, color: 'green.500' },
+                { label: 'Pilotos', value: '-', icon: Car, color: 'yellow.500' },
+                { label: 'Presupuesto Total', value: `$${(presupuestoTotal / 1000000).toFixed(0)}M`, icon: DollarSign, color: 'accent.600' },
+            ]);
+        } catch (error) {
+            console.error('Error al cargar equipos:', error);
+        } finally {
+            setLoadingEquipos(false);
+        }
+    };
+    
+    const getColorEquipo = (nombre) => {
+        const colores = {
+            'Scuderia Ferrari': '#DC0000',
+            'Oracle Red Bull Racing': '#1E41FF',
+            'Mercedes-AMG Petronas': '#00D2BE',
+            'McLaren F1 Team': '#FF8700',
+            'Aston Martin F1': '#006F62',
+            'Alpine F1 Team': '#0090FF',
+        };
+        return colores[nombre] || '#666666';
+    };
 
     const loadSimulaciones = async () => {
         try {
@@ -131,21 +201,7 @@ function AdminDashboard() {
         return date.toLocaleDateString();
     };
 
-    // Datos que coinciden con los dummy de equipos
-    const stats = [
-        { label: 'Usuarios', value: 3, icon: Users, color: 'blue.500' },
-        { label: 'Equipos', value: 4, icon: Building2, color: 'green.500' },
-        { label: 'Pilotos', value: 8, icon: Car, color: 'yellow.500' },
-        { label: 'Presupuesto Total', value: '$565M', icon: DollarSign, color: 'accent.600' },
-    ];
-
-    // Top equipos por presupuesto
-    const topEquipos = [
-        { nombre: 'Red Bull Racing', presupuesto: 145, campeonatos: 6, color: '#1E41FF' },
-        { nombre: 'Mercedes', presupuesto: 145, campeonatos: 8, color: '#00D2BE' },
-        { nombre: 'Ferrari', presupuesto: 140, campeonatos: 16, color: '#DC0000' },
-        { nombre: 'McLaren', presupuesto: 135, campeonatos: 8, color: '#FF8700' },
-    ];
+    // Los stats y equipos ahora se cargan dinámicamente
 
     return (
         <VStack spacing={6} align="stretch">
@@ -223,35 +279,44 @@ function AdminDashboard() {
                                 Ver todos
                             </Button>
                         </HStack>
-                        <VStack spacing={3} align="stretch">
-                            {topEquipos.map((equipo, idx) => (
-                                <HStack 
-                                    key={idx} 
-                                    p={3} 
-                                    bg="brand.900" 
-                                    borderRadius="md"
-                                    borderLeft="4px solid"
-                                    borderLeftColor={equipo.color}
-                                >
-                                    <Text color="gray.500" fontWeight="bold" w="24px">
-                                        #{idx + 1}
-                                    </Text>
-                                    <Box flex={1}>
-                                        <Text color="white" fontWeight="medium">{equipo.nombre}</Text>
-                                        <HStack spacing={2} fontSize="xs" color="gray.400">
-                                            <HStack>
-                                                <Trophy size={12} />
-                                                <Text>{equipo.campeonatos} títulos</Text>
-                                            </HStack>
-                                        </HStack>
-                                    </Box>
-                                    <VStack spacing={0} align="end">
-                                        <Text color="green.400" fontWeight="bold">${equipo.presupuesto}M</Text>
-                                        <Text fontSize="xs" color="gray.500">presupuesto</Text>
-                                    </VStack>
-                                </HStack>
-                            ))}
-                        </VStack>
+                        {loadingEquipos ? (
+                            <Flex justify="center" py={4}>
+                                <Spinner color="accent.400" />
+                            </Flex>
+                        ) : equipos.length === 0 ? (
+                            <Text color="gray.500" textAlign="center" py={4}>
+                                No hay equipos registrados
+                            </Text>
+                        ) : (
+                            <VStack spacing={3} align="stretch">
+                                {equipos.map((equipo, idx) => (
+                                    <HStack 
+                                        key={equipo.id} 
+                                        p={3} 
+                                        bg="brand.900" 
+                                        borderRadius="md"
+                                        borderLeft="4px solid"
+                                        borderLeftColor={equipo.color}
+                                    >
+                                        <Text color="gray.500" fontWeight="bold" w="24px">
+                                            #{idx + 1}
+                                        </Text>
+                                        <Box flex={1}>
+                                            <Text color="white" fontWeight="medium">{equipo.nombre}</Text>
+                                            <Text fontSize="xs" color="gray.400">
+                                                Disponible: ${(equipo.disponible / 1000000).toFixed(1)}M
+                                            </Text>
+                                        </Box>
+                                        <VStack spacing={0} align="end">
+                                            <Text color="green.400" fontWeight="bold">
+                                                ${(equipo.presupuesto / 1000000).toFixed(1)}M
+                                            </Text>
+                                            <Text fontSize="xs" color="gray.500">total aportes</Text>
+                                        </VStack>
+                                    </HStack>
+                                ))}
+                            </VStack>
+                        )}
                     </CardBody>
                 </Card>
 

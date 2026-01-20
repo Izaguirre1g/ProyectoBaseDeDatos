@@ -10,6 +10,35 @@ const usuariosService = require('../services/usuarios.service');
 //Esta funcion registra la sesion del usuario en la base
 //inicia agarrando la ip, la hora que para pasarla a standar time le restamos 6 para que se guarde bien en la base
 //para que cuanddo se consulta la hora en la base se pueda comparar bien
+// Esta función limpia las sesiones que quedaron abiertas (Estado 1) pero que ya expiraron
+// Se llama al inicio de cada login para limpiar sesiones cuando el usuario cerró la pestaña sin logout
+async function limpiarSesionesExpiradas() {
+    try {
+        const pool = await getConnection();
+        const TIMEOUT_MINUTOS = 2; 
+        
+        const result = await pool.request()
+            .input('timeoutMinutos', sql.Int, TIMEOUT_MINUTOS)
+            .query(`
+                UPDATE SESION 
+                SET Estado = 0
+                WHERE Estado = 1 
+                AND DATEDIFF(MINUTE, Hora_inicio_sesion, GETDATE()) > @timeoutMinutos;
+                
+                SELECT @@ROWCOUNT as sesionesLimpiadas;
+            `);
+        
+        const sesionesLimpiadas = result.recordset[0].sesionesLimpiadas;
+        if (sesionesLimpiadas > 0) {
+            console.log(`las sesiones expiradas se eliminaron ${sesionesLimpiadas}`);
+        }
+        return sesionesLimpiadas;
+    } catch (error) {
+        console.error('las sesiones no se pudieron eliminar:', error);
+        return 0;
+    }
+}
+
 async function registrarSesionEnBD(idUsuario, req) {
     try {
         const pool = await getConnection();
@@ -17,7 +46,7 @@ async function registrarSesionEnBD(idUsuario, req) {
         const ipUsuario = req.ip || req.connection.remoteAddress || 'Desconocida';
         
         const horaInicio = new Date();
-        //horaInicio.setHours(horaInicio.getHours() - 6);  // Solo si SQL Server está en UTC
+        //horaInicio.setHours(horaInicio.getHours() - 6);
         
         const result = await pool.request()
             .input('horaInicio', sql.DateTime, horaInicio)
@@ -49,6 +78,9 @@ router.post('/login', async (req, res) => {
         console.log('\n Inicio de sesión');
         console.log(`Email: ${email}`);
         console.log(`Contraseña ingresada: ${password}`);
+        
+        //para limpirr las sesiones que se quedaron ahí 
+        await limpiarSesionesExpiradas();
         
         // Conectar a la BD y buscar usuario
         const pool = await getConnection();
