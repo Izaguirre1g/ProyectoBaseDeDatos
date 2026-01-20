@@ -78,4 +78,10 @@ export const equiposService = {
         const response = await api.get(`/equipos/${equipoId}/gastos`);
         return response.data;
     },
+
+    // Crear nuevo equipo
+    create: async (nombre) => {
+        const response = await api.post('/equipos', { nombre });
+        return response.data;
+    },
 };

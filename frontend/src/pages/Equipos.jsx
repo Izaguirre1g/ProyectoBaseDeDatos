@@ -48,6 +48,7 @@ import {
     FormLabel,
     Input,
     Select,
+    IconButton,
 } from '@chakra-ui/react';
 import {
     Building2,
@@ -62,6 +63,7 @@ import {
     Megaphone,
     ChevronRight,
     Plus,
+    Trash2,
 } from 'lucide-react';
 import { equiposService } from '../services/equipos.service';
 
@@ -87,6 +89,8 @@ function StatCard({ icon, label, value, subtext, color = 'accent.500' }) {
 
 // Componente para tarjeta de conductor
 function PilotoCard({ piloto }) {
+    const habilidadColor = piloto.habilidad >= 80 ? 'green' : piloto.habilidad >= 50 ? 'yellow' : 'red';
+    
     return (
         <Card bg="brand.800" borderColor="brand.700" borderWidth="1px">
             <CardBody>
@@ -100,6 +104,11 @@ function PilotoCard({ piloto }) {
                         <HStack>
                             <Text fontWeight="bold" fontSize="lg">{piloto.nombre}</Text>
                             <Badge colorScheme="purple" fontSize="sm">#{piloto.numero}</Badge>
+                            {piloto.habilidad !== null && piloto.habilidad !== undefined && (
+                                <Badge colorScheme={habilidadColor} fontSize="sm">
+                                    H: {piloto.habilidad}
+                                </Badge>
+                            )}
                         </HStack>
                         <Text color="gray.400" fontSize="sm">{piloto.nacionalidad}</Text>
                         <HStack spacing={4} mt={2}>
@@ -120,10 +129,15 @@ function PilotoCard({ piloto }) {
 }
 
 // Componente para tarjeta de carro
-function CarroCard({ carro, onClick }) {
+function CarroCard({ carro, onClick, onDelete }) {
     const completitud = carro.partes || 0;
     const total = 5;
     const porcentaje = (completitud / total) * 100;
+
+    const handleDelete = (e) => {
+        e.stopPropagation(); // Evitar que se dispare onClick del Card
+        if (onDelete) onDelete(carro.id);
+    };
 
     return (
         <Card 
@@ -142,9 +156,19 @@ function CarroCard({ carro, onClick }) {
                             <Icon as={Car} boxSize={5} color="accent.500" />
                             <Text fontWeight="bold">{carro.nombre}</Text>
                         </HStack>
-                        <Badge colorScheme={porcentaje === 100 ? 'green' : 'orange'}>
-                            {completitud}/{total} partes
-                        </Badge>
+                        <HStack>
+                            <Badge colorScheme={porcentaje === 100 ? 'green' : 'orange'}>
+                                {completitud}/{total} partes
+                            </Badge>
+                            <IconButton
+                                icon={<Trash2 size={14} />}
+                                size="xs"
+                                colorScheme="red"
+                                variant="ghost"
+                                aria-label="Eliminar carro"
+                                onClick={handleDelete}
+                            />
+                        </HStack>
                     </HStack>
                     <Progress 
                         value={porcentaje} 
@@ -207,6 +231,7 @@ function Equipos() {
     const toast = useToast();
     const { isOpen, onOpen, onClose } = useDisclosure();
     const { isOpen: isAporteOpen, onOpen: onAporteOpen, onClose: onAporteClose } = useDisclosure();
+    const { isOpen: isCarroOpen, onOpen: onCarroOpen, onClose: onCarroClose } = useDisclosure();
     const { usuario, isEngineer } = useAuth();
     
     // Los ingenieros solo pueden ver su equipo asignado
@@ -227,6 +252,19 @@ function Equipos() {
         idPatrocinador: '',
         monto: ''
     });
+    
+    // Estado para nuevo patrocinador
+    const [nuevoPatrocinador, setNuevoPatrocinador] = useState('');
+    const [creandoPatrocinador, setCreandoPatrocinador] = useState(false);
+    const [mostrarNuevoPatrocinador, setMostrarNuevoPatrocinador] = useState(false);
+    
+    // Estado para nuevo carro
+    const [nuevoCarro, setNuevoCarro] = useState({
+        idConductor: ''
+    });
+    const [conductoresDisponibles, setConductoresDisponibles] = useState([]);
+    const [loadingConductores, setLoadingConductores] = useState(false);
+    const [creandoCarro, setCreandoCarro] = useState(false);
     
     // Estado para patrocinadores disponibles
     const [patrocinadores, setPatrocinadores] = useState([]);
@@ -302,11 +340,12 @@ function Equipos() {
                     },
                     pilotos: pilotos.map(p => ({
                         id: p.Id_usuario,
-                        nombre: p.Correo_usuario,
+                        nombre: p.Nombre_usuario || p.Correo_usuario,
                         nacionalidad: '',
                         campeonatos: 0,
                         victorias: 0,
-                        numero: p.Id_usuario
+                        numero: p.Id_usuario,
+                        habilidad: p.Habilidad
                     })),
                     carros: carrosConPartes,
                     inventario: inventario.map(i => ({
@@ -434,43 +473,164 @@ function Equipos() {
         }
     };
     
-    const handleCrearEquipo = () => {
-        // Simular creación (en producción sería una llamada al backend)
-        const nuevoId = equipos.length + 1;
-        const equipoCreado = {
-            id: nuevoId,
-            ...nuevoEquipo,
-            fundacion: new Date().getFullYear(),
-            campeonatos: 0,
-            presupuesto: {
-                total: nuevoEquipo.presupuesto,
-                gastado: 0,
-                sponsors: 0,
-                distribucion: []
-            },
-            pilotos: [],
-            carros: [],
-            inventario: [],
-            patrocinadores: []
-        };
+    // Manejar apertura del modal de nuevo carro
+    const handleNuevoCarroClick = async () => {
+        if (!selectedEquipo) return;
         
-        setEquipos([...equipos, equipoCreado]);
-        setSelectedEquipo(equipoCreado);
-        setNuevoEquipo({
-            nombre: '',
-            nombreCompleto: '',
-            pais: '',
-            colorPrimario: '#e10600',
-            presupuesto: 100000000
-        });
-        onClose();
+        // Verificar si ya tiene 2 carros
+        if (selectedEquipo.carros?.length >= 2) {
+            toast({
+                title: 'Límite alcanzado',
+                description: 'El equipo ya tiene el máximo de 2 carros permitidos',
+                status: 'warning',
+                duration: 3000,
+            });
+            return;
+        }
         
-        toast({
-            title: 'Equipo creado',
-            description: `${equipoCreado.nombre} ha sido registrado exitosamente`,
-            status: 'success',
-            duration: 3000,
-        });
+        // Cargar conductores disponibles
+        setLoadingConductores(true);
+        try {
+            const conductores = await carrosService.getConductoresDisponibles(selectedEquipo.id);
+            setConductoresDisponibles(conductores);
+            setNuevoCarro({ idConductor: '' });
+            onCarroOpen();
+        } catch (error) {
+            console.error('Error al cargar conductores:', error);
+            toast({
+                title: 'Error',
+                description: 'No se pudieron cargar los conductores disponibles',
+                status: 'error',
+                duration: 3000,
+            });
+        } finally {
+            setLoadingConductores(false);
+        }
+    };
+    
+    // Crear nuevo carro
+    const handleCrearCarro = async () => {
+        if (!selectedEquipo) return;
+        
+        setCreandoCarro(true);
+        try {
+            const resultado = await carrosService.crearCarro(
+                selectedEquipo.id,
+                nuevoCarro.idConductor ? parseInt(nuevoCarro.idConductor) : null
+            );
+            
+            if (resultado.success) {
+                toast({
+                    title: 'Carro creado',
+                    description: resultado.mensaje,
+                    status: 'success',
+                    duration: 3000,
+                });
+                
+                // Recargar equipos para reflejar el cambio
+                await loadEquipos();
+                onCarroClose();
+            } else {
+                toast({
+                    title: 'Error',
+                    description: resultado.mensaje,
+                    status: 'error',
+                    duration: 5000,
+                });
+            }
+        } catch (error) {
+            console.error('Error al crear carro:', error);
+            toast({
+                title: 'Error',
+                description: error.response?.data?.mensaje || error.response?.data?.error || 'Error al crear el carro',
+                status: 'error',
+                duration: 5000,
+            });
+        } finally {
+            setCreandoCarro(false);
+        }
+    };
+    
+    // Eliminar carro
+    const handleEliminarCarro = async (carroId) => {
+        if (!confirm('¿Estás seguro de eliminar este carro? Se eliminarán también las partes instaladas y resultados de simulaciones.')) {
+            return;
+        }
+        
+        try {
+            await carrosService.eliminarCarro(carroId);
+            toast({
+                title: 'Carro eliminado',
+                description: 'El carro ha sido eliminado exitosamente',
+                status: 'success',
+                duration: 3000,
+            });
+            
+            // Recargar equipos para reflejar el cambio
+            await loadEquipos();
+        } catch (error) {
+            console.error('Error al eliminar carro:', error);
+            toast({
+                title: 'Error',
+                description: error.response?.data?.error || 'Error al eliminar el carro',
+                status: 'error',
+                duration: 5000,
+            });
+        }
+    };
+    
+    const handleCrearEquipo = async () => {
+        try {
+            // Llamar al backend para crear el equipo
+            const resultado = await equiposService.create(nuevoEquipo.nombre);
+            
+            // Crear objeto del equipo con los datos del backend
+            const equipoCreado = {
+                id: resultado.Id_equipo,
+                nombre: resultado.Nombre,
+                nombreCompleto: nuevoEquipo.nombreCompleto || resultado.Nombre,
+                pais: nuevoEquipo.pais || '',
+                colorPrimario: nuevoEquipo.colorPrimario || '#e10600',
+                fundacion: new Date().getFullYear(),
+                campeonatos: 0,
+                presupuesto: {
+                    total: 0,
+                    gastado: 0,
+                    sponsors: 0,
+                    distribucion: []
+                },
+                pilotos: [],
+                carros: [],
+                inventario: [],
+                patrocinadores: []
+            };
+            
+            setEquipos([...equipos, equipoCreado]);
+            setSelectedEquipo(equipoCreado);
+            setNuevoEquipo({
+                nombre: '',
+                nombreCompleto: '',
+                pais: '',
+                colorPrimario: '#e10600',
+                presupuesto: 100000000
+            });
+            onClose();
+            
+            toast({
+                title: 'Equipo creado',
+                description: `${equipoCreado.nombre} ha sido registrado exitosamente`,
+                status: 'success',
+                duration: 3000,
+            });
+        } catch (error) {
+            console.error('Error al crear equipo:', error);
+            toast({
+                title: 'Error',
+                description: error.response?.data?.error || 'Error al crear el equipo',
+                status: 'error',
+                duration: 5000,
+            });
+        }
     };
 
     if (loading) {
@@ -689,15 +849,31 @@ function Equipos() {
 
                                     {/* Tab Carros */}
                                     <TabPanel p={0}>
-                                        <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
-                                            {selectedEquipo.carros?.map((carro) => (
+                                        <VStack align="stretch" spacing={4}>
+                                            {/* Botón para crear nuevo carro */}
+                                            {selectedEquipo.carros?.length < 2 && (
+                                                <Button
+                                                    leftIcon={<Plus size={16} />}
+                                                    colorScheme="green"
+                                                    variant="outline"
+                                                    onClick={handleNuevoCarroClick}
+                                                    isLoading={loadingConductores}
+                                                >
+                                                    Nuevo Carro
+                                                </Button>
+                                            )}
+                                            
+                                            <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
+                                                {selectedEquipo.carros?.map((carro) => (
                                                 <CarroCard 
                                                     key={carro.id} 
                                                     carro={carro}
                                                     onClick={() => handleCarroClick(carro.id)}
+                                                    onDelete={handleEliminarCarro}
                                                 />
                                             ))}
-                                        </SimpleGrid>
+                                            </SimpleGrid>
+                                        </VStack>
                                     </TabPanel>
 
                                     {/* Tab Inventario */}
@@ -986,6 +1162,91 @@ function Equipos() {
                             leftIcon={<Plus size={16} />}
                         >
                             Agregar Aporte
+                        </Button>
+                    </ModalFooter>
+                </ModalContent>
+            </Modal>
+
+            {/* Modal para Crear Nuevo Carro */}
+            <Modal isOpen={isCarroOpen} onClose={onCarroClose} size="md" isCentered>
+                <ModalOverlay bg="blackAlpha.800"/>
+                <ModalContent bg="brand.800" borderColor="brand.700">
+                    <ModalHeader color="white">
+                        <HStack>
+                            <Icon as={Car} boxSize={5} color="accent.500" />
+                            <Text>Nuevo Carro</Text>
+                        </HStack>
+                    </ModalHeader>
+                    <ModalCloseButton/>
+                    <ModalBody pb={6}>
+                        <VStack spacing={4} align="stretch">
+                            <Text color="gray.300" fontSize="sm">
+                                Equipo: <Text as="span" fontWeight="bold" color="white">{selectedEquipo?.nombre}</Text>
+                            </Text>
+                            
+                            <Text color="gray.400" fontSize="sm">
+                                Carros actuales: {selectedEquipo?.carros?.length || 0}/2
+                            </Text>
+                            
+                            <Divider borderColor="brand.600" />
+                            
+                            <FormControl>
+                                <FormLabel color="gray.300">Conductor (opcional)</FormLabel>
+                                {loadingConductores ? (
+                                    <Spinner size="sm" color="accent.500" />
+                                ) : conductoresDisponibles.length > 0 ? (
+                                    <Select
+                                        placeholder="Selecciona un conductor o deja sin asignar"
+                                        value={nuevoCarro.idConductor}
+                                        onChange={(e) => setNuevoCarro({...nuevoCarro, idConductor: e.target.value})}
+                                        bg="brand.900"
+                                        borderColor="brand.700"
+                                        _focus={{ borderColor: 'accent.500' }}
+                                    >
+                                        {conductoresDisponibles.map((c) => (
+                                            <option key={c.Id_usuario} value={c.Id_usuario} style={{background: '#1a1a2e'}}>
+                                                {c.Nombre_usuario || c.Correo_usuario} 
+                                                {c.Habilidad !== null && ` (Habilidad: ${c.Habilidad})`}
+                                                {c.Id_equipo === null && ' - Sin equipo'}
+                                            </option>
+                                        ))}
+                                    </Select>
+                                ) : (
+                                    <Text color="yellow.400" fontSize="sm">
+                                        No hay conductores disponibles. Puedes crear el carro sin conductor.
+                                    </Text>
+                                )}
+                                <Text fontSize="xs" color="gray.500" mt={1}>
+                                    Si no seleccionas conductor, se asignará automáticamente uno del equipo si está disponible.
+                                </Text>
+                            </FormControl>
+                            
+                            {/* Info sobre conductores del equipo */}
+                            {conductoresDisponibles.some(c => c.Id_equipo === selectedEquipo?.id) && (
+                                <Card bg="brand.900" borderColor="green.700" borderWidth="1px">
+                                    <CardBody py={2}>
+                                        <HStack>
+                                            <Icon as={Users} color="green.400" boxSize={4} />
+                                            <Text fontSize="sm" color="green.400">
+                                                Hay conductores del equipo disponibles para asignar
+                                            </Text>
+                                        </HStack>
+                                    </CardBody>
+                                </Card>
+                            )}
+                        </VStack>
+                    </ModalBody>
+                    <ModalFooter>
+                        <Button variant="ghost" mr={3} onClick={onCarroClose}>
+                            Cancelar
+                        </Button>
+                        <Button 
+                            colorScheme="green" 
+                            onClick={handleCrearCarro}
+                            isLoading={creandoCarro}
+                            leftIcon={<Plus size={16} />}
+                        >
+                            Crear Carro
                         </Button>
                     </ModalFooter>
                 </ModalContent>
