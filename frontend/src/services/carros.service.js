@@ -30,13 +30,15 @@ export const carrosService = {
     },
 
     /**
-     * Crear nuevo carro usando SP_CrearCarro
+     * Crear nuevo carro con conductor opcional
      * @param {number} idEquipo - ID del equipo que crea el carro
+     * @param {number|null} idConductor - ID del conductor (opcional)
      * @returns {Promise<Object>} - Carro creado
      */
-    async crearCarro(idEquipo) {
+    async crearCarro(idEquipo, idConductor = null) {
         const response = await api.post('/carros', {
-            idEquipo
+            idEquipo,
+            idConductor
         });
         return response.data;
     },
@@ -132,6 +134,24 @@ export const carrosService = {
      */
     async getStats(carroId) {
         const response = await api.get(`/carros/${carroId}/stats`);
+        return response.data;
+    },
+
+    /**
+     * Obtener conductores disponibles para asignar a un carro
+     * @param {number} idEquipo - ID del equipo
+     */
+    async getConductoresDisponibles(idEquipo) {
+        const response = await api.get(`/carros/conductores-disponibles/${idEquipo}`);
+        return response.data;
+    },
+
+    /**
+     * Eliminar un carro
+     * @param {number} carroId - ID del carro a eliminar
+     */
+    async eliminarCarro(carroId) {
+        const response = await api.delete(`/carros/${carroId}`);
         return response.data;
     }
 };

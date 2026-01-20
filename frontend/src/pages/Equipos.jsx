@@ -512,11 +512,22 @@ function Equipos() {
     const handleCrearCarro = async () => {
         if (!selectedEquipo) return;
         
+        // Validar que se haya seleccionado un conductor
+        if (!nuevoCarro.idConductor) {
+            toast({
+                title: 'Conductor requerido',
+                description: 'Debes seleccionar un piloto para el carro',
+                status: 'warning',
+                duration: 3000,
+            });
+            return;
+        }
+        
         setCreandoCarro(true);
         try {
             const resultado = await carrosService.crearCarro(
                 selectedEquipo.id,
-                nuevoCarro.idConductor ? parseInt(nuevoCarro.idConductor) : null
+                parseInt(nuevoCarro.idConductor)
             );
             
             if (resultado.success) {
@@ -1191,7 +1202,7 @@ function Equipos() {
                             <Divider borderColor="brand.600" />
                             
                             <FormControl>
-                                <FormLabel color="gray.300">Conductor (opcional)</FormLabel>
+                                <FormLabel color="gray.300">Conductor <Text as="span" color="red.400">*</Text></FormLabel>
                                 {loadingConductores ? (
                                     <Spinner size="sm" color="accent.500" />
                                 ) : conductoresDisponibles.length > 0 ? (
@@ -1217,7 +1228,7 @@ function Equipos() {
                                     </Text>
                                 )}
                                 <Text fontSize="xs" color="gray.500" mt={1}>
-                                    Si no seleccionas conductor, se asignará automáticamente uno del equipo si está disponible.
+                                    Se debe seleccionar un conductor del equipo para asignarlo al carro. Si no hay conductores disponibles, contacte al administrador para que le asigne conductores.
                                 </Text>
                             </FormControl>
                             
@@ -1244,6 +1255,7 @@ function Equipos() {
                             colorScheme="green" 
                             onClick={handleCrearCarro}
                             isLoading={creandoCarro}
+                            isDisabled={!nuevoCarro.idConductor}
                             leftIcon={<Plus size={16} />}
                         >
                             Crear Carro

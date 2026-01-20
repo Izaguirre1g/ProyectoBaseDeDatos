@@ -313,39 +313,60 @@ const carrosService = {
     /**
      * ============================================
      * MÉTODO: crearCarro()
-     * Crear un nuevo carro usando SP_CrearCarro
+     * Crear un nuevo carro con conductor opcional
      * ============================================
      * Valida que el equipo no tenga más de 2 carros
      */
-    async crearCarro(idEquipo) {
+    async crearCarro(idEquipo, idConductor = null) {
         const pool = await getConnection();
+        const transaction = pool.transaction();
         
         try {
-            const result = await pool.request()
-                .input('Id_equipo', sql.Int, idEquipo)
-                .output('Resultado', sql.VarChar(200))
-                .execute('SP_CrearCarro');
+            await transaction.begin();
             
-            const mensaje = result.output.Resultado;
-            const returnValue = result.returnValue;
+            // Verificar que el equipo no tenga más de 2 carros
+            const checkResult = await transaction.request()
+                .input('idEquipo', sql.Int, idEquipo)
+                .query('SELECT COUNT(*) as total FROM CARRO WHERE Id_equipo = @idEquipo');
             
-            if (returnValue === 0) {
-                // Obtener el carro creado
-                const carros = await this.getByEquipo(idEquipo);
-                const nuevoCaroo = carros[carros.length - 1]; // El último creado
-                return {
-                    success: true,
-                    mensaje,
-                    carro: nuevoCaroo
-                };
-            } else {
+            if (checkResult.recordset[0].total >= 2) {
+                await transaction.rollback();
                 return {
                     success: false,
-                    mensaje: mensaje || 'Error al crear carro'
+                    mensaje: 'El equipo ya tiene el máximo de 2 carros permitidos'
                 };
             }
+            
+            // Crear el carro
+            const insertResult = await transaction.request()
+                .input('idEquipo', sql.Int, idEquipo)
+                .input('idConductor', sql.Int, idConductor)
+                .query(`
+                    INSERT INTO CARRO (Id_equipo, Finalizado, M_total, P_total, A_total, Id_conductor)
+                    OUTPUT INSERTED.*
+                    VALUES (@idEquipo, 0, 0, 0, 0, @idConductor)
+                `);
+            
+            const nuevoCarro = insertResult.recordset[0];
+            
+            // Si hay conductor, actualizar su equipo
+            if (idConductor) {
+                await transaction.request()
+                    .input('idConductor', sql.Int, idConductor)
+                    .input('idEquipo', sql.Int, idEquipo)
+                    .query('UPDATE USUARIO SET Id_equipo = @idEquipo WHERE Id_usuario = @idConductor');
+            }
+            
+            await transaction.commit();
+            
+            return {
+                success: true,
+                mensaje: 'Carro creado exitosamente',
+                carro: nuevoCarro
+            };
         } catch (error) {
-            console.error('Error en SP_CrearCarro:', error);
+            await transaction.rollback();
+            console.error('Error al crear carro:', error);
             throw new Error(error.message || 'Error al crear carro');
         }
     },
@@ -397,13 +418,69 @@ const carrosService = {
 
     async delete(id) {
         const pool = await getConnection();
-        await pool.request()
-            .input('id', sql.Int, id)
-            .query('DELETE FROM ESTRUCTURA_CARRO WHERE Id_carro = @id');
-        await pool.request()
-            .input('id', sql.Int, id)
-            .query('DELETE FROM CARRO WHERE Id_carro = @id');
-        return true;
+        const transaction = pool.transaction();
+        
+        try {
+            await transaction.begin();
+            
+            // Eliminar resultados de simulaciones relacionados
+            await transaction.request()
+                .input('id', sql.Int, id)
+                .query('DELETE FROM RESULTADO WHERE Id_carro = @id');
+            
+            // Eliminar estructura del carro (partes instaladas)
+            await transaction.request()
+                .input('id', sql.Int, id)
+                .query('DELETE FROM ESTRUCTURA_CARRO WHERE Id_carro = @id');
+            
+            // Eliminar conductor_chasis si existe
+            await transaction.request()
+                .input('id', sql.Int, id)
+                .query('DELETE FROM CONDUCTOR_CHASIS WHERE Id_carro = @id');
+            
+            // Eliminar el carro
+            await transaction.request()
+                .input('id', sql.Int, id)
+                .query('DELETE FROM CARRO WHERE Id_carro = @id');
+            
+            await transaction.commit();
+            return true;
+        } catch (error) {
+            await transaction.rollback();
+            console.error('Error al eliminar carro:', error);
+            throw error;
+        }
+    },
+
+    /**
+     * Obtener conductores disponibles para asignar a un carro
+     * Retorna conductores con rol 'Conductor' que no están asignados a ningún carro
+     */
+    async getConductoresDisponibles(idEquipo) {
+        const pool = await getConnection();
+        const result = await pool.request()
+            .input('idEquipo', sql.Int, idEquipo)
+            .query(`
+                SELECT 
+                    u.Id_usuario,
+                    u.Nombre_usuario,
+                    u.Correo_usuario,
+                    u.Habilidad,
+                    u.Id_equipo,
+                    e.Nombre as Equipo
+                FROM USUARIO u
+                INNER JOIN ROL r ON u.Id_rol = r.Id_rol
+                LEFT JOIN EQUIPO e ON u.Id_equipo = e.Id_equipo
+                WHERE r.Nombre = 'Conductor'
+                AND u.Id_usuario NOT IN (
+                    SELECT Id_conductor FROM CARRO WHERE Id_conductor IS NOT NULL
+                )
+                AND (u.Id_equipo = @idEquipo OR u.Id_equipo IS NULL)
+                ORDER BY 
+                    CASE WHEN u.Id_equipo = @idEquipo THEN 0 ELSE 1 END,
+                    u.Nombre_usuario
+            `);
+        return result.recordset;
     }
 };
 

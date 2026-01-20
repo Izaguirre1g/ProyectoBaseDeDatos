@@ -44,6 +44,21 @@ router.get('/disponibles', async (req, res) => {
 });
 
 /**
+ * GET /api/carros/conductores-disponibles/:idEquipo
+ * Obtener conductores disponibles para asignar a un carro del equipo
+ */
+router.get('/conductores-disponibles/:idEquipo', async (req, res) => {
+    try {
+        const { idEquipo } = req.params;
+        const conductores = await carrosService.getConductoresDisponibles(parseInt(idEquipo));
+        res.json(conductores);
+    } catch (error) {
+        console.error('Error al obtener conductores disponibles:', error);
+        res.status(500).json({ error: 'Error al obtener conductores disponibles' });
+    }
+});
+
+/**
  * GET /api/carros/:id/configuracion
  * Obtener configuración completa del carro (5 categorías)
  */
@@ -204,17 +219,20 @@ router.get('/:id', async (req, res) => {
 
 /**
  * POST /api/carros
- * Crear nuevo carro usando SP_CrearCarro
+ * Crear nuevo carro con conductor opcional
  */
 router.post('/', async (req, res) => {
     try {
-        const { idEquipo } = req.body;
+        const { idEquipo, idConductor } = req.body;
         
         if (!idEquipo) {
             return res.status(400).json({ error: 'idEquipo es requerido' });
         }
         
-        const resultado = await carrosService.crearCarro(parseInt(idEquipo));
+        const resultado = await carrosService.crearCarro(
+            parseInt(idEquipo),
+            idConductor ? parseInt(idConductor) : null
+        );
         
         if (resultado.success) {
             res.status(201).json(resultado);
