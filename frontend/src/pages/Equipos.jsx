@@ -332,7 +332,7 @@ function Equipos() {
                     pais: '', // No disponible en BD
                     colorPrimario: '#e10600', // Default, no disponible en BD
                     presupuesto: {
-                        total: presupuestoData.TotalAportes || 0,
+                        total: presupuestoData.Presupuesto || 0,
                         gastado: presupuestoData.TotalGastos || 0,
                         disponible: presupuestoData.Presupuesto || 0,
                         sponsors: patrocinadores.reduce((acc, p) => acc + (p.MontoTotal || 0), 0),
