@@ -218,7 +218,7 @@ function AdminDashboard() {
 
             <Card bg="brand.800" borderColor="brand.700">
                 <CardBody>
-                    <Heading size="md" color="white" mb={4}>Acciones Rápidas</Heading>
+                    <Heading size="md" color="white" mb={4}>Acciones rápidas</Heading>
                     <Flex gap={3} flexWrap="wrap">
                         <Button 
                             leftIcon={<Plus size={16} />} 
@@ -269,7 +269,7 @@ function AdminDashboard() {
                 <Card bg="brand.800" borderColor="brand.700">
                     <CardBody>
                         <HStack justify="space-between" mb={4}>
-                            <Heading size="md" color="white">Equipos por Presupuesto</Heading>
+                            <Heading size="md" color="white">Equipos por presupuesto</Heading>
                             <Button 
                                 size="xs" 
                                 variant="ghost" 
@@ -324,7 +324,7 @@ function AdminDashboard() {
                 <Card bg="brand.800" borderColor="brand.700">
                     <CardBody>
                         <HStack justify="space-between" mb={4}>
-                            <Heading size="md" color="white">Simulaciones Recientes</Heading>
+                            <Heading size="md" color="white">Simulaciones recientes</Heading>
                             <Button 
                                 size="xs" 
                                 variant="ghost" 
@@ -539,7 +539,7 @@ function EngineerDashboard() {
                 <Card bg="brand.800" borderColor="brand.700">
                     <CardBody>
                         <HStack justify="space-between" mb={4}>
-                            <Heading size="md" color="white">Carros del Equipo</Heading>
+                            <Heading size="md" color="white">Carros del equipo</Heading>
                             <Button 
                                 size="xs" 
                                 variant="ghost" 
@@ -627,7 +627,7 @@ function EngineerDashboard() {
                         
                         {/* Patrocinadores resumen */}
                         <Divider my={4} borderColor="brand.700" />
-                        <Text fontSize="sm" color="gray.400" mb={2}>Principales Patrocinadores</Text>
+                        <Text fontSize="sm" color="gray.400" mb={2}>Principales patrocinadores</Text>
                         <HStack spacing={2} flexWrap="wrap">
                             {patrocinadores.length > 0 ? patrocinadores.map((p, idx) => (
                                 <Badge key={idx} colorScheme="green" variant="subtle">
@@ -643,7 +643,7 @@ function EngineerDashboard() {
 
             <Card bg="brand.800" borderColor="brand.700">
                 <CardBody>
-                    <Heading size="md" color="white" mb={4}>Acciones Rápidas</Heading>
+                    <Heading size="md" color="white" mb={4}>Acciones rápidas</Heading>
                     <Flex gap={3} flexWrap="wrap">
                         <Button 
                             leftIcon={<ShoppingCart size={16} />} 
@@ -896,7 +896,7 @@ function DriverDashboard() {
                 <Card bg="brand.800" borderColor="brand.700">
                     <CardBody>
                         <HStack justify="space-between" mb={4}>
-                            <Heading size="md" color="white">Historial de Simulaciones</Heading>
+                            <Heading size="md" color="white">Historial de simulaciones</Heading>
                             <Button 
                                 size="xs" 
                                 variant="ghost" 

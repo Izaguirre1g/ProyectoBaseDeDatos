@@ -189,7 +189,7 @@ export function ModalGestionStock({ isOpen, onClose, parte, onSuccess }) {
                         {/* Información de la parte */}
                         <Box 
                             p={4} 
-                            bg="gray.50" 
+                            bg="gray.60" 
                             borderRadius="md" 
                             borderWidth="1px"
                         >

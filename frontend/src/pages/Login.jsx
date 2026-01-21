@@ -118,7 +118,7 @@ function Login() {
                                             type={showPassword ? 'text' : 'password'}
                                             value={password}
                                             onChange={(e) => setPassword(e.target.value)}
-                                            placeholder="Ingresa tu contrasena"
+                                            placeholder="Ingresa tu contraseña"
                                             required
                                             disabled={loading}
                                         />

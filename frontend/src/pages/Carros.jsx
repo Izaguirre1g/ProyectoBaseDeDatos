@@ -117,7 +117,7 @@ function Carros() {
     return (
         <Container maxW="container.xl" py={8}>
             <Box mb={6}>
-                <Heading size="lg" color="white">Armado de Carros</Heading>
+                <Heading size="lg" color="white">Armado de carros</Heading>
                 <Text color="gray.400" mt={1}>Selecciona un carro para configurar sus partes</Text>
             </Box>
 

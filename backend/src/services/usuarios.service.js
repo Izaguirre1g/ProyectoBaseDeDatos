@@ -72,10 +72,16 @@ const usuariosService = {
 
     /**
      * Crear nuevo usuario
+     * La contraseña ya viene hasheada con Argon2id desde el frontend
      */
     async create({ nombre, correo, password, idEquipo, idRol, habilidad = null }) {
         const pool = await getConnection();
-        const hash = await argon2.hash(password, ARGON2_CONFIG);
+        // La contraseña ya viene hasheada desde el cliente
+        // Si no está hasheada (no empieza con $argon2), hashearla aquí
+        let hash = password;
+        if (!password.startsWith('$argon2')) {
+            hash = await argon2.hash(password, ARGON2_CONFIG);
+        }
         const nextId = await this.getNextId();
 
         const result = await pool.request()
@@ -124,10 +130,13 @@ const usuariosService = {
 
     /**
      * Actualizar contraseña
+     * La contraseña ya viene hasheada con Argon2id desde el frontend
      */
     async updatePassword(id, newPassword) {
         const pool = await getConnection();
-        const hash = await argon2.hash(newPassword, ARGON2_CONFIG);
+        // El hash Argon2id viene del cliente - guardar directamente
+        const hash = newPassword;
+        console.log('🔐 Actualizando hash Argon2id');
         await pool.request()
             .input('id', sql.Int, id)
             .input('hash', sql.NVarChar, hash)
@@ -234,12 +243,24 @@ const usuariosService = {
 
     /**
      * Verificar contraseña
+     * Recibe el hash Argon2id desde el frontend y lo compara directamente
      */
     async verifyPassword(correo, password) {
         const user = await this.getByCorreo(correo);
-        if (!user) return { valid: false, user: null };
+        if (!user) {
+            console.log('❌ Usuario no encontrado:', correo);
+            return { valid: false, user: null };
+        }
         
-        const valid = await argon2.verify(user.Contrasena_hash, password);
+        // El password ya viene como hash Argon2id desde el cliente
+        // Comparar directamente con el hash almacenado
+        console.log('🔐 Hash recibido:', password);
+        console.log('🔐 Hash en BD:   ', user.Contrasena_hash);
+        console.log('🔐 ¿Son iguales?:', password === user.Contrasena_hash);
+        
+        const valid = (password === user.Contrasena_hash);
+        console.log('🔐 Verificación de hash Argon2id:', valid ? '✅ Correcto' : '❌ Incorrecto');
+        
         return { valid, user: valid ? user : null };
     },
 

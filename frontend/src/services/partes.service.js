@@ -125,6 +125,63 @@ export const partesService = {
             motivo
         });
         return response.data;
+    },
+
+    /**
+     * Crear una nueva parte en el catálogo
+     * Solo accesible por Admin
+     * @param {Object} dataParte - Datos de la parte a crear
+     * @param {string} dataParte.nombre - Nombre de la parte
+     * @param {string} dataParte.marca - Marca de la parte
+     * @param {number} dataParte.idCategoria - ID de la categoría
+     * @param {number} dataParte.precio - Precio de la parte
+     * @param {number} dataParte.potencia - Stat de potencia (1-9)
+     * @param {number} dataParte.aerodinamica - Stat de aerodinámica (1-9)
+     * @param {number} dataParte.manejo - Stat de manejo (1-9)
+     * @returns {Promise<Object>} - Parte creada
+     */
+    async crearParte({ nombre, marca, idCategoria, precio, potencia, aerodinamica, manejo }) {
+        const response = await api.post('/partes', {
+            nombre,
+            marca,
+            idCategoria,
+            precio,
+            potencia,
+            aerodinamica,
+            manejo
+        });
+        return response.data;
+    },
+
+    /**
+     * Actualizar una parte existente
+     * Solo accesible por Admin
+     * @param {number} idParte - ID de la parte a actualizar
+     * @param {Object} dataParte - Datos actualizados
+     * @returns {Promise<Object>} - Parte actualizada
+     */
+    async actualizarParte(idParte, { nombre, marca, idCategoria, precio, potencia, aerodinamica, manejo }) {
+        const response = await api.put(`/partes/${idParte}`, {
+            nombre,
+            marca,
+            idCategoria,
+            precio,
+            potencia,
+            aerodinamica,
+            manejo
+        });
+        return response.data;
+    },
+
+    /**
+     * Eliminar una parte del catálogo
+     * Solo accesible por Admin
+     * @param {number} idParte - ID de la parte a eliminar
+     * @returns {Promise<Object>} - Resultado de la operación
+     */
+    async eliminarParte(idParte) {
+        const response = await api.delete(`/partes/${idParte}`);
+        return response.data;
     }
 };
 

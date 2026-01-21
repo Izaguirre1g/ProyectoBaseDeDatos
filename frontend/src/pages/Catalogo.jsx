@@ -22,10 +22,11 @@ import {
     Divider,
     useToast,
 } from '@chakra-ui/react';
-import { Package, Zap, Wind, Target, ShoppingCart } from 'lucide-react';
+import { Package, Zap, Wind, Target, ShoppingCart, Plus } from 'lucide-react';
 import partesService from '../services/partes.service';
 import ModalCompra from '../components/ModalCompra';
 import { ModalGestionStock } from '../components/ModalGestionStock';
+import { ModalNuevaParte } from '../components/ModalNuevaParte';
 import { useAuth } from '../context/AuthContext';
 
 function Catalogo() {
@@ -45,6 +46,9 @@ function Catalogo() {
     // NUEVOS ESTADOS PARA GESTIÓN DE STOCK
     const [modalStockOpen, setModalStockOpen] = useState(false);
     const [parteParaStock, setParteParaStock] = useState(null);
+
+    // ESTADO PARA MODAL DE NUEVA PARTE
+    const [modalNuevaParteOpen, setModalNuevaParteOpen] = useState(false);
 
     useEffect(() => {
         const fetchCategorias = async () => {
@@ -175,6 +179,22 @@ function Catalogo() {
         fetchPartes();
     };
 
+    // NUEVA FUNCIÓN: Manejar creación de parte exitosa
+    const handleParteCreada = () => {
+        console.log('Nueva parte creada, recargando catálogo...');
+        
+        toast({
+            title: 'Catálogo actualizado',
+            description: 'La nueva parte ya está disponible en el catálogo',
+            status: 'success',
+            duration: 3000,
+            isClosable: true,
+        });
+        
+        // Recargar el catálogo para ver la nueva parte
+        fetchPartes();
+    };
+
     const getCategoriaIcon = (catId) => {
         const icons = {
             'Motor': Zap,
@@ -193,10 +213,24 @@ function Catalogo() {
 
     return (
         <Container maxW="container.xl" py={8}>
-            <Box mb={6}>
-                <Heading size="lg" color="white">Catalogo de Partes F1</Heading>
-                <Text color="gray.400" mt={1}>Selecciona las mejores partes para tu carro</Text>
-            </Box>
+            <Flex mb={6} justify="space-between" align="center" wrap="wrap" gap={4}>
+                <Box>
+                    <Heading size="lg" color="white">Catalogo de Partes F1</Heading>
+                    <Text color="gray.400" mt={1}>Selecciona las mejores partes para tu carro</Text>
+                </Box>
+                
+                {/* Botón para agregar nueva parte - Solo Admin */}
+                {usuario?.rol === 'Admin' && (
+                    <Button
+                        leftIcon={<Plus size={18} />}
+                        colorScheme="green"
+                        size="md"
+                        onClick={() => setModalNuevaParteOpen(true)}
+                    >
+                        Agregar nueva parte
+                    </Button>
+                )}
+            </Flex>
 
             {/* Filtros por categoria */}
             <Wrap spacing={3} mb={6}>
@@ -346,6 +380,14 @@ function Catalogo() {
                 onClose={() => setModalStockOpen(false)}
                 parte={parteParaStock}
                 onSuccess={handleStockModificado}
+            />
+
+            {/* Modal para Crear Nueva Parte (Admin) */}
+            <ModalNuevaParte
+                isOpen={modalNuevaParteOpen}
+                onClose={() => setModalNuevaParteOpen(false)}
+                categorias={categorias}
+                onSuccess={handleParteCreada}
             />
 
             {/* Resumen */}

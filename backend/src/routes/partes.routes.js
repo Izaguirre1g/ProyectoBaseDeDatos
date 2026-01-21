@@ -211,6 +211,18 @@ router.get('/:id', async (req, res) => {
 // CRUD - Admin
 router.post('/', async (req, res) => {
     try {
+        console.log('CREAR PARTE INICIO');
+        console.log('Usuario rol:', req.session?.rol);
+        console.log('Body recibido:', req.body);
+        
+        // Verificar que el usuario es Admin
+        if (req.session?.rol !== 'Admin') {
+            console.log('Acceso denegado: usuario no es Admin');
+            return res.status(403).json({ 
+                error: 'Solo los administradores pueden crear nuevas partes' 
+            });
+        }
+        
         const { nombre, marca, manejo, aerodinamica, potencia, precio, idCategoria } = req.body;
         
         if (!nombre || !idCategoria) {
@@ -226,10 +238,13 @@ router.post('/', async (req, res) => {
             idCategoria: parseInt(idCategoria)
         });
         
+        console.log('Parte creada:', parte);
+        console.log('CREAR PARTE FIN');
+        
         res.status(201).json(parte);
     } catch (error) {
         console.error('Error al crear parte:', error);
-        res.status(500).json({ error: 'Error al crear parte' });
+        res.status(500).json({ error: 'Error al crear parte', detalle: error.message });
     }
 });
 

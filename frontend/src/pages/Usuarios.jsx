@@ -108,32 +108,39 @@ function Usuarios() {
 
     const handleEdit = async (usuario) => {
         setEditingUser(usuario);
+        const rolFrontend = mapRolBDtoFrontend(usuario.Rol) || 'Driver';
+        
         setFormData({
             nombre: usuario.Nombre || usuario.Nombre_usuario || '',
             email: usuario.Correo_usuario || '',
             password: '',
-            rol: mapRolBDtoFrontend(usuario.Rol) || 'Driver',
+            rol: rolFrontend,
             equipo: usuario.Equipo || '',
             habilidad: usuario.Habilidad !== null && usuario.Habilidad !== undefined ? usuario.Habilidad.toString() : ''
         });
         
-        // Cargar equipos disponibles + el equipo actual del usuario
+        // Cargar equipos según el rol del usuario
         try {
-            const equiposDisponibles = await equiposService.getEquiposDisponibles();
-            // Agregar el equipo actual si existe
-            if (usuario.Equipo) {
-                const yaExiste = equiposDisponibles.some(e => e.Nombre === usuario.Equipo);
-                if (!yaExiste) {
-                    // Agregar equipo actual a la lista
-                    equiposDisponibles.push({
-                        Id_equipo: usuario.Id_equipo || 0,
-                        Nombre: usuario.Equipo
-                    });
+            if (rolFrontend === 'Engineer') {
+                // Ingenieros: solo equipos sin ingeniero asignado + el equipo actual
+                let equiposDisponibles = await equiposService.getEquiposDisponibles();
+                if (usuario.Equipo) {
+                    const yaExiste = equiposDisponibles.some(e => e.Nombre === usuario.Equipo);
+                    if (!yaExiste) {
+                        equiposDisponibles.push({
+                            Id_equipo: usuario.Id_equipo || 0,
+                            Nombre: usuario.Equipo
+                        });
+                    }
                 }
+                setEquipos(equiposDisponibles);
+            } else {
+                // Conductores y Admin: todos los equipos
+                const todosEquipos = await equiposService.getAll();
+                setEquipos(todosEquipos);
             }
-            setEquipos(equiposDisponibles);
         } catch (err) {
-            console.warn('Error al cargar equipos disponibles:', err);
+            console.warn('Error al cargar equipos:', err);
         }
         
         onOpen();
@@ -150,12 +157,12 @@ function Usuarios() {
             habilidad: ''
         });
         
-        // Cargar equipos disponibles para nuevo usuario
+        // Por defecto es Driver, así que cargar todos los equipos
         try {
-            const equiposDisponibles = await equiposService.getEquiposDisponibles();
-            setEquipos(equiposDisponibles);
+            const todosEquipos = await equiposService.getAll();
+            setEquipos(todosEquipos);
         } catch (err) {
-            console.warn('Error al cargar equipos disponibles:', err);
+            console.warn('Error al cargar equipos:', err);
         }
         
         onOpen();
@@ -193,11 +200,40 @@ function Usuarios() {
         return rolMap[rolFrontend] || rolFrontend;
     };
 
-    const handleFormChange = (field, value) => {
+    const handleFormChange = async (field, value) => {
         setFormData(prev => ({
             ...prev,
             [field]: value
         }));
+        
+        // Si cambia el rol, actualizar la lista de equipos disponibles
+        if (field === 'rol') {
+            try {
+                if (value === 'Engineer') {
+                    // Ingenieros: solo equipos sin ingeniero asignado
+                    let equiposDisponibles = await equiposService.getEquiposDisponibles();
+                    // Si estamos editando y el usuario ya tiene equipo, agregarlo
+                    if (editingUser?.Equipo) {
+                        const yaExiste = equiposDisponibles.some(e => e.Nombre === editingUser.Equipo);
+                        if (!yaExiste) {
+                            equiposDisponibles.push({
+                                Id_equipo: editingUser.Id_equipo || 0,
+                                Nombre: editingUser.Equipo
+                            });
+                        }
+                    }
+                    setEquipos(equiposDisponibles);
+                } else {
+                    // Conductores y Admin: todos los equipos
+                    const todosEquipos = await equiposService.getAll();
+                    setEquipos(todosEquipos);
+                }
+                // Limpiar equipo seleccionado al cambiar rol
+                setFormData(prev => ({ ...prev, equipo: '' }));
+            } catch (err) {
+                console.warn('Error al cargar equipos:', err);
+            }
+        }
     };
 
     const handleDelete = async (id) => {

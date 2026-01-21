@@ -25,16 +25,23 @@ async function hashPassword(password) {
 
 /**
  * Verifica si una contraseña coincide con su hash
- * @param {string} password - Contraseña en texto plano
- * @param {string} hash - Hash almacenado
+ * Ahora el frontend envía el hash Argon2id directamente, así que comparamos hashes
+ * @param {string} passwordHash - Hash Argon2id recibido del frontend
+ * @param {string} storedHash - Hash almacenado en la BD
  * @returns {Promise<boolean>} - true si coincide, false si no
  */
-async function verifyPassword(password, hash) {
+async function verifyPassword(passwordHash, storedHash) {
     try {
-        const matches = await argon2.verify(hash, password);
+        // Comparación directa de hashes (el frontend ya envía el hash)
+        console.log('🔐 Comparando hashes:');
+        console.log('   Recibido:', passwordHash.substring(0, 60) + '...');
+        console.log('   En BD:   ', storedHash.substring(0, 60) + '...');
+        
+        const matches = (passwordHash === storedHash);
+        console.log('   ¿Coinciden?:', matches);
+        
         return matches;
     } catch (error) {
-        // En caso de error en verificación (hash corrupto, etc.)
         console.error('Error verificando contraseña:', error.message);
         return false;
     }
