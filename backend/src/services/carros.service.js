@@ -423,6 +423,43 @@ const carrosService = {
         try {
             await transaction.begin();
             
+            // Obtener el equipo del carro para devolver partes al inventario
+            const carroResult = await transaction.request()
+                .input('id', sql.Int, id)
+                .query('SELECT Id_equipo FROM CARRO WHERE Id_carro = @id');
+            
+            const idEquipo = carroResult.recordset[0]?.Id_equipo;
+            
+            if (idEquipo) {
+                // Obtener las partes instaladas en el carro
+                const partesResult = await transaction.request()
+                    .input('id', sql.Int, id)
+                    .query('SELECT Id_parte FROM ESTRUCTURA_CARRO WHERE Id_carro = @id');
+                
+                // Devolver cada parte al inventario del equipo
+                for (const parte of partesResult.recordset) {
+                    // Verificar si ya existe en inventario
+                    const existeResult = await transaction.request()
+                        .input('idEquipo', sql.Int, idEquipo)
+                        .input('idParte', sql.Int, parte.Id_parte)
+                        .query('SELECT Cantidad FROM INVENTARIO_EQUIPO WHERE Id_equipo = @idEquipo AND Id_parte = @idParte');
+                    
+                    if (existeResult.recordset.length > 0) {
+                        // Incrementar cantidad
+                        await transaction.request()
+                            .input('idEquipo', sql.Int, idEquipo)
+                            .input('idParte', sql.Int, parte.Id_parte)
+                            .query('UPDATE INVENTARIO_EQUIPO SET Cantidad = Cantidad + 1 WHERE Id_equipo = @idEquipo AND Id_parte = @idParte');
+                    } else {
+                        // Insertar nueva entrada en inventario
+                        await transaction.request()
+                            .input('idEquipo', sql.Int, idEquipo)
+                            .input('idParte', sql.Int, parte.Id_parte)
+                            .query('INSERT INTO INVENTARIO_EQUIPO (Id_equipo, Id_parte, Cantidad) VALUES (@idEquipo, @idParte, 1)');
+                    }
+                }
+            }
+            
             // Eliminar resultados de simulaciones relacionados
             await transaction.request()
                 .input('id', sql.Int, id)
