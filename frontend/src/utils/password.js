@@ -1,4 +1,4 @@
-import { argon2id } from 'hash-wasm';
+import { argon2id, sha256 } from 'hash-wasm';
 
 /**
  * Configuración de Argon2id según OWASP
@@ -20,8 +20,17 @@ const ARGON2_CONFIG = {
 async function generateDeterministicSalt(email) {
     const encoder = new TextEncoder();
     const data = encoder.encode(email.toLowerCase().trim() + '_F1_DATABASE_SALT');
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-    return new Uint8Array(hashBuffer).slice(0, 16); // Tomar primeros 16 bytes
+    
+    // Usar sha256 de hash-wasm
+    const hashHex = await sha256(data);
+    
+    // Convertir el string hexadecimal a Uint8Array y tomar primeros 16 bytes
+    const hashBuffer = new Uint8Array(16);
+    for (let i = 0; i < 16; i++) {
+        hashBuffer[i] = parseInt(hashHex.substr(i * 2, 2), 16);
+    }
+    
+    return hashBuffer;
 }
 
 /**

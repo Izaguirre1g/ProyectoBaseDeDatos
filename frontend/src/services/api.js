@@ -1,8 +1,14 @@
 import axios from 'axios';
 
+// Detectar automáticamente la IP (localhost o IP local según dónde se acceda)
+const getBaseURL = () => {
+    const host = window.location.hostname;
+    return `http://${host}:3000/api`;
+};
+
 // Configuración base de Axios
 const api = axios.create({
-    baseURL: 'http://localhost:3000/api',
+    baseURL: getBaseURL(),
     withCredentials: true,  // Importante para enviar cookies de sesión
     headers: {
         'Content-Type': 'application/json'

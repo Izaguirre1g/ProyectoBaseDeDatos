@@ -166,6 +166,86 @@ npm run preview
 | `npm run preview` | Vista previa del build |
 | `npm run lint` | Ejecuta ESLint |
 
+## Configuracion en Red Local (Multiples Computadoras)
+
+Para permitir que otras computadoras en la misma red accedan a la aplicacion, sigue estos pasos:
+
+### Paso 1: Identificar tu direccion IP local
+
+Abre PowerShell y ejecuta:
+
+```powershell
+ipconfig
+```
+
+Busca "IPv4 Address" bajo tu conexion de red (Ethernet o WiFi). Por ejemplo: `192.168.1.15`
+
+### Paso 2: Iniciar el servidor
+
+Los servidores ya estan configurados para escuchar en todas las interfaces. Solo inicia normalmente:
+
+```bash
+# Terminal 1 - Backend
+cd backend
+npm run dev
+
+# Terminal 2 - Frontend
+cd frontend
+npm run dev
+```
+
+Deberías ver mensajes como:
+```
+Servidor F1 Database corriendo en http://0.0.0.0:3000
+Acceso desde red: http://192.168.1.15:3000
+```
+
+### Paso 3: Configurar Firewall de Windows
+
+El Firewall de Windows puede bloquear las conexiones. Configuralo asi:
+
+#### Opcion A: Permitir automaticamente (Recomendado)
+
+Cuando inicies el servidor por primera vez, Windows mostrara una ventana. Selecciona:
+- "Redes privadas"
+- Haz clic en "Permitir acceso"
+
+#### Opcion B: Configurar manualmente
+
+1. Abre "Windows Defender Firewall with Advanced Security":
+   - Presiona tecla Windows y escribe "firewall"
+
+2. Haz clic en "Inbound Rules" (Reglas de entrada)
+
+3. Haz clic en "New Rule" (Nueva regla)
+
+4. Para el Backend:
+   - Tipo de regla: "Port"
+   - Protocolo y puerto: "TCP", puerto "3000"
+   - Accion: "Allow the connection"
+   - Perfil: Marca "Private"
+   - Nombre: "F1 Database Backend"
+   - Haz clic en "Finish"
+
+5. Repite para el Frontend (puerto "5173"):
+   - Nombre: "F1 Database Frontend"
+
+### Paso 4: Acceder desde otra computadora
+
+En otra computadora conectada a la misma red, abre el navegador e ingresa:
+
+```
+http://192.168.1.15:5173
+```
+
+Reemplaza "192.168.1.15" con tu IP local.
+
+### Troubleshooting
+
+- **No se puede conectar**: Verifica que ambas computadoras esten en la misma red y que el firewall permita los puertos 3000 y 5173
+- **Pagina en blanco**: Asegúrate de que el Backend y Frontend estan corriendo
+- **Error de autenticacion**: Verifica que la BD este correctamente configurada en el archivo `.env`
+
 ## Licencia
 
 MIT

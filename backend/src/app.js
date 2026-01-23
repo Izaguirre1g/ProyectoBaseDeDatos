@@ -25,9 +25,21 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// CORS configurado para React
+// CORS configurado para React - Permitir localhost y IP local
 app.use(cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    origin: function(origin, callback) {
+        const allowedOrigins = [
+            'http://localhost:5173',
+            'http://localhost:3000',
+            'http://192.168.1.15:5173',  // Tu IP local con puerto frontend
+            'http://192.168.1.15:3000'   // Tu IP local con puerto backend
+        ];
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error('No permitido por CORS'));
+        }
+    },
     credentials: true
 }));
 
@@ -77,8 +89,10 @@ app.use((err, req, res, next) => {
 });
 
 // Iniciar servidor
-app.listen(PORT, async () => {
-    console.log(`Servidor F1 Database corriendo en http://localhost:${PORT}`);
+app.listen(PORT, '0.0.0.0', async () => {
+    console.log(`Servidor F1 Database corriendo en http://0.0.0.0:${PORT}`);
+    console.log(`Acceso local: http://localhost:${PORT}`);
+    console.log(`Acceso desde red: http://192.168.1.15:${PORT}`);
     console.log(`Ambiente: ${process.env.NODE_ENV || 'development'}`);
     
     // Intentar conectar a la base de datos
