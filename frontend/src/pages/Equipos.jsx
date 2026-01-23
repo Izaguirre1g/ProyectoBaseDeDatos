@@ -212,7 +212,7 @@ function PatrocinadorCard({ patrocinador }) {
                     </VStack>
                     <VStack align="end" spacing={0}>
                         <Text fontWeight="bold" color="green.400">
-                            ${(patrocinador.aporte / 1000000).toFixed(1)}M
+                            ${new Intl.NumberFormat('es-CR', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(patrocinador.aporte)}
                         </Text>
                         <Text fontSize="xs" color="gray.500">por temporada</Text>
                     </VStack>
@@ -345,7 +345,7 @@ function Equipos() {
                         campeonatos: 0,
                         victorias: 0,
                         numero: p.Id_usuario,
-                        habilidad: p.Habilidad
+                        habilidad: p.Habilidad || p.Nivel_Habilidad || 75
                     })),
                     carros: carrosConPartes,
                     inventario: inventario.map(i => ({
@@ -458,7 +458,7 @@ function Equipos() {
             
             toast({
                 title: 'Aporte agregado',
-                description: `$${(montoNumerico / 1000000).toFixed(1)}M agregados desde ${patrocinadorSeleccionado?.Nombre}`,
+                description: `${new Intl.NumberFormat('es-CR', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(montoNumerico)} agregados desde ${patrocinadorSeleccionado?.Nombre}`,
                 status: 'success',
                 duration: 3000,
             });
@@ -791,28 +791,28 @@ function Equipos() {
                                             <StatCard
                                                 icon={DollarSign}
                                                 label="Presupuesto Total"
-                                                value={`$${(selectedEquipo.presupuesto?.total / 1000000).toFixed(0)}M`}
+                                                value={new Intl.NumberFormat('es-CR', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(selectedEquipo.presupuesto?.total)}
                                                 subtext="Temporada 2026"
                                                 color="green.400"
                                             />
                                             <StatCard
                                                 icon={TrendingUp}
                                                 label="Gastado"
-                                                value={`$${(selectedEquipo.presupuesto?.gastado / 1000000).toFixed(0)}M`}
+                                                value={new Intl.NumberFormat('es-CR', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(selectedEquipo.presupuesto?.gastado)}
                                                 subtext={`${((selectedEquipo.presupuesto?.gastado / selectedEquipo.presupuesto?.total) * 100).toFixed(0)}% del total`}
                                                 color="orange.400"
                                             />
                                             <StatCard
                                                 icon={DollarSign}
                                                 label="Disponible"
-                                                value={`$${((selectedEquipo.presupuesto?.total - selectedEquipo.presupuesto?.gastado) / 1000000).toFixed(0)}M`}
+                                                value={new Intl.NumberFormat('es-CR', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format((selectedEquipo.presupuesto?.total - selectedEquipo.presupuesto?.gastado))}
                                                 subtext="Para desarrollo"
                                                 color="blue.400"
                                             />
                                             <StatCard
                                                 icon={Megaphone}
                                                 label="Ingresos Sponsors"
-                                                value={`$${(selectedEquipo.presupuesto?.sponsors / 1000000).toFixed(0)}M`}
+                                                value={new Intl.NumberFormat('es-CR', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(selectedEquipo.presupuesto?.sponsors)}
                                                 subtext={`${selectedEquipo.patrocinadores?.length || 0} patrocinadores`}
                                                 color="purple.400"
                                             />
@@ -915,7 +915,7 @@ function Equipos() {
                                                                     </Badge>
                                                                 </Td>
                                                                 <Td isNumeric>{item.cantidad}</Td>
-                                                                <Td isNumeric>${(item.precio / 1000).toFixed(0)}K</Td>
+                                                                <Td isNumeric>${new Intl.NumberFormat('es-CR').format(item.precio)}</Td>
                                                                 <Td>
                                                                     <Badge colorScheme={
                                                                         item.cantidad > 3 ? 'green' :
@@ -948,7 +948,7 @@ function Equipos() {
                                                 <HStack justify="space-between">
                                                     <Text fontWeight="bold">Total Ingresos por Patrocinio</Text>
                                                     <Text fontSize="xl" fontWeight="bold" color="green.400">
-                                                        ${(selectedEquipo.patrocinadores?.reduce((acc, p) => acc + p.aporte, 0) / 1000000).toFixed(1)}M
+                                                        {new Intl.NumberFormat('es-CR', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(selectedEquipo.patrocinadores?.reduce((acc, p) => acc + p.aporte, 0))}
                                                     </Text>
                                                 </HStack>
                                             </CardBody>
@@ -1065,7 +1065,7 @@ function Equipos() {
                                                 <Text fontSize="sm" color="gray.400">{nuevoEquipo.pais || 'País'}</Text>
                                             </VStack>
                                             <Box flex={1} />
-                                            <Badge colorScheme="green">${(nuevoEquipo.presupuesto / 1000000)}M</Badge>
+                                            <Badge colorScheme="green">{new Intl.NumberFormat('es-CR', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(nuevoEquipo.presupuesto)}</Badge>
                                         </HStack>
                                     </CardBody>
                                 </Card>
@@ -1147,13 +1147,13 @@ function Equipos() {
                                             <HStack justify="space-between">
                                                 <Text fontSize="sm" color="gray.400">Nuevo presupuesto total:</Text>
                                                 <Text fontWeight="bold" color="green.400">
-                                                    ${((selectedEquipo?.presupuesto?.total + parseFloat(nuevoAporte.monto)) / 1000000).toFixed(1)}M
+                                                    {new Intl.NumberFormat('es-CR', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(selectedEquipo?.presupuesto?.total + parseFloat(nuevoAporte.monto))}
                                                 </Text>
                                             </HStack>
                                             <HStack justify="space-between">
                                                 <Text fontSize="sm" color="gray.400">Aumento:</Text>
                                                 <Badge colorScheme="green" fontSize="sm">
-                                                    +${(parseFloat(nuevoAporte.monto) / 1000000).toFixed(1)}M
+                                                    +{new Intl.NumberFormat('es-CR', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(parseFloat(nuevoAporte.monto))}
                                                 </Badge>
                                             </HStack>
                                         </VStack>

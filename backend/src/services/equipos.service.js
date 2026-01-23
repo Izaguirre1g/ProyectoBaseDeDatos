@@ -277,7 +277,9 @@ const equiposService = {
                 SELECT 
                     u.Id_usuario,
                     u.Correo_usuario,
+                    u.Nombre_usuario,
                     u.Id_rol,
+                    u.Habilidad,
                     r.Nombre as Rol
                 FROM USUARIO u
                 LEFT JOIN ROL r ON u.Id_rol = r.Id_rol

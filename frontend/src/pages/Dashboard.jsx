@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import simulacionesService from '../services/simulaciones.service';
 import { carrosService } from '../services/carros.service';
 import { equiposService } from '../services/equipos.service';
+import { usuariosService } from '../services/usuarios.service';
 import {
     Box,
     Container,
@@ -111,6 +112,7 @@ function AdminDashboard() {
     useEffect(() => {
         loadSimulaciones();
         loadEquipos();
+        loadUsuariosYPilotos();
     }, []);
 
     const loadEquipos = async () => {
@@ -146,18 +148,45 @@ function AdminDashboard() {
             
             setEquipos(equiposOrdenados);
             
-            // Actualizar stats con el presupuesto total real
+            // Actualizar stats con el presupuesto total real y equipos
             const presupuestoTotal = equiposConPresupuesto.reduce((acc, e) => acc + e.presupuesto, 0);
-            setStats([
-                { label: 'Usuarios', value: '-', icon: Users, color: 'blue.500' },
+            const presupuestoFormato = new Intl.NumberFormat('es-CR', {
+                style: 'currency',
+                currency: 'USD',
+                minimumFractionDigits: 0
+            }).format(presupuestoTotal);
+            
+            // Obtener el estado actual de usuarios y pilotos
+            setStats((statsActuales) => [
+                { label: 'Usuarios', value: statsActuales[0].value, icon: Users, color: 'blue.500' },
                 { label: 'Equipos', value: equiposRaw.length, icon: Building2, color: 'green.500' },
-                { label: 'Pilotos', value: '-', icon: Car, color: 'yellow.500' },
-                { label: 'Presupuesto Total', value: `$${(presupuestoTotal / 1000000).toFixed(0)}M`, icon: DollarSign, color: 'accent.600' },
+                { label: 'Pilotos', value: statsActuales[2].value, icon: Car, color: 'yellow.500' },
+                { label: 'Presupuesto Total', value: presupuestoFormato, icon: DollarSign, color: 'accent.600' },
             ]);
         } catch (error) {
             console.error('Error al cargar equipos:', error);
         } finally {
             setLoadingEquipos(false);
+        }
+    };
+    
+    const loadUsuariosYPilotos = async () => {
+        try {
+            const usuarios = await usuariosService.getAll();
+            const totalUsuarios = usuarios.length;
+            
+            // Contar pilotos (usuarios con Id_rol === 3, que es el rol de Conductor/Piloto)
+            const pilotos = usuarios.filter(u => u.Id_rol === 3).length;
+            
+            // Actualizar stats con usuarios y pilotos
+            setStats((statsActuales) => [
+                { label: 'Usuarios', value: totalUsuarios, icon: Users, color: 'blue.500' },
+                { label: 'Equipos', value: statsActuales[1].value, icon: Building2, color: 'green.500' },
+                { label: 'Pilotos', value: pilotos, icon: Car, color: 'yellow.500' },
+                { label: 'Presupuesto Total', value: statsActuales[3].value, icon: DollarSign, color: 'accent.600' },
+            ]);
+        } catch (error) {
+            console.error('Error al cargar usuarios y pilotos:', error);
         }
     };
     
@@ -304,12 +333,12 @@ function AdminDashboard() {
                                         <Box flex={1}>
                                             <Text color="white" fontWeight="medium">{equipo.nombre}</Text>
                                             <Text fontSize="xs" color="gray.400">
-                                                Disponible: ${(equipo.disponible / 1000000).toFixed(1)}M
+                                                Disponible: ${new Intl.NumberFormat('es-CR', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(equipo.disponible)}
                                             </Text>
                                         </Box>
                                         <VStack spacing={0} align="end">
                                             <Text color="green.400" fontWeight="bold">
-                                                ${(equipo.presupuesto / 1000000).toFixed(1)}M
+                                                ${new Intl.NumberFormat('es-CR', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(equipo.presupuesto)}
                                             </Text>
                                             <Text fontSize="xs" color="gray.500">total aportes</Text>
                                         </VStack>
@@ -511,13 +540,13 @@ function EngineerDashboard() {
                 <StatCard 
                     icon={DollarSign} 
                     label="Presupuesto Total" 
-                    value={`$${(presupuesto.total / 1000000).toFixed(0)}M`} 
+                    value={new Intl.NumberFormat('es-CR', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(presupuesto.total)}
                     color="green.500" 
                 />
                 <StatCard 
                     icon={TrendingUp} 
                     label="Disponible" 
-                    value={`$${(presupuesto.disponible / 1000000).toFixed(0)}M`} 
+                    value={new Intl.NumberFormat('es-CR', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(presupuesto.disponible)}
                     color="blue.500" 
                 />
                 <StatCard 
@@ -616,7 +645,7 @@ function EngineerDashboard() {
                                     <HStack spacing={4}>
                                         <Badge colorScheme="purple">{item.cantidad} unid.</Badge>
                                         <Text color="green.400" fontSize="sm" fontWeight="bold">
-                                            ${(item.valor / 1000).toFixed(0)}K
+                                            ${new Intl.NumberFormat('es-CR', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(item.valor)}
                                         </Text>
                                     </HStack>
                                 </HStack>

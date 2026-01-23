@@ -746,7 +746,7 @@ function ArmadoCarro() {
                                                                     Disponibles: {parte.Cantidad}
                                                                 </Text>
                                                                 <Text fontSize="xs" color="green.400">
-                                                                    ${(parte.Precio / 1000).toFixed(0)}K
+                                                                    ${new Intl.NumberFormat('es-CR').format(parte.Precio)}
                                                                 </Text>
                                                             </HStack>
                                                         </Box>

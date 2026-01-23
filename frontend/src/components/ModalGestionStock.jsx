@@ -215,7 +215,7 @@ export function ModalGestionStock({ isOpen, onClose, parte, onSuccess }) {
                                     {parte?.Marca} | {parte?.Categoria}
                                 </Text>
                                 <Text fontSize="sm" color="gray.500">
-                                    Precio: ${parte?.Precio?.toFixed(2)}
+                                    Precio: ${new Intl.NumberFormat('es-CR').format(parte?.Precio)}
                                 </Text>
                             </VStack>
                         </Box>
