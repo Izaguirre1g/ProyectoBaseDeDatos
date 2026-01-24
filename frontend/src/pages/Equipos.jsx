@@ -250,7 +250,8 @@ function Equipos() {
     // Estado para nuevo aporte
     const [nuevoAporte, setNuevoAporte] = useState({
         idPatrocinador: '',
-        monto: ''
+        monto: '',
+        descripcion: ''
     });
     
     // Estado para nuevo patrocinador
@@ -453,7 +454,7 @@ function Equipos() {
             await loadEquipos();
             
             // Limpiar formulario y cerrar modal
-            setNuevoAporte({ idPatrocinador: '', monto: '' });
+            setNuevoAporte({ idPatrocinador: '', monto: '', descripcion: '' });
             onAporteClose();
             
             toast({
@@ -1136,6 +1137,24 @@ function Equipos() {
                                 />
                                 <Text fontSize="xs" color="gray.500" mt={1}>
                                     Ingresa el monto en dólares (sin comas ni símbolos)
+                                </Text>
+                            </FormControl>
+
+                            <FormControl>
+                                <FormLabel color="gray.300">Descripción (opcional)</FormLabel>
+                                <Input
+                                    type="text"
+                                    placeholder="Ej: Patrocinio temporada 2026"
+                                    value={nuevoAporte.descripcion}
+                                    onChange={(e) => setNuevoAporte({...nuevoAporte, descripcion: e.target.value})}
+                                    bg="brand.900"
+                                    borderColor="brand.700"
+                                    _focus={{ borderColor: 'accent.500' }}
+                                    _placeholder={{ color: 'gray.500' }}
+                                    maxLength={200}
+                                />
+                                <Text fontSize="xs" color="gray.500" mt={1}>
+                                    Describe el motivo o concepto del aporte
                                 </Text>
                             </FormControl>
 

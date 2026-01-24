@@ -136,7 +136,7 @@ const usuariosService = {
         const pool = await getConnection();
         // El hash Argon2id viene del cliente - guardar directamente
         const hash = newPassword;
-        console.log('🔐 Actualizando hash Argon2id');
+        console.log('[AUTH] Actualizando hash Argon2id');
         await pool.request()
             .input('id', sql.Int, id)
             .input('hash', sql.NVarChar, hash)
@@ -248,18 +248,18 @@ const usuariosService = {
     async verifyPassword(correo, password) {
         const user = await this.getByCorreo(correo);
         if (!user) {
-            console.log('❌ Usuario no encontrado:', correo);
+            console.log('[AUTH] Usuario no encontrado:', correo);
             return { valid: false, user: null };
         }
         
         // El password ya viene como hash Argon2id desde el cliente
         // Comparar directamente con el hash almacenado
-        console.log('🔐 Hash recibido:', password);
-        console.log('🔐 Hash en BD:   ', user.Contrasena_hash);
-        console.log('🔐 ¿Son iguales?:', password === user.Contrasena_hash);
+        console.log('[AUTH] Hash recibido:', password);
+        console.log('[AUTH] Hash en BD:   ', user.Contrasena_hash);
+        console.log('[AUTH] Son iguales?:', password === user.Contrasena_hash);
         
         const valid = (password === user.Contrasena_hash);
-        console.log('🔐 Verificación de hash Argon2id:', valid ? '✅ Correcto' : '❌ Incorrecto');
+        console.log('[AUTH] Verificación de hash Argon2id:', valid ? 'Correcto' : 'Incorrecto');
         
         return { valid, user: valid ? user : null };
     },

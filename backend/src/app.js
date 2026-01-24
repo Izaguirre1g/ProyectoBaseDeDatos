@@ -13,6 +13,7 @@ const partesRoutes = require('./routes/partes.routes');
 const simulacionesRoutes = require('./routes/simulaciones.routes');
 const circuitosRoutes = require('./routes/circuitos.routes');
 const usuariosRoutes = require('./routes/usuarios.routes');
+const patrocinadoresRoutes = require('./routes/patrocinadores.routes');
 
 // Base de datos
 const { getConnection } = require('./config/database');
@@ -25,20 +26,33 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// CORS configurado para React - Permitir localhost y IP local
+// CORS configurado para React - Permitir localhost y cualquier IP de la red local
 app.use(cors({
     origin: function(origin, callback) {
-        const allowedOrigins = [
-            'http://localhost:5173',
-            'http://localhost:3000',
-            'http://192.168.1.15:5173',  // Tu IP local con puerto frontend
-            'http://192.168.1.15:3000'   // Tu IP local con puerto backend
-        ];
-        if (!origin || allowedOrigins.includes(origin)) {
-            callback(null, true);
-        } else {
-            callback(new Error('No permitido por CORS'));
+        // Permitir solicitudes sin origin (como Postman, curl, etc.)
+        if (!origin) {
+            return callback(null, true);
         }
+        
+        // Permitir localhost con cualquier puerto
+        if (origin.startsWith('http://localhost:')) {
+            return callback(null, true);
+        }
+        
+        // Permitir cualquier IP de red local (192.168.x.x) con cualquier puerto
+        const localNetworkPattern = /^http:\/\/192\.168\.\d{1,3}\.\d{1,3}(:\d+)?$/;
+        if (localNetworkPattern.test(origin)) {
+            return callback(null, true);
+        }
+        
+        // Permitir IPs de red local 10.x.x.x
+        const localNetwork10Pattern = /^http:\/\/10\.\d{1,3}\.\d{1,3}\.\d{1,3}(:\d+)?$/;
+        if (localNetwork10Pattern.test(origin)) {
+            return callback(null, true);
+        }
+        
+        console.log('CORS bloqueado para origen:', origin);
+        callback(new Error('No permitido por CORS'));
     },
     credentials: true
 }));
@@ -50,8 +64,8 @@ app.use(session({
     saveUninitialized: false,
     cookie: {
         httpOnly: true,      // Protege contra XSS
-        secure: process.env.NODE_ENV === 'production', // HTTPS en producción
-        sameSite: 'lax',     // Protege contra CSRF
+        secure: false,       // false para desarrollo con HTTP
+        sameSite: false,     // Desactivado para permitir cookies entre IPs de red local
         maxAge: parseInt(process.env.SESSION_MAX_AGE) || 120000 // 2 minutos
     }
 }));
@@ -78,6 +92,7 @@ app.use('/api/partes', partesRoutes);
 app.use('/api/simulaciones', simulacionesRoutes);
 app.use('/api/circuitos', circuitosRoutes);
 app.use('/api/usuarios', usuariosRoutes);
+app.use('/api/patrocinadores', patrocinadoresRoutes);
 
 // Manejo de errores global
 app.use((err, req, res, next) => {

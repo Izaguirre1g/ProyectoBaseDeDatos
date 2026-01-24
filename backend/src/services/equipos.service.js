@@ -197,7 +197,7 @@ const equiposService = {
     async addAporte({ idEquipo, monto, idPatrocinador, descripcion }) {
         const pool = await getConnection();
         
-        console.log('💰 SERVICIO AGREGAR APORTE:');
+        console.log('[APORTES] SERVICIO AGREGAR APORTE:');
         console.log('  idEquipo:', idEquipo);
         console.log('  monto:', monto);
         console.log('  idPatrocinador:', idPatrocinador);

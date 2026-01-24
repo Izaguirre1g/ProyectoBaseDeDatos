@@ -10,6 +10,7 @@ import Catalogo from './pages/Catalogo';
 import Equipos from './pages/Equipos';
 import ArmadoCarro from './pages/ArmadoCarro';
 import Simulaciones from './pages/Simulaciones';
+import Patrocinadores from './pages/Patrocinadores';
 import Unauthorized from './pages/Unauthorized';
 import './App.css';
 
@@ -89,6 +90,16 @@ function AppRoutes() {
                     element={
                         <ProtectedRoute allowedRoles={['Admin', 'Engineer', 'Driver']}>
                             <Simulaciones />
+                        </ProtectedRoute>
+                    } 
+                />
+
+                {/* Patrocinadores - Solo Admin */}
+                <Route 
+                    path="/patrocinadores" 
+                    element={
+                        <ProtectedRoute allowedRoles={['Admin']}>
+                            <Patrocinadores />
                         </ProtectedRoute>
                     } 
                 />

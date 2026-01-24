@@ -33,7 +33,7 @@ async function hashPassword(password) {
 async function verifyPassword(passwordHash, storedHash) {
     try {
         // Comparación directa de hashes (el frontend ya envía el hash)
-        console.log('🔐 Comparando hashes:');
+        console.log('[AUTH] Comparando hashes:');
         console.log('   Recibido:', passwordHash.substring(0, 60) + '...');
         console.log('   En BD:   ', storedHash.substring(0, 60) + '...');
         

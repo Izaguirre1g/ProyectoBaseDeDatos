@@ -1,7 +1,8 @@
 import axios from 'axios';
 
-// Detectar automáticamente la IP (localhost o IP local según dónde se acceda)
+// Detectar automáticamente la IP del backend (mismo servidor que sirve el frontend)
 const getBaseURL = () => {
+    // Usar la misma IP/hostname desde donde se accede al frontend
     const host = window.location.hostname;
     return `http://${host}:3000/api`;
 };

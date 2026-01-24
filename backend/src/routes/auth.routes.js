@@ -75,9 +75,9 @@ router.post('/login', async (req, res) => {
     const { email, password } = req.body;
     
     try {
-        console.log('\n Inicio de sesión');
-        console.log(`Email: ${email}`);
-        console.log(`Contraseña ingresada: ${password}`);
+        console.log('\n[LOGIN] Inicio de sesión');
+        console.log('Email:', email);
+        console.log('Contraseña ingresada:', password);
         
         //para limpirr las sesiones que se quedaron ahí 
         await limpiarSesionesExpiradas();
@@ -97,8 +97,8 @@ router.post('/login', async (req, res) => {
             `);
         
         if (result.recordset.length === 0) {
-            console.log('Usuario no encontrado');
-            console.log(' Fin de la validacion \n');
+            console.log('[LOGIN] Usuario no encontrado');
+            console.log('[LOGIN] Fin de la validacion\n');
             return res.status(401).json({ 
                 success: false, 
                 error: 'Email o contrasena incorrectos' 
@@ -115,24 +115,24 @@ router.post('/login', async (req, res) => {
         };
         const rolFrontend = rolMap[usuario.Rol] || usuario.Rol;
         
-        console.log(` Usuario encontrado: ${usuario.Correo_usuario}`);
-        console.log(`   Rol: ${usuario.Rol} -> ${rolFrontend}`);
-        console.log(`   Equipo: ${usuario.Equipo}`);
-        console.log(`\n ARGON2ID - VERIFICACIÓN DE CONTRASEÑA:`);
-        console.log(`Hash almacenado en BD:`);
-        console.log(`${usuario.Contrasena_hash}`);
+        console.log('[LOGIN] Usuario encontrado:', usuario.Correo_usuario);
+        console.log('   Rol:', usuario.Rol, '->', rolFrontend);
+        console.log('   Equipo:', usuario.Equipo);
+        console.log('\n[ARGON2ID] VERIFICACIÓN DE CONTRASEÑA:');
+        console.log('Hash almacenado en BD:');
+        console.log(usuario.Contrasena_hash);
         
         // Verificar contraseña con Argon2id
-        console.log(`\n Verificando contrasena`);
+        console.log('\n[AUTH] Verificando contraseña');
         const inicio = Date.now();
         const passwordMatch = await verifyPassword(password, usuario.Contrasena_hash);
         const tiempo = Date.now() - inicio;
         
-        console.log(` Tiempo de verificación: ${tiempo}ms`);
+        console.log('[AUTH] Tiempo de verificación:', tiempo + 'ms');
         
         if (!passwordMatch) {
-            console.log(`Contrasena Incorrecta`);
-            console.log(' Login completo \n');
+            console.log('[LOGIN] Contraseña Incorrecta');
+            console.log('[LOGIN] Fin\n');
             return res.status(401).json({ 
                 success: false, 
                 error: 'Email o contrasena incorrectos' 
@@ -140,22 +140,22 @@ router.post('/login', async (req, res) => {
         }
         
         // Guardar en sesión
-        console.log(` Contrasena correcta `);
-        console.log(`\n Creando sesión`);
+        console.log('[LOGIN] Contraseña correcta');
+        console.log('\n[SESSION] Creando sesión');
         req.session.userId = usuario.Id_usuario;
         req.session.rol = rolFrontend;
         req.session.nombre = usuario.Correo_usuario.split('@')[0];
         req.session.equipo = usuario.Equipo;
         req.session.equipoId = usuario.Id_equipo;
         
-        console.log(` Sesión creada para: ${usuario.Correo_usuario}`);
-        console.log(`\n  Registrando sesión en BD`);
+        console.log('[SESSION] Sesión creada para:', usuario.Correo_usuario);
+        console.log('\n[DB] Registrando sesión en BD');
         
         // Registrar sesión en la BD
         const idSesion = await registrarSesionEnBD(usuario.Id_usuario, req);
         req.session.idSesion = idSesion;
         
-        console.log(` Fin de la validacion exitosa \n`);
+        console.log('[LOGIN] Fin de la validación exitosa\n');
         
         res.json({ 
             success: true, 

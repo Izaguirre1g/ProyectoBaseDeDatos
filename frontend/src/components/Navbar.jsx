@@ -24,6 +24,7 @@ import {
     LogOut,
     ChevronDown,
     User,
+    Handshake,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -104,6 +105,13 @@ function Navbar() {
                                         isActive={isActive('/usuarios')}
                                     >
                                         Usuarios
+                                    </NavLink>
+                                    <NavLink 
+                                        to="/patrocinadores" 
+                                        icon={Handshake} 
+                                        isActive={isActive('/patrocinadores')}
+                                    >
+                                        Patrocinadores
                                     </NavLink>
                                     <NavLink 
                                         to="/equipos" 
