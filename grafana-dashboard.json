@@ -1,0 +1,309 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "gnetId": null,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "datasource": "SQL Server F1",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "displayMode": "auto",
+            "filterable": true
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 2,
+      "options": {
+        "showHeader": true,
+        "sortBy": [
+          {
+            "displayName": "Posicion",
+            "desc": false
+          }
+        ]
+      },
+      "pluginVersion": "9.0.0",
+      "targets": [
+        {
+          "rawSql": "SELECT \n    Posicion,\n    Equipo_Nombre AS [Equipo],\n    Conductor_Nombre AS [Conductor],\n    Circuito_Nombre AS [Circuito],\n    CAST(Tiempo_segundos AS DECIMAL(10,3)) AS [Tiempo(s)],\n    Puntos_F1 AS [Puntos],\n    Carro_Potencia AS [P],\n    Carro_Aerodinamica AS [A],\n    Carro_Manejo AS [M]\nFROM VW_Grafana_Ranking\nWHERE Id_simulacion = ${simulacion}\nORDER BY Posicion ASC",
+          "refId": "A"
+        }
+      ],
+      "title": "🏆 Ranking - Simulaciones",
+      "type": "table"
+    },
+    {
+      "datasource": "SQL Server F1",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "tooltip": false,
+              "viz": false,
+              "legend": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 10
+      },
+      "id": 3,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "9.0.0",
+      "targets": [
+        {
+          "rawSql": "SELECT \n    Fecha_hora AS time,\n    Tiempo_segundos,\n    CONCAT(\n        'PU: ', LEFT(PowerUnit_Nombre, 15), ' | ',\n        'Aero: ', LEFT(Aerodinamico_Nombre, 15)\n    ) AS [Setup],\n    Circuito_Nombre,\n    Carro_Total_PAM\nFROM VW_Grafana_Carro_Comparacion\nWHERE Id_carro = ${carro}\nORDER BY Fecha_hora DESC\nOFFSET 0 ROWS FETCH NEXT 30 ROWS ONLY",
+          "refId": "A"
+        }
+      ],
+      "title": "🔄 Comparación - Setup vs Tiempo",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "SQL Server F1",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "Total P+A+M",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "points",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "tooltip": false,
+              "viz": false,
+              "legend": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 8,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "always",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 20
+      },
+      "id": 4,
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean"
+          ],
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "9.0.0",
+      "targets": [
+        {
+          "rawSql": "SELECT \n    Carro_Total_PAM AS [Total P+A+M],\n    Tiempo_segundos AS [Tiempo(s)],\n    Equipo_Nombre AS [Equipo],\n    Conductor_Nombre AS [Conductor],\n    CAST(Posicion AS VARCHAR) AS [Posicion]\nFROM VW_Grafana_PAM_Tiempo\nWHERE Id_simulacion = ${simulacion}\nORDER BY Tiempo_segundos",
+          "refId": "A"
+        }
+      ],
+      "title": "📈 Análisis - P, A, M vs Tiempo",
+      "type": "timeseries"
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 37,
+  "style": "dark",
+  "tags": [
+    "F1",
+    "Simulaciones",
+    "Racing"
+  ],
+  "templating": {
+    "list": [
+      {
+        "allValue": null,
+        "current": {
+          "selected": false,
+          "text": "1",
+          "value": "1"
+        },
+        "datasource": "SQL Server F1",
+        "definition": "SELECT DISTINCT CAST(Id_simulacion AS VARCHAR) as simulacion FROM VW_Grafana_Simulaciones ORDER BY Id_simulacion DESC",
+        "description": null,
+        "error": null,
+        "hide": 0,
+        "includeAll": false,
+        "label": "Simulación",
+        "multi": false,
+        "name": "simulacion",
+        "options": [],
+        "query": "SELECT DISTINCT CAST(Id_simulacion AS VARCHAR) as simulacion FROM VW_Grafana_Simulaciones ORDER BY Id_simulacion DESC",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "tagValuesQuery": "",
+        "tagsQuery": "",
+        "type": "query",
+        "useTags": false
+      },
+      {
+        "allValue": null,
+        "current": {
+          "selected": false,
+          "text": "2",
+          "value": "2"
+        },
+        "datasource": "SQL Server F1",
+        "definition": "SELECT DISTINCT CAST(Id_carro AS VARCHAR) as carro FROM VW_Grafana_Carro_Comparacion ORDER BY Id_carro",
+        "description": null,
+        "error": null,
+        "hide": 0,
+        "includeAll": false,
+        "label": "Carro (Comparación)",
+        "multi": false,
+        "name": "carro",
+        "options": [],
+        "query": "SELECT DISTINCT CAST(Id_carro AS VARCHAR) as carro FROM VW_Grafana_Carro_Comparacion ORDER BY Id_carro",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "tagValuesQuery": "",
+        "tagsQuery": "",
+        "type": "query",
+        "useTags": false
+      }
+    ]
+  },
+  "time": {
+    "from": "now-30d",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "",
+  "title": "F1 Simulaciones",
+  "uid": "f1sim",
+  "version": 1
+}
