@@ -209,10 +209,11 @@ function Usuarios() {
         // Si cambia el rol, actualizar la lista de equipos disponibles
         if (field === 'rol') {
             try {
-                if (value === 'Engineer') {
-                    // Ingenieros: solo equipos sin ingeniero asignado
+                if (value === 'Admin') {
+                    setEquipos([]);
+                    setFormData(prev => ({ ...prev, equipo: '', habilidad: '' }));
+                } else if (value === 'Engineer') {
                     let equiposDisponibles = await equiposService.getEquiposDisponibles();
-                    // Si estamos editando y el usuario ya tiene equipo, agregarlo
                     if (editingUser?.Equipo) {
                         const yaExiste = equiposDisponibles.some(e => e.Nombre === editingUser.Equipo);
                         if (!yaExiste) {
@@ -223,13 +224,12 @@ function Usuarios() {
                         }
                     }
                     setEquipos(equiposDisponibles);
+                    setFormData(prev => ({ ...prev, equipo: '' }));
                 } else {
-                    // Conductores y Admin: todos los equipos
                     const todosEquipos = await equiposService.getAll();
                     setEquipos(todosEquipos);
+                    setFormData(prev => ({ ...prev, equipo: '' }));
                 }
-                // Limpiar equipo seleccionado al cambiar rol
-                setFormData(prev => ({ ...prev, equipo: '' }));
             } catch (err) {
                 console.warn('Error al cargar equipos:', err);
             }
@@ -298,8 +298,8 @@ function Usuarios() {
                     nombre: formData.nombre,
                     email: formData.email,
                     rol: formData.rol,
-                    equipo: formData.equipo && formData.equipo !== '' ? formData.equipo : null,
-                    habilidad: formData.habilidad !== '' ? parseInt(formData.habilidad) : null
+                    equipo: formData.rol === 'Admin' ? null : (formData.equipo && formData.equipo !== '' ? formData.equipo : null),
+                    habilidad: formData.rol === 'Admin' ? null : (formData.habilidad !== '' ? parseInt(formData.habilidad) : null)
                 };
                 
                 // Solo enviar password si se proporciona una nueva
@@ -353,8 +353,8 @@ function Usuarios() {
                     email: formData.email,
                     password: formData.password,
                     rol: formData.rol,
-                    equipo: formData.equipo && formData.equipo !== '' ? formData.equipo : null,
-                    habilidad: formData.habilidad !== '' ? parseInt(formData.habilidad) : null
+                    equipo: formData.rol === 'Admin' ? null : (formData.equipo && formData.equipo !== '' ? formData.equipo : null),
+                    habilidad: formData.rol === 'Admin' ? null : (formData.habilidad !== '' ? parseInt(formData.habilidad) : null)
                 });
                 toast({
                     title: 'Usuario creado',
@@ -504,7 +504,7 @@ function Usuarios() {
                                     <option value="Driver">Conductor</option>
                                 </Select>
                             </FormControl>
-                            <FormControl isRequired={formData.rol === 'Driver'}>
+                            <FormControl isRequired={formData.rol === 'Driver'} isDisabled={formData.rol === 'Admin'}>
                                 <FormLabel color="gray.400" fontSize="sm">
                                     Habilidad (0-100) {formData.rol === 'Driver' && <Text as="span" color="red.400">*</Text>}
                                 </FormLabel>
@@ -514,17 +514,18 @@ function Usuarios() {
                                     max="100"
                                     value={formData.habilidad}
                                     onChange={(e) => handleFormChange('habilidad', e.target.value)}
-                                    placeholder={formData.rol === 'Driver' ? 'Requerido para conductores' : 'Opcional'}
+                                    placeholder={formData.rol === 'Driver' ? 'Requerido para conductores' : formData.rol === 'Admin' ? 'No aplicable para administradores' : 'Opcional'}
                                 />
                                 <Text fontSize="xs" color="gray.500" mt={1}>
-                                    {formData.rol === 'Driver' ? 'Obligatorio para conductores' : 'Opcional para otros roles'}
+                                    {formData.rol === 'Admin' ? 'Los administradores no tienen habilidad asignada' : formData.rol === 'Driver' ? 'Obligatorio para conductores' : 'Opcional para otros roles'}
                                 </Text>
                             </FormControl>
-                            <FormControl>
+                            <FormControl isDisabled={formData.rol === 'Admin'}>
                                 <FormLabel color="gray.400" fontSize="sm">Equipo (opcional)</FormLabel>
                                 <Select 
                                     value={formData.equipo}
                                     onChange={(e) => handleFormChange('equipo', e.target.value)}
+                                    placeholder={formData.rol === 'Admin' ? 'No aplicable para administradores' : 'Seleccionar equipo'}
                                 >
                                     <option value="">Sin equipo</option>
                                     {equipos.map(equipo => (
@@ -533,6 +534,11 @@ function Usuarios() {
                                         </option>
                                     ))}
                                 </Select>
+                                {formData.rol === 'Admin' && (
+                                    <Text fontSize="xs" color="gray.500" mt={1}>
+                                        Los administradores no pueden tener equipo asignado
+                                    </Text>
+                                )}
                             </FormControl>
                             <HStack w="full" justify="flex-end" spacing={3} pt={4}>
                                 <Button variant="ghost" onClick={handleCloseModal}>
