@@ -65,9 +65,14 @@ import {
     Play,
     Plus,
     MapPin,
+    BarChart3,
+    ExternalLink,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import simulacionesService from '../services/simulaciones.service';
+
+// URL base de Grafana
+const GRAFANA_BASE_URL = 'http://localhost:3001';
 
 // Nombres de circuitos por distancia
 const getNombreCircuito = (distancia) => {
@@ -476,12 +481,43 @@ function AdminSimulaciones() {
                 {/* Tabs: Historial y Circuitos */}
                 <Tabs colorScheme="red" variant="soft-rounded">
                     <TabList>
+                        <Tab _selected={{ bg: 'accent.600', color: 'white' }}>
+                            <Icon as={BarChart3} mr={2} boxSize={4} />
+                            Dashboard Grafana
+                        </Tab>
                         <Tab _selected={{ bg: 'accent.600', color: 'white' }}>Historial</Tab>
                         <Tab _selected={{ bg: 'accent.600', color: 'white' }}>Circuitos</Tab>
                         <Tab _selected={{ bg: 'accent.600', color: 'white' }}>Carros</Tab>
                     </TabList>
                     
                     <TabPanels>
+                        {/* Tab Dashboard Grafana */}
+                        <TabPanel px={0}>
+                            <Card bg="brand.800" borderColor="brand.700">
+                                <CardBody p={0}>
+                                    <HStack justify="flex-end" p={3} borderBottom="1px" borderColor="brand.700">
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            colorScheme="blue"
+                                            leftIcon={<ExternalLink size={14} />}
+                                            onClick={() => window.open(`${GRAFANA_BASE_URL}/d/f1sim/f1-simulaciones`, '_blank')}
+                                        >
+                                            Abrir en Grafana
+                                        </Button>
+                                    </HStack>
+                                    <Box
+                                        as="iframe"
+                                        src={`${GRAFANA_BASE_URL}/d/f1sim/f1-simulaciones?orgId=1&kiosk`}
+                                        width="100%"
+                                        height="800px"
+                                        border="none"
+                                        borderRadius="md"
+                                    />
+                                </CardBody>
+                            </Card>
+                        </TabPanel>
+                        
                         {/* Tab Historial */}
                         <TabPanel px={0}>
                             <Card bg="brand.800" borderColor="brand.700">
@@ -928,64 +964,106 @@ function EngineerSimulaciones() {
                     </Card>
                 </SimpleGrid>
 
-                {/* Conductores del equipo */}
-                <Card bg="brand.800" borderColor="brand.700">
-                    <CardBody>
-                        <Heading size="md" mb={4}>Conductores del Equipo</Heading>
-                        <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
-                            {teamData.conductores?.map((conductor) => {
-                                const stats = getConductorStats(conductor.id);
-                                return (
-                                    <Box 
-                                        key={conductor.id}
-                                        p={4} 
-                                        bg="brand.900" 
-                                        borderRadius="lg"
-                                        borderLeft="4px solid"
-                                        borderLeftColor="accent.500"
-                                    >
-                                        <HStack justify="space-between" mb={3}>
-                                            <VStack align="start" spacing={1}>
-                                                <Text fontWeight="bold" fontSize="lg">{conductor.nombre}</Text>
-                                                <Text color="gray.400" fontSize="sm">{conductor.correo}</Text>
-                                            </VStack>
-                                            <Badge colorScheme="blue">H: {conductor.habilidad}</Badge>
-                                        </HStack>
-                                        
-                                        <HStack spacing={4} fontSize="sm" color="gray.400" mb={3}>
-                                            <HStack>
-                                                <Trophy size={14} />
-                                                <Text>{stats.victorias} victorias</Text>
-                                            </HStack>
-                                            <HStack>
-                                                <Flag size={14} />
-                                                <Text>{stats.podios} podios</Text>
-                                            </HStack>
-                                        </HStack>
+                {/* Tabs: Dashboard Grafana y Vista Original */}
+                <Tabs colorScheme="red" variant="soft-rounded">
+                    <TabList>
+                        <Tab _selected={{ bg: 'accent.600', color: 'white' }}>
+                            <Icon as={BarChart3} mr={2} boxSize={4} />
+                            Dashboard Análisis
+                        </Tab>
+                        <Tab _selected={{ bg: 'accent.600', color: 'white' }}>Conductores</Tab>
+                        <Tab _selected={{ bg: 'accent.600', color: 'white' }}>Simulaciones</Tab>
+                    </TabList>
+                    
+                    <TabPanels>
+                        {/* Tab Dashboard Grafana - Análisis por Carro */}
+                        <TabPanel px={0}>
+                            <Card bg="brand.800" borderColor="brand.700">
+                                <CardBody p={0}>
+                                    <HStack justify="flex-end" p={3} borderBottom="1px" borderColor="brand.700">
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            colorScheme="blue"
+                                            leftIcon={<ExternalLink size={14} />}
+                                            onClick={() => window.open(`${GRAFANA_BASE_URL}/d/f1carro/f1-analisis-por-carro`, '_blank')}
+                                        >
+                                            Abrir en Grafana
+                                        </Button>
+                                    </HStack>
+                                    <Box
+                                        as="iframe"
+                                        src={`${GRAFANA_BASE_URL}/d/f1carro/f1-analisis-por-carro?orgId=1&kiosk`}
+                                        width="100%"
+                                        height="800px"
+                                        border="none"
+                                        borderRadius="md"
+                                    />
+                                </CardBody>
+                            </Card>
+                        </TabPanel>
+                        
+                        {/* Tab Conductores del equipo */}
+                        <TabPanel px={0}>
+                            <Card bg="brand.800" borderColor="brand.700">
+                                <CardBody>
+                                    <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
+                                        {teamData.conductores?.map((conductor) => {
+                                            const stats = getConductorStats(conductor.id);
+                                            return (
+                                                <Box 
+                                                    key={conductor.id}
+                                                    p={4} 
+                                                    bg="brand.900" 
+                                                    borderRadius="lg"
+                                                    borderLeft="4px solid"
+                                                    borderLeftColor="accent.500"
+                                                >
+                                                    <HStack justify="space-between" mb={3}>
+                                                        <VStack align="start" spacing={1}>
+                                                            <Text fontWeight="bold" fontSize="lg">{conductor.nombre}</Text>
+                                                            <Text color="gray.400" fontSize="sm">{conductor.correo}</Text>
+                                                        </VStack>
+                                                        <Badge colorScheme="blue">H: {conductor.habilidad}</Badge>
+                                                    </HStack>
+                                                    
+                                                    <HStack spacing={4} fontSize="sm" color="gray.400" mb={3}>
+                                                        <HStack>
+                                                            <Trophy size={14} />
+                                                            <Text>{stats.victorias} victorias</Text>
+                                                        </HStack>
+                                                        <HStack>
+                                                            <Flag size={14} />
+                                                            <Text>{stats.podios} podios</Text>
+                                                        </HStack>
+                                                    </HStack>
 
-                                        {conductor.carro ? (
-                                            <HStack justify="space-between">
-                                                <Text fontSize="sm" color="green.400">
-                                                    Carro #{conductor.carro.id} - {conductor.carro.finalizado ? 'Completo' : 'En desarrollo'}
-                                                </Text>
-                                                <HStack fontSize="xs" color="gray.500">
-                                                    <Text>P:{conductor.carro.stats.P}</Text>
-                                                    <Text>A:{conductor.carro.stats.A}</Text>
-                                                    <Text>M:{conductor.carro.stats.M}</Text>
-                                                </HStack>
-                                            </HStack>
-                                        ) : (
-                                            <Text fontSize="sm" color="red.400">Sin carro asignado</Text>
-                                        )}
-                                    </Box>
-                                );
-                            })}
-                        </SimpleGrid>
-                    </CardBody>
-                </Card>
-
-                {/* Filtros */}
-                <Card bg="brand.800" borderColor="brand.700">
+                                                    {conductor.carro ? (
+                                                        <HStack justify="space-between">
+                                                            <Text fontSize="sm" color="green.400">
+                                                                Carro #{conductor.carro.id} - {conductor.carro.finalizado ? 'Completo' : 'En desarrollo'}
+                                                            </Text>
+                                                            <HStack fontSize="xs" color="gray.500">
+                                                                <Text>P:{conductor.carro.stats.P}</Text>
+                                                                <Text>A:{conductor.carro.stats.A}</Text>
+                                                                <Text>M:{conductor.carro.stats.M}</Text>
+                                                            </HStack>
+                                                        </HStack>
+                                                    ) : (
+                                                        <Text fontSize="sm" color="red.400">Sin carro asignado</Text>
+                                                    )}
+                                                </Box>
+                                            );
+                                        })}
+                                    </SimpleGrid>
+                                </CardBody>
+                            </Card>
+                        </TabPanel>
+                        
+                        {/* Tab Simulaciones */}
+                        <TabPanel px={0}>
+                            {/* Filtros */}
+                            <Card bg="brand.800" borderColor="brand.700" mb={4}>
                     <CardBody>
                         <HStack spacing={4} align="center">
                             <Text fontWeight="medium">Filtrar por conductor:</Text>
@@ -1179,6 +1257,9 @@ function EngineerSimulaciones() {
                         })}
                     </VStack>
                 )}
+                        </TabPanel>
+                    </TabPanels>
+                </Tabs>
             </VStack>
         </Container>
     );

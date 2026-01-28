@@ -1,0 +1,219 @@
+{
+  "id": null,
+  "uid": "f1carro",
+  "title": "F1 Analisis por Carro",
+  "tags": ["F1", "Racing", "Carro"],
+  "timezone": "browser",
+  "schemaVersion": 37,
+  "refresh": "30s",
+  "templating": {
+    "list": [
+      {
+        "name": "carro",
+        "label": "Carro",
+        "type": "query",
+        "datasource": {
+          "type": "mssql",
+          "uid": "cfbk8svo6jw8wb"
+        },
+        "query": "SELECT DISTINCT Id_carro as __value, CONCAT('Carro ', Id_carro, ' - ', Equipo_Nombre, ' (', Conductor_Nombre, ')') as __text FROM VW_Grafana_Carro_Historial ORDER BY Id_carro",
+        "refresh": 1,
+        "current": {"text": "4", "value": "4"}
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Info del Carro $carro",
+      "gridPos": {"h": 4, "w": 24, "x": 0, "y": 0},
+      "datasource": {
+        "type": "mssql",
+        "uid": "cfbk8svo6jw8wb"
+      },
+      "targets": [{
+        "refId": "A",
+        "format": "table",
+        "rawQuery": true,
+        "rawSql": "SELECT TOP 1 Equipo_Nombre AS Equipo, Conductor_Nombre AS Conductor, P_total AS Potencia, A_total AS Aerodinamica, M_total AS Manejo, H_conductor AS Habilidad FROM VW_Grafana_Carro_Historial WHERE Id_carro = $carro"
+      }],
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "textMode": "auto"
+      }
+    },
+    {
+      "id": 2,
+      "type": "table",
+      "title": "Historial de Simulaciones - Carro $carro",
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 4},
+      "datasource": {
+        "type": "mssql",
+        "uid": "cfbk8svo6jw8wb"
+      },
+      "targets": [{
+        "refId": "A",
+        "format": "table",
+        "rawQuery": true,
+        "rawSql": "SELECT Id_simulacion AS [Sim], FORMAT(Fecha_hora, 'yyyy-MM-dd HH:mm') AS Fecha, Circuito_Nombre AS Circuito, Posicion AS Pos, CAST(Tiempo_segundos AS DECIMAL(10,2)) AS [Tiempo (s)], CAST(Vrecta AS DECIMAL(10,2)) AS Vrecta, CAST(Vcurva AS DECIMAL(10,2)) AS Vcurva, CAST(Penalizacion AS DECIMAL(10,2)) AS Penalizacion, P_total AS P, A_total AS A, M_total AS M, H_conductor AS H FROM VW_Grafana_Carro_Historial WHERE Id_carro = $carro ORDER BY Id_simulacion DESC"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {"filterable": true}
+        },
+        "overrides": [
+          {
+            "matcher": {"id": "byName", "options": "Pos"},
+            "properties": [{"id": "custom.width", "value": 50}]
+          }
+        ]
+      }
+    },
+    {
+      "id": 3,
+      "type": "barchart",
+      "title": "Comparacion de Tiempos por Simulacion - Carro $carro",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 12},
+      "datasource": {
+        "type": "mssql",
+        "uid": "cfbk8svo6jw8wb"
+      },
+      "targets": [{
+        "refId": "A",
+        "format": "table",
+        "rawQuery": true,
+        "rawSql": "SELECT CONCAT('Sim ', Id_simulacion) AS Simulacion, Tiempo_segundos AS Tiempo FROM VW_Grafana_Carro_Historial WHERE Id_carro = $carro ORDER BY Id_simulacion"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"}
+        }
+      },
+      "options": {
+        "orientation": "horizontal",
+        "xField": "Simulacion",
+        "showValue": "always"
+      }
+    },
+    {
+      "id": 4,
+      "type": "barchart",
+      "title": "Posiciones Obtenidas - Carro $carro",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 12},
+      "datasource": {
+        "type": "mssql",
+        "uid": "cfbk8svo6jw8wb"
+      },
+      "targets": [{
+        "refId": "A",
+        "format": "table",
+        "rawQuery": true,
+        "rawSql": "SELECT CONCAT('Sim ', Id_simulacion) AS Simulacion, Posicion FROM VW_Grafana_Carro_Historial WHERE Id_carro = $carro ORDER BY Id_simulacion"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"},
+          "max": 10,
+          "min": 1
+        }
+      },
+      "options": {
+        "orientation": "horizontal",
+        "xField": "Simulacion",
+        "showValue": "always"
+      }
+    },
+    {
+      "id": 5,
+      "type": "table",
+      "title": "Setup Actual del Carro $carro",
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 20},
+      "datasource": {
+        "type": "mssql",
+        "uid": "cfbk8svo6jw8wb"
+      },
+      "targets": [{
+        "refId": "A",
+        "format": "table",
+        "rawQuery": true,
+        "rawSql": "SELECT TOP 1 ISNULL(PU_Nombre, 'Sin instalar') AS [Power Unit], ISNULL(PU_P, 0) AS [PU-P], ISNULL(PU_A, 0) AS [PU-A], ISNULL(PU_M, 0) AS [PU-M], ISNULL(Aero_Nombre, 'Sin instalar') AS [Aerodinamico], ISNULL(Aero_P, 0) AS [Aero-P], ISNULL(Aero_A, 0) AS [Aero-A], ISNULL(Aero_M, 0) AS [Aero-M], ISNULL(Neum_Nombre, 'Sin instalar') AS [Neumaticos], ISNULL(Neum_P, 0) AS [Neum-P], ISNULL(Neum_A, 0) AS [Neum-A], ISNULL(Neum_M, 0) AS [Neum-M] FROM VW_Grafana_Carro_Historial WHERE Id_carro = $carro"
+      }]
+    },
+    {
+      "id": 6,
+      "type": "table",
+      "title": "Setup Actual (Suspension y Caja) - Carro $carro",
+      "gridPos": {"h": 6, "w": 24, "x": 0, "y": 28},
+      "datasource": {
+        "type": "mssql",
+        "uid": "cfbk8svo6jw8wb"
+      },
+      "targets": [{
+        "refId": "A",
+        "format": "table",
+        "rawQuery": true,
+        "rawSql": "SELECT TOP 1 ISNULL(Susp_Nombre, 'Sin instalar') AS [Suspension], ISNULL(Susp_P, 0) AS [Susp-P], ISNULL(Susp_A, 0) AS [Susp-A], ISNULL(Susp_M, 0) AS [Susp-M], ISNULL(Caja_Nombre, 'Sin instalar') AS [Caja Cambios], ISNULL(Caja_P, 0) AS [Caja-P], ISNULL(Caja_A, 0) AS [Caja-A], ISNULL(Caja_M, 0) AS [Caja-M], P_total AS [Total P], A_total AS [Total A], M_total AS [Total M], (P_total + A_total + M_total) AS [Total PAM] FROM VW_Grafana_Carro_Historial WHERE Id_carro = $carro"
+      }]
+    },
+    {
+      "id": 7,
+      "type": "gauge",
+      "title": "Velocidad Recta vs Curva - Ultima Simulacion",
+      "gridPos": {"h": 6, "w": 12, "x": 0, "y": 34},
+      "datasource": {
+        "type": "mssql",
+        "uid": "cfbk8svo6jw8wb"
+      },
+      "targets": [{
+        "refId": "A",
+        "format": "table",
+        "rawQuery": true,
+        "rawSql": "SELECT TOP 1 CAST(Vrecta AS DECIMAL(10,2)) AS [V Recta (km/h)], CAST(Vcurva AS DECIMAL(10,2)) AS [V Curva (km/h)] FROM VW_Grafana_Carro_Historial WHERE Id_carro = $carro ORDER BY Id_simulacion DESC"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "max": 350,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "red", "value": null},
+              {"color": "yellow", "value": 200},
+              {"color": "green", "value": 280}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 8,
+      "type": "stat",
+      "title": "Estadisticas del Carro $carro",
+      "gridPos": {"h": 6, "w": 12, "x": 12, "y": 34},
+      "datasource": {
+        "type": "mssql",
+        "uid": "cfbk8svo6jw8wb"
+      },
+      "targets": [{
+        "refId": "A",
+        "format": "table",
+        "rawQuery": true,
+        "rawSql": "SELECT COUNT(*) AS [Total Carreras], MIN(Posicion) AS [Mejor Posicion], CAST(AVG(CAST(Posicion AS FLOAT)) AS DECIMAL(3,1)) AS [Posicion Promedio], CAST(MIN(Tiempo_segundos) AS DECIMAL(10,2)) AS [Mejor Tiempo], CAST(AVG(Tiempo_segundos) AS DECIMAL(10,2)) AS [Tiempo Promedio] FROM VW_Grafana_Carro_Historial WHERE Id_carro = $carro"
+      }],
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "textMode": "auto",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": true
+        }
+      }
+    }
+  ]
+}
