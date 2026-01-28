@@ -246,6 +246,138 @@ Reemplaza "192.168.1.15" con tu IP local.
 - **Pagina en blanco**: Asegúrate de que el Backend y Frontend estan corriendo
 - **Error de autenticacion**: Verifica que la BD este correctamente configurada en el archivo `.env`
 
+## Configuracion de Grafana (Dashboards de Simulaciones)
+
+El proyecto incluye dashboards de Grafana para visualizar estadisticas de simulaciones. Los dashboards estan embebidos en la pagina de Simulaciones del frontend.
+
+### Requisitos
+
+- **Docker Desktop** instalado y corriendo
+- Puerto **3001** disponible
+
+### Paso 1: Crear el contenedor de Grafana
+
+Ejecutar el siguiente comando en PowerShell:
+
+```powershell
+docker run -d --name grafana -p 3001:3000 `
+  -e "GF_SECURITY_ALLOW_EMBEDDING=true" `
+  -e "GF_SECURITY_COOKIE_SAMESITE=lax" `
+  -e "GF_AUTH_ANONYMOUS_ENABLED=true" `
+  -e "GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer" `
+  -v grafana-storage:/var/lib/grafana `
+  grafana/grafana:latest
+```
+
+El contenedor se iniciara automaticamente. Grafana estara disponible en `http://localhost:3001` o `http://192.168.1.15:3001`
+
+### Paso 2: Instalar el plugin de SQL Server
+
+```powershell
+docker exec grafana grafana-cli plugins install grafana-mssql-datasource
+docker restart grafana
+```
+
+Esperar unos segundos a que Grafana reinicie.
+
+### Paso 3: Configurar el Data Source
+
+1. Abrir Grafana en `http://localhost:3001` o `http://192.168.1.15:3001`
+2. Credenciales por defecto: `admin` / `admin` 
+3. En **Connections** > **Data sources** > **Add data source**
+4. Buscar y seleccionar **Microsoft SQL Server**
+5. Configurar:
+   - **Name**: `SQL Server F1`
+   - **Host**: `host.docker.internal:1433` (para conectar desde Docker a SQL Server local)
+   - **Database**: `DB_F1_Garage_Manager`
+   - **Authentication**: SQL Server Authentication
+   - **User**: usuario de SQL Server
+   - **Password**: password de SQL Server
+6. Click en **Save & Test** - debe mostrar "Database Connection OK"
+
+### Paso 4: Importar los Dashboards
+
+Los dashboards estan en la raiz del proyecto:
+- `grafana-dashboard-v2.json` - Dashboard principal de simulaciones
+- `grafana-carro-dashboard.json` - Dashboard de analisis por carro
+
+Para importarlos via API (reemplazar la contrasena si se cambio):
+
+```powershell
+# Dashboard F1 Simulaciones
+$headers = @{
+    "Authorization" = "Basic " + [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("admin:admin"))
+    "Content-Type" = "application/json"
+}
+$body = Get-Content "grafana-dashboard-v2.json" -Raw
+Invoke-RestMethod -Uri "http://localhost:3001/api/dashboards/db" -Method Post -Headers $headers -Body $body
+
+# Dashboard F1 Analisis por Carro
+$carroBody = Get-Content "grafana-carro-dashboard.json" -Raw
+$carroPayload = @{
+    dashboard = $carroBody | ConvertFrom-Json
+    overwrite = $true
+    folderId = 0
+} | ConvertTo-Json -Depth 20
+Invoke-RestMethod -Uri "http://localhost:3001/api/dashboards/db" -Method Post -Headers $headers -Body $carroPayload
+```
+
+O importalos manualmente:
+1. Ve a **Dashboards** > **New** > **Import**
+2. Click en "Upload JSON file" y selecciona cada archivo
+
+### Paso 5: Verificar Data Source UID
+
+Los dashboards esperan un Data Source con UID `cfbk8svo6jw8wb`. Si el UID es diferente:
+
+1. Ve a **Connections** > **Data sources** > **SQL Server F1**
+2. Copia el UID de la URL (ej: `http://localhost:3001/connections/datasources/edit/TU_UID`)
+3. Edita los archivos JSON y reemplaza `cfbk8svo6jw8wb` por tu UID
+4. Reimporta los dashboards
+
+### Configuracion para Acceso en Red
+
+Para que otras computadoras vean los dashboards embebidos:
+
+1. **Firewall**: Permite el puerto 3001 (igual que hiciste con 3000 y 5173)
+
+2. **Modificar Frontend**: En `frontend/src/pages/Simulaciones.jsx`, cambia:
+   ```javascript
+   const GRAFANA_BASE_URL = 'http://localhost:3001';
+   ```
+   Por tu IP local:
+   ```javascript
+   const GRAFANA_BASE_URL = 'http://192.168.1.15:3001';
+   ```
+
+3. Las otras computadoras podran ver los dashboards embebidos en la pagina de Simulaciones
+
+### Dashboards Disponibles
+
+| Dashboard | URL | Descripcion |
+|-----------|-----|-------------|
+| F1 Simulaciones | `/d/f1sim/f1-simulaciones` | Ranking, historial por carro, PAM vs Tiempo |
+| F1 Analisis por Carro | `/d/f1carro/f1-analisis-por-carro` | Estadisticas detalladas de un carro |
+
+### Comandos Utiles de Docker
+
+```powershell
+# Ver estado del contenedor
+docker ps -a | Select-String grafana
+
+# Iniciar Grafana
+docker start grafana
+
+# Detener Grafana
+docker stop grafana
+
+# Ver logs
+docker logs grafana
+
+# Eliminar contenedor (los datos se mantienen en el volumen)
+docker rm grafana
+```
+
 ## Licencia
 
 MIT
