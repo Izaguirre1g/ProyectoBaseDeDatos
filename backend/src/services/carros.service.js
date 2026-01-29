@@ -522,10 +522,8 @@ const carrosService = {
                 AND u.Id_usuario NOT IN (
                     SELECT Id_conductor FROM CARRO WHERE Id_conductor IS NOT NULL
                 )
-                AND (u.Id_equipo = @idEquipo OR u.Id_equipo IS NULL)
-                ORDER BY 
-                    CASE WHEN u.Id_equipo = @idEquipo THEN 0 ELSE 1 END,
-                    u.Nombre_usuario
+                AND u.Id_equipo = @idEquipo
+                ORDER BY u.Nombre_usuario
             `);
         return result.recordset;
     },
