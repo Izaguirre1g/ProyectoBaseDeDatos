@@ -71,8 +71,10 @@ import {
 import { useAuth } from '../context/AuthContext';
 import simulacionesService from '../services/simulaciones.service';
 
+
+//cambiar posteriormente a variables del usuario
 // URL base de Grafana
-const GRAFANA_BASE_URL = 'http://192.168.1.15:3001';
+const GRAFANA_BASE_URL = 'http://192.168.18.56:3001';
 
 // Nombres de circuitos por distancia
 const getNombreCircuito = (distancia) => {

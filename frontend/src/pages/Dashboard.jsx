@@ -848,12 +848,6 @@ function DriverDashboard() {
                     color="purple.500" 
                 />
                 <StatCard 
-                    icon={Flag} 
-                    label="Carreras" 
-                    value={stats?.carreras || 0} 
-                    color="green.500" 
-                />
-                <StatCard 
                     icon={Clock} 
                     label="Mejor Tiempo" 
                     value={formatTiempo(stats?.mejorTiempo)} 

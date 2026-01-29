@@ -14,7 +14,7 @@
         "type": "query",
         "datasource": {
           "type": "mssql",
-          "uid": "cfbk8svo6jw8wb"
+          "uid": "1FEqOVHDz"
         },
         "query": "SELECT DISTINCT CAST(Id_simulacion AS VARCHAR) FROM VW_Grafana_Ranking ORDER BY 1 DESC",
         "refresh": 1,
@@ -26,7 +26,7 @@
         "type": "query",
         "datasource": {
           "type": "mssql",
-          "uid": "cfbk8svo6jw8wb"
+          "uid": "1FEqOVHDz"
         },
         "query": "SELECT DISTINCT CAST(Id_carro AS VARCHAR) FROM VW_Grafana_Carro_Comparacion ORDER BY 1 DESC",
         "refresh": 1,
@@ -42,7 +42,7 @@
       "gridPos": {"h": 10, "w": 24, "x": 0, "y": 0},
       "datasource": {
         "type": "mssql",
-        "uid": "cfbk8svo6jw8wb"
+        "uid": "1FEqOVHDz"
       },
       "targets": [{
         "refId": "A",
@@ -64,7 +64,7 @@
       "gridPos": {"h": 10, "w": 24, "x": 0, "y": 10},
       "datasource": {
         "type": "mssql",
-        "uid": "cfbk8svo6jw8wb"
+        "uid": "1FEqOVHDz"
       },
       "targets": [{
         "refId": "A",
@@ -97,7 +97,7 @@
       "gridPos": {"h": 12, "w": 24, "x": 0, "y": 20},
       "datasource": {
         "type": "mssql",
-        "uid": "cfbk8svo6jw8wb"
+        "uid": "1FEqOVHDz"
       },
       "targets": [
         {

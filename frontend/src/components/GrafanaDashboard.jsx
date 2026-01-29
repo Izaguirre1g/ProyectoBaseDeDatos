@@ -24,7 +24,7 @@ import { ExternalLink, RefreshCw } from 'lucide-react';
  * Utilizando iframes con seguridad mediante parámetros de URL
  */
 
-const GRAFANA_BASE_URL = 'http://localhost:3001';
+const GRAFANA_BASE_URL = 'http://192.168.18.56:3001';
 
 // IDs de los paneles (estos se obtienen de Grafana cuando creas los paneles)
 // Formato: /d-solo/ID_DASHBOARD/NOMBRE?panelId=NUMERO_PANEL

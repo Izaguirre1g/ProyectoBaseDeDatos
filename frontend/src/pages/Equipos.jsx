@@ -240,11 +240,7 @@ function Equipos() {
     
     // Estado para nuevo equipo
     const [nuevoEquipo, setNuevoEquipo] = useState({
-        nombre: '',
-        nombreCompleto: '',
-        pais: '',
-        colorPrimario: '#e10600',
-        presupuesto: 100000000
+        nombre: ''
     });
     
     // Estado para nuevo aporte
@@ -589,9 +585,9 @@ function Equipos() {
             const equipoCreado = {
                 id: resultado.Id_equipo,
                 nombre: resultado.Nombre,
-                nombreCompleto: nuevoEquipo.nombreCompleto || resultado.Nombre,
-                pais: nuevoEquipo.pais || '',
-                colorPrimario: nuevoEquipo.colorPrimario || '#e10600',
+                nombreCompleto: resultado.Nombre,
+                pais: '',
+                colorPrimario: '#e10600',
                 fundacion: new Date().getFullYear(),
                 campeonatos: 0,
                 presupuesto: {
@@ -609,11 +605,7 @@ function Equipos() {
             setEquipos([...equipos, equipoCreado]);
             setSelectedEquipo(equipoCreado);
             setNuevoEquipo({
-                nombre: '',
-                nombreCompleto: '',
-                pais: '',
-                colorPrimario: '#e10600',
-                presupuesto: 100000000
+                nombre: ''
             });
             onClose();
             
@@ -726,10 +718,6 @@ function Equipos() {
                                 </VStack>
                                 <Box flex={1} />
                                 <VStack align="end" spacing={0}>
-                                    <HStack>
-                                        <Icon as={Trophy} color="yellow.400" />
-                                        <Text fontWeight="bold">{selectedEquipo.campeonatos} Campeonatos</Text>
-                                    </HStack>
                                     <Text fontSize="sm" color="gray.400">
                                         Fundado en {selectedEquipo.fundacion}
                                     </Text>
@@ -793,13 +781,6 @@ function Equipos() {
                                                 color="orange.400"
                                             />
                                             <StatCard
-                                                icon={DollarSign}
-                                                label="Disponible"
-                                                value={new Intl.NumberFormat('es-CR', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format((selectedEquipo.presupuesto?.total - selectedEquipo.presupuesto?.gastado))}
-                                                subtext="Para desarrollo"
-                                                color="blue.400"
-                                            />
-                                            <StatCard
                                                 icon={Megaphone}
                                                 label="Ingresos Sponsors"
                                                 value={new Intl.NumberFormat('es-CR', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(selectedEquipo.presupuesto?.sponsors)}
@@ -821,15 +802,26 @@ function Equipos() {
                                                             </Tr>
                                                         </Thead>
                                                         <Tbody>
-                                                            {selectedEquipo.gastos.map((gasto) => (
-                                                                <Tr key={gasto.id} _hover={{ bg: 'brand.600' }}>
-                                                                    <Td>{new Date(gasto.fecha).toLocaleDateString()}</Td>
-                                                                    <Td>{gasto.descripcion}</Td>
-                                                                    <Td isNumeric color="red.400">
-                                                                        -${gasto.monto?.toLocaleString()}
-                                                                    </Td>
-                                                                </Tr>
-                                                            ))}
+                                                            {selectedEquipo.gastos.map((gasto) => {
+                                                                // Procesar fecha correctamente sin conversión UTC
+                                                                let fechaFormato = '';
+                                                                if (gasto.fecha) {
+                                                                    // Extraer solo la parte de fecha (YYYY-MM-DD) para evitar problemas de zona horaria
+                                                                    const fechaStr = gasto.fecha.toString().split('T')[0];
+                                                                    const [year, month, day] = fechaStr.split('-');
+                                                                    fechaFormato = `${day}/${month}/${year}`;
+                                                                }
+                                                                
+                                                                return (
+                                                                    <Tr key={gasto.id} _hover={{ bg: 'brand.600' }}>
+                                                                        <Td>{fechaFormato}</Td>
+                                                                        <Td>{gasto.descripcion}</Td>
+                                                                        <Td isNumeric color="red.400">
+                                                                            -${gasto.monto?.toLocaleString()}
+                                                                        </Td>
+                                                                    </Tr>
+                                                                );
+                                                            })}
                                                         </Tbody>
                                                     </Table>
                                                 ) : (
@@ -975,91 +967,6 @@ function Equipos() {
                                     _focus={{ borderColor: 'accent.500' }}
                                 />
                             </FormControl>
-                            
-                            <FormControl isRequired>
-                                <FormLabel color="gray.300">Nombre Completo</FormLabel>
-                                <Input
-                                    placeholder="Ej: Oracle Red Bull Racing"
-                                    value={nuevoEquipo.nombreCompleto}
-                                    onChange={(e) => setNuevoEquipo({...nuevoEquipo, nombreCompleto: e.target.value})}
-                                    bg="brand.900"
-                                    borderColor="brand.700"
-                                    _focus={{ borderColor: 'accent.500' }}
-                                />
-                            </FormControl>
-
-                            <FormControl isRequired>
-                                <FormLabel color="gray.300">País</FormLabel>
-                                <Select
-                                    placeholder="Seleccionar país"
-                                    value={nuevoEquipo.pais}
-                                    onChange={(e) => setNuevoEquipo({...nuevoEquipo, pais: e.target.value})}
-                                    bg="brand.900"
-                                    borderColor="brand.700"
-                                    _focus={{ borderColor: 'accent.500' }}
-                                >
-                                    <option value="Reino Unido">Reino Unido</option>
-                                    <option value="Italia">Italia</option>
-                                    <option value="Alemania">Alemania</option>
-                                    <option value="Austria">Austria</option>
-                                    <option value="Francia">Francia</option>
-                                    <option value="Estados Unidos">Estados Unidos</option>
-                                    <option value="Suiza">Suiza</option>
-                                </Select>
-                            </FormControl>
-
-                            <HStack w="full" spacing={4}>
-                                <FormControl>
-                                    <FormLabel color="gray.300">Color del Equipo</FormLabel>
-                                    <Input
-                                        type="color"
-                                        value={nuevoEquipo.colorPrimario}
-                                        onChange={(e) => setNuevoEquipo({...nuevoEquipo, colorPrimario: e.target.value})}
-                                        bg="brand.900"
-                                        borderColor="brand.700"
-                                        h="50px"
-                                        p={1}
-                                    />
-                                </FormControl>
-
-                                <FormControl isRequired>
-                                    <FormLabel color="gray.300">Presupuesto Inicial</FormLabel>
-                                    <Select
-                                        value={nuevoEquipo.presupuesto}
-                                        onChange={(e) => setNuevoEquipo({...nuevoEquipo, presupuesto: parseInt(e.target.value)})}
-                                        bg="brand.900"
-                                        borderColor="brand.700"
-                                        _focus={{ borderColor: 'accent.500' }}
-                                    >
-                                        <option value={80000000}>$80M - Equipo Pequeño</option>
-                                        <option value={100000000}>$100M - Equipo Mediano</option>
-                                        <option value={120000000}>$120M - Equipo Grande</option>
-                                        <option value={145000000}>$145M - Equipo Top</option>
-                                    </Select>
-                                </FormControl>
-                            </HStack>
-
-                            {/* Preview */}
-                            {nuevoEquipo.nombre && (
-                                <Card bg="brand.900" w="full" mt={2}>
-                                    <CardBody py={3}>
-                                        <HStack>
-                                            <Box
-                                                w="4px"
-                                                h="40px"
-                                                bg={nuevoEquipo.colorPrimario}
-                                                borderRadius="full"
-                                            />
-                                            <VStack align="start" spacing={0}>
-                                                <Text fontWeight="bold" color="white">{nuevoEquipo.nombre || 'Nombre del Equipo'}</Text>
-                                                <Text fontSize="sm" color="gray.400">{nuevoEquipo.pais || 'País'}</Text>
-                                            </VStack>
-                                            <Box flex={1} />
-                                            <Badge colorScheme="green">{new Intl.NumberFormat('es-CR', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(nuevoEquipo.presupuesto)}</Badge>
-                                        </HStack>
-                                    </CardBody>
-                                </Card>
-                            )}
                         </VStack>
                     </ModalBody>
                     <ModalFooter>
@@ -1069,7 +976,7 @@ function Equipos() {
                         <Button 
                             colorScheme="red" 
                             onClick={handleCrearEquipo}
-                            isDisabled={!nuevoEquipo.nombre || !nuevoEquipo.nombreCompleto || !nuevoEquipo.pais}
+                            isDisabled={!nuevoEquipo.nombre}
                         >
                             Crear Equipo
                         </Button>

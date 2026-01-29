@@ -14,7 +14,7 @@
         "type": "query",
         "datasource": {
           "type": "mssql",
-          "uid": "cfbk8svo6jw8wb"
+          "uid": "1FEqOVHDz"
         },
         "query": "SELECT DISTINCT Id_carro as __value, CONCAT('Carro ', Id_carro, ' - ', Equipo_Nombre, ' (', Conductor_Nombre, ')') as __text FROM VW_Grafana_Carro_Historial ORDER BY Id_carro",
         "refresh": 1,
@@ -30,7 +30,7 @@
       "gridPos": {"h": 4, "w": 24, "x": 0, "y": 0},
       "datasource": {
         "type": "mssql",
-        "uid": "cfbk8svo6jw8wb"
+        "uid": "1FEqOVHDz"
       },
       "targets": [{
         "refId": "A",
@@ -52,7 +52,7 @@
       "gridPos": {"h": 8, "w": 24, "x": 0, "y": 4},
       "datasource": {
         "type": "mssql",
-        "uid": "cfbk8svo6jw8wb"
+        "uid": "1FEqOVHDz"
       },
       "targets": [{
         "refId": "A",
@@ -79,7 +79,7 @@
       "gridPos": {"h": 8, "w": 12, "x": 0, "y": 12},
       "datasource": {
         "type": "mssql",
-        "uid": "cfbk8svo6jw8wb"
+        "uid": "1FEqOVHDz"
       },
       "targets": [{
         "refId": "A",
@@ -105,7 +105,7 @@
       "gridPos": {"h": 8, "w": 12, "x": 12, "y": 12},
       "datasource": {
         "type": "mssql",
-        "uid": "cfbk8svo6jw8wb"
+        "uid": "1FEqOVHDz"
       },
       "targets": [{
         "refId": "A",
@@ -133,7 +133,7 @@
       "gridPos": {"h": 8, "w": 24, "x": 0, "y": 20},
       "datasource": {
         "type": "mssql",
-        "uid": "cfbk8svo6jw8wb"
+        "uid": "1FEqOVHDz"
       },
       "targets": [{
         "refId": "A",
@@ -149,7 +149,7 @@
       "gridPos": {"h": 6, "w": 24, "x": 0, "y": 28},
       "datasource": {
         "type": "mssql",
-        "uid": "cfbk8svo6jw8wb"
+        "uid": "1FEqOVHDz"
       },
       "targets": [{
         "refId": "A",
@@ -165,7 +165,7 @@
       "gridPos": {"h": 6, "w": 12, "x": 0, "y": 34},
       "datasource": {
         "type": "mssql",
-        "uid": "cfbk8svo6jw8wb"
+        "uid": "1FEqOVHDz"
       },
       "targets": [{
         "refId": "A",
@@ -195,7 +195,7 @@
       "gridPos": {"h": 6, "w": 12, "x": 12, "y": 34},
       "datasource": {
         "type": "mssql",
-        "uid": "cfbk8svo6jw8wb"
+        "uid": "1FEqOVHDz"
       },
       "targets": [{
         "refId": "A",
