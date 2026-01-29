@@ -24,28 +24,31 @@ import { ExternalLink, RefreshCw } from 'lucide-react';
  * Utilizando iframes con seguridad mediante parámetros de URL
  */
 
-const GRAFANA_BASE_URL = 'http://192.168.18.56:3001';
+
+//CAMBIAR ESTE URL POR LA IP DE LA COMPU
+
+const GRAFANA_BASE_URL = `http://${window.location.hostname}:3001`;
 
 // IDs de los paneles (estos se obtienen de Grafana cuando creas los paneles)
 // Formato: /d-solo/ID_DASHBOARD/NOMBRE?panelId=NUMERO_PANEL
 const PANELS = {
     ranking: {
-        title: '🏆 Ranking por Simulación',
+        title: 'Ranking por Simulacion',
         description: 'Posiciones finales de cada simulación',
         url: '/d-solo/f1sim/f1-simulaciones?panelId=1&refresh=30s&var-simulacion=$simulacion',
     },
     comparacion: {
-        title: '🔄 Comparación Setup vs Tiempo',
+        title: 'Comparacion Setup vs Tiempo',
         description: 'Cómo cambia el tiempo con diferentes configuraciones',
         url: '/d-solo/f1sim/f1-simulaciones?panelId=2&refresh=30s&var-carro=$carro',
     },
     pam: {
-        title: '📈 P, A, M vs Tiempo',
+        title: 'P, A, M vs Tiempo',
         description: 'Relación entre potencia, aerodinámica, manejo y tiempo',
         url: '/d-solo/f1sim/f1-simulaciones?panelId=3&refresh=30s&var-simulacion=$simulacion',
     },
     dashboard: {
-        title: '📊 Dashboard Completo',
+        title: 'Dashboard Completo',
         description: 'Vista completa de todas las simulaciones',
         url: '/d/f1sim/f1-simulaciones?kiosk=tv&refresh=1m',
     },
@@ -162,7 +165,7 @@ export function GrafanaDashboard() {
                     <VStack align="stretch" spacing={4}>
                         <HStack justify="space-between">
                             <Heading size="lg" color="white">
-                                📊 Análisis de Simulaciones
+                                Analisis de Simulaciones
                             </Heading>
                             <Button
                                 size="sm"
@@ -225,16 +228,16 @@ export function GrafanaDashboard() {
             <Tabs variant="enclosed" colorScheme="brand">
                 <TabList bg="brand.700" p={2} borderRadius="md">
                     <Tab color="white" _selected={{ color: 'accent.400', bg: 'brand.600' }}>
-                        🏆 Ranking
+                        Ranking
                     </Tab>
                     <Tab color="white" _selected={{ color: 'accent.400', bg: 'brand.600' }}>
-                        🔄 Setup Comparison
+                        Setup Comparison
                     </Tab>
                     <Tab color="white" _selected={{ color: 'accent.400', bg: 'brand.600' }}>
-                        📈 P,A,M Analysis
+                        P,A,M Analysis
                     </Tab>
                     <Tab color="white" _selected={{ color: 'accent.400', bg: 'brand.600' }}>
-                        📊 Dashboard
+                        Dashboard
                     </Tab>
                 </TabList>
 
@@ -290,7 +293,7 @@ export function GrafanaDashboard() {
             <Card bg="brand.900" borderColor="brand.700" borderWidth="1px">
                 <CardBody>
                     <Box fontSize="sm" color="gray.300">
-                        💡 <strong>Tip:</strong> Puedes ver los dashboards en pantalla completa haciendo click
+                        <strong>Tip:</strong> Puedes ver los dashboards en pantalla completa haciendo click
                         en "Ver en Grafana". Los datos se actualizan automáticamente cada 30 segundos.
                     </Box>
                 </CardBody>

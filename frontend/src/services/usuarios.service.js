@@ -38,7 +38,7 @@ export const usuariosService = {
         // Si hay contraseña, hashearla con Argon2id
         if (usuario.password && usuario.password.trim()) {
             datosEnviar.password = await hashPassword(usuario.password, usuario.email);
-            console.log('🔐 Contraseña hasheada con Argon2id para crear usuario');
+            console.log('Contrasena hasheada con Argon2id para crear usuario');
         }
         
         const response = await api.post('/usuarios', datosEnviar);
@@ -58,7 +58,7 @@ export const usuariosService = {
         // Si hay contraseña nueva, hashearla con Argon2id
         if (datos.password && datos.password.trim()) {
             datosEnviar.password = await hashPassword(datos.password, datos.email);
-            console.log('🔐 Contraseña hasheada con Argon2id para actualizar usuario');
+            console.log('Contrasena hasheada con Argon2id para actualizar usuario');
         }
         
         const response = await api.put(`/usuarios/${id}`, datosEnviar);

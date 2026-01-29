@@ -56,35 +56,35 @@ const SLOT_TO_CATEGORIA_ID = {
 const SLOTS_CONFIG = {
     powerUnit: { 
         nombre: 'Power Unit', 
-        icon: '⚡',
+        icon: 'PU',
         posicion: { x: 200, y: 180 },
         color: '#e10600',
         categoriaId: 1
     },
     aerodinamica: { 
-        nombre: 'Aerodinámica', 
-        icon: '💨',
+        nombre: 'Aerodinamica', 
+        icon: 'AE',
         posicion: { x: 200, y: 60 },
         color: '#3b82f6',
         categoriaId: 2
     },
     neumaticos: { 
-        nombre: 'Neumáticos', 
-        icon: '🏎',
+        nombre: 'Neumaticos', 
+        icon: 'NE',
         posicion: { x: 320, y: 150 },
         color: '#eab308',
         categoriaId: 3
     },
     suspension: { 
-        nombre: 'Suspensión', 
-        icon: '🔧',
+        nombre: 'Suspension', 
+        icon: 'SU',
         posicion: { x: 80, y: 150 },
         color: '#22c55e',
         categoriaId: 4
     },
     cajaCambios: { 
         nombre: 'Caja Cambios', 
-        icon: '⚙️',
+        icon: 'CC',
         posicion: { x: 200, y: 240 },
         color: '#8b5cf6',
         categoriaId: 5
@@ -606,7 +606,7 @@ function ArmadoCarro() {
                                                 <text x={cx} y={cy + 3} textAnchor="middle" fill="#fff" fontSize="8" fontWeight="bold">!</text>
                                             )}
                                             {!isEmpty && (
-                                                <text x={cx} y={cy + 2} textAnchor="middle" fill="#fff" fontSize="6">✓</text>
+                                                <text x={cx} y={cy + 2} textAnchor="middle" fill="#fff" fontSize="6">OK</text>
                                             )}
                                         </g>
                                     );

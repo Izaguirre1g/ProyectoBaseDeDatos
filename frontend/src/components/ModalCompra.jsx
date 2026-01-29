@@ -259,9 +259,9 @@ function ModalCompra({
                                             {disponibilidad.Mensaje}
                                         </Text>
                                         {disponibilidad.PuedeComprar ? (
-                                            <Badge colorScheme="green">✓ Disponible</Badge>
+                                            <Badge colorScheme="green">Disponible</Badge>
                                         ) : (
-                                            <Badge colorScheme="red">✗ No disponible</Badge>
+                                            <Badge colorScheme="red">No disponible</Badge>
                                         )}
                                     </HStack>
                                 </VStack>

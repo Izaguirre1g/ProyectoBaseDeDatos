@@ -73,22 +73,22 @@ import simulacionesService from '../services/simulaciones.service';
 
 
 //cambiar posteriormente a variables del usuario
-// URL base de Grafana
-const GRAFANA_BASE_URL = 'http://192.168.18.56:3001';
+// URL base de Grafana - detecta automáticamente la IP
+const GRAFANA_BASE_URL = `http://${window.location.hostname}:3001`;
 
 // Nombres de circuitos por distancia
 const getNombreCircuito = (distancia) => {
     const nombres = {
-        5.793: { nombre: 'Monza', pais: 'Italia', imagen: '🇮🇹' },
-        3.337: { nombre: 'Monaco', pais: 'Mónaco', imagen: '🇲🇨' },
-        7.004: { nombre: 'Spa-Francorchamps', pais: 'Bélgica', imagen: '🇧🇪' },
-        5.891: { nombre: 'Silverstone', pais: 'Reino Unido', imagen: '🇬🇧' },
-        5.807: { nombre: 'Suzuka', pais: 'Japón', imagen: '🇯🇵' },
-        4.318: { nombre: 'Barcelona', pais: 'España', imagen: '🇪🇸' },
-        5.412: { nombre: 'Interlagos', pais: 'Brasil', imagen: '🇧🇷' },
-        6.003: { nombre: 'COTA', pais: 'USA', imagen: '🇺🇸' }
+        5.793: { nombre: 'Monza', pais: 'Italia', imagen: 'IT' },
+        3.337: { nombre: 'Monaco', pais: 'Monaco', imagen: 'MC' },
+        7.004: { nombre: 'Spa-Francorchamps', pais: 'Belgica', imagen: 'BE' },
+        5.891: { nombre: 'Silverstone', pais: 'Reino Unido', imagen: 'GB' },
+        5.807: { nombre: 'Suzuka', pais: 'Japon', imagen: 'JP' },
+        4.318: { nombre: 'Barcelona', pais: 'Espana', imagen: 'ES' },
+        5.412: { nombre: 'Interlagos', pais: 'Brasil', imagen: 'BR' },
+        6.003: { nombre: 'COTA', pais: 'USA', imagen: 'US' }
     };
-    return nombres[distancia] || { nombre: `Circuito`, pais: 'Desconocido', imagen: '🏁' };
+    return nombres[distancia] || { nombre: `Circuito`, pais: 'Desconocido', imagen: '--' };
 };
 
 // Función para formatear tiempo

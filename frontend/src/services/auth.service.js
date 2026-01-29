@@ -18,7 +18,7 @@ export const authService = {
     async login(email, password) {
         // Hashear contraseña con Argon2id antes de enviar
         const hashedPassword = await hashPassword(password, email);
-        console.log('🔐 Login - Hash generado:', hashedPassword);
+        console.log('Login - Hash generado:', hashedPassword);
         
         const response = await api.post('/auth/login', { 
             email, 
@@ -54,7 +54,7 @@ export const authService = {
     async register(userData) {
         // Hashear contraseña con Argon2id antes de enviar
         const hashedPassword = await hashPassword(userData.password, userData.email);
-        console.log('🔐 Contraseña hasheada con Argon2id para registro');
+        console.log('Contrasena hasheada con Argon2id para registro');
         
         const response = await api.post('/auth/register', {
             ...userData,

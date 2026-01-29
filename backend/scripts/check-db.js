@@ -7,7 +7,7 @@ const { getConnection, sql } = require('../src/config/database');
 
 async function checkDB() {
     try {
-        console.log('🔄 Verificando conexión a la base de datos...\n');
+        console.log('Verificando conexion a la base de datos...\n');
         const pool = await getConnection();
         
         console.log('Conexión exitosa!\n');

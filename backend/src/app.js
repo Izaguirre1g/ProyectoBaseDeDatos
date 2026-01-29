@@ -51,6 +51,12 @@ app.use(cors({
             return callback(null, true);
         }
         
+        // Permitir IPs de red local 172.x.x.x (Docker, WSL, etc.)
+        const localNetwork172Pattern = /^http:\/\/172\.\d{1,3}\.\d{1,3}\.\d{1,3}(:\d+)?$/;
+        if (localNetwork172Pattern.test(origin)) {
+            return callback(null, true);
+        }
+        
         console.log('CORS bloqueado para origen:', origin);
         callback(new Error('No permitido por CORS'));
     },
@@ -103,11 +109,37 @@ app.use((err, req, res, next) => {
     });
 });
 
+// Función para obtener la IP de red local
+function getLocalNetworkIP() {
+    const os = require('os');
+    const interfaces = os.networkInterfaces();
+    
+    let fallbackIP = null;
+    
+    for (const name of Object.keys(interfaces)) {
+        for (const iface of interfaces[name]) {
+            // Buscar IPv4 que no sea loopback
+            if (iface.family === 'IPv4' && !iface.internal) {
+                // Priorizar IPs de red local típicas (192.168.x.x)
+                if (iface.address.startsWith('192.168.')) {
+                    return iface.address;
+                }
+                // Guardar como fallback otras IPs
+                if (!fallbackIP) {
+                    fallbackIP = iface.address;
+                }
+            }
+        }
+    }
+    return fallbackIP || 'localhost';
+}
+
 // Iniciar servidor
 app.listen(PORT, '0.0.0.0', async () => {
+    const networkIP = getLocalNetworkIP();
     console.log(`Servidor F1 Database corriendo en http://0.0.0.0:${PORT}`);
     console.log(`Acceso local: http://localhost:${PORT}`);
-    console.log(`Acceso desde red: http://192.168.1.15:${PORT}`);
+    console.log(`Acceso desde red: http://${networkIP}:${PORT}`);
     console.log(`Ambiente: ${process.env.NODE_ENV || 'development'}`);
     
     // Intentar conectar a la base de datos

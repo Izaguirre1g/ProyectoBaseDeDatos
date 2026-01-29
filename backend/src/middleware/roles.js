@@ -60,7 +60,7 @@ function verificarRol(rolesPermitidos) {
                 });
             }
             
-            console.log(`[ROLES] ✓ Usuario ${userId} autorizado`);
+            console.log(`[ROLES] Usuario ${userId} autorizado`);
             // Agregar rol al request para usarlo después si es necesario
             req.userRole = rolUsuario;
             req.userId = userId;

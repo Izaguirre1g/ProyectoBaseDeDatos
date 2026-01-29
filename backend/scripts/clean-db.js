@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Script para limpiar datos de prueba de la base de datos
- * ⚠️ CUIDADO: Este script elimina datos!
+ * CUIDADO: Este script elimina datos!
  */
 
 const { getConnection } = require('../src/config/database');
@@ -11,7 +11,7 @@ async function cleanDB() {
         console.log('Conectando a la base de datos...\n');
         const pool = await getConnection();
         
-        console.log('⚠️  LIMPIANDO DATOS DE PRUEBA...\n');
+        console.log('LIMPIANDO DATOS DE PRUEBA...\n');
         
         // Orden de eliminación (respetando FKs)
         const tablas = [

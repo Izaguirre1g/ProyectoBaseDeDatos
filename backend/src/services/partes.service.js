@@ -102,7 +102,7 @@ const partesService = {
     async comprar(idEquipo, idParte, cantidad) {
         const pool = await getConnection();
         
-        console.log('🛒 SERVICIO COMPRAR:');
+        console.log('SERVICIO COMPRAR:');
         console.log('  idEquipo:', idEquipo);
         console.log('  idParte:', idParte);
         console.log('  cantidad:', cantidad);
