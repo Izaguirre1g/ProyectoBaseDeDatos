@@ -4,7 +4,6 @@ const carrosService = {
     /**
      * ============================================
      * CONSULTAS BÁSICAS
-     * ============================================
      */
     async getAll() {
         const pool = await getConnection();
@@ -641,11 +640,11 @@ const carrosService = {
                     `);
                 
                 // Si no tiene más carros en este equipo, quitarle el equipo
-                if (otrosCarrosResult.recordset[0].total === 0) {
-                    await transaction.request()
-                        .input('idConductor', sql.Int, conductorActual)
-                        .query('UPDATE USUARIO SET Id_equipo = NULL WHERE Id_usuario = @idConductor');
-                }
+                //if (otrosCarrosResult.recordset[0].total === 0) {
+                //    await transaction.request()
+                //        .input('idConductor', sql.Int, conductorActual)
+                //        .query('UPDATE USUARIO SET Id_equipo = NULL WHERE Id_usuario = @idConductor');
+                //}
             }
             
             // Actualizar el conductor en CARRO
