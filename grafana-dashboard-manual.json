@@ -1,0 +1,246 @@
+﻿{
+    "id":  null,
+    "uid":  "f1sim",
+    "title":  "F1 Simulaciones",
+    "tags":  [
+                 "F1",
+                 "Racing"
+             ],
+    "timezone":  "browser",
+    "schemaVersion":  37,
+    "refresh":  "30s",
+    "templating":  {
+                       "list":  [
+                                    {
+                                        "name":  "simulacion",
+                                        "label":  "Simulacion",
+                                        "type":  "query",
+                                        "datasource":  {
+                                                           "type":  "mssql",
+                                                           "uid":  "cfbk8svo6jw8wb"
+                                                       },
+                                        "query":  "SELECT DISTINCT CAST(Id_simulacion AS VARCHAR) FROM VW_Grafana_Ranking ORDER BY 1 DESC",
+                                        "refresh":  1,
+                                        "current":  {
+                                                        "text":  "1",
+                                                        "value":  "1"
+                                                    }
+                                    },
+                                    {
+                                        "name":  "carro",
+                                        "label":  "Carro",
+                                        "type":  "query",
+                                        "datasource":  {
+                                                           "type":  "mssql",
+                                                           "uid":  "cfbk8svo6jw8wb"
+                                                       },
+                                        "query":  "SELECT DISTINCT CAST(Id_carro AS VARCHAR) FROM VW_Grafana_Carro_Comparacion ORDER BY 1 DESC",
+                                        "refresh":  1,
+                                        "current":  {
+                                                        "text":  "10",
+                                                        "value":  "10"
+                                                    }
+                                    }
+                                ]
+                   },
+    "panels":  [
+                   {
+                       "id":  1,
+                       "type":  "table",
+                       "title":  "Ranking - Simulacion",
+                       "gridPos":  {
+                                       "h":  10,
+                                       "w":  24,
+                                       "x":  0,
+                                       "y":  0
+                                   },
+                       "datasource":  {
+                                          "type":  "mssql",
+                                          "uid":  "cfbk8svo6jw8wb"
+                                      },
+                       "targets":  [
+                                       {
+                                           "refId":  "A",
+                                           "format":  "table",
+                                           "rawQuery":  true,
+                                           "rawSql":  "SELECT Posicion, Equipo_Nombre AS Equipo, Conductor_Nombre AS Conductor, CAST(Tiempo_segundos AS DECIMAL(10,2)) AS Tiempo, Total_PAM AS [P+A+M], Potencia AS P, Aerodinamica AS A, Manejo AS M FROM VW_Grafana_PAM_Tiempo WHERE Id_simulacion = $simulacion ORDER BY Posicion"
+                                       }
+                                   ],
+                       "fieldConfig":  {
+                                           "defaults":  {
+                                                            "custom":  {
+                                                                           "filterable":  true
+                                                                       }
+                                                        }
+                                       }
+                   },
+                   {
+                       "id":  2,
+                       "type":  "table",
+                       "title":  "Historial Carro $carro - Setup vs Tiempo",
+                       "description":  "Compara el mismo carro en diferentes simulaciones mostrando su setup (P, A, M) y tiempo resultante",
+                       "gridPos":  {
+                                       "h":  10,
+                                       "w":  24,
+                                       "x":  0,
+                                       "y":  10
+                                   },
+                       "datasource":  {
+                                          "type":  "mssql",
+                                          "uid":  "cfbk8svo6jw8wb"
+                                      },
+                       "targets":  [
+                                       {
+                                           "refId":  "A",
+                                           "format":  "table",
+                                           "rawQuery":  true,
+                                           "rawSql":  "SELECT Id_simulacion AS [Sim], FORMAT(Fecha_hora, \u0027dd/MM/yyyy HH:mm\u0027) AS Fecha, Equipo_Nombre AS Equipo, Potencia AS P, Aerodinamica AS A, Manejo AS M, (Potencia + Aerodinamica + Manejo) AS [Total PAM], Habilidad_Conductor AS H, CAST(Tiempo_segundos AS DECIMAL(10,2)) AS [Tiempo (s)], Posicion AS Pos FROM VW_Grafana_Carro_Comparacion WHERE Id_carro = $carro ORDER BY Fecha_hora DESC"
+                                       }
+                                   ],
+                       "fieldConfig":  {
+                                           "defaults":  {
+                                                            "custom":  {
+                                                                           "filterable":  true,
+                                                                           "align":  "center"
+                                                                       },
+                                                            "mappings":  [
+
+                                                                         ]
+                                                        },
+                                           "overrides":  [
+                                                             {
+                                                                 "matcher":  {
+                                                                                 "id":  "byName",
+                                                                                 "options":  "Tiempo (s)"
+                                                                             },
+                                                                 "properties":  [
+                                                                                    {
+                                                                                        "id":  "custom.cellOptions",
+                                                                                        "value":  {
+                                                                                                      "type":  "color-background",
+                                                                                                      "mode":  "gradient"
+                                                                                                  }
+                                                                                    },
+                                                                                    {
+                                                                                        "id":  "color",
+                                                                                        "value":  {
+                                                                                                      "mode":  "continuous-GrYlRd"
+                                                                                                  }
+                                                                                    }
+                                                                                ]
+                                                             },
+                                                             {
+                                                                 "matcher":  {
+                                                                                 "id":  "byName",
+                                                                                 "options":  "Pos"
+                                                                             },
+                                                                 "properties":  [
+                                                                                    {
+                                                                                        "id":  "custom.width",
+                                                                                        "value":  60
+                                                                                    }
+                                                                                ]
+                                                             }
+                                                         ]
+                                       }
+                   },
+                   {
+                       "id":  3,
+                       "type":  "barchart",
+                       "title":  "PAM Total vs Tiempo (s) - Simulacion $simulacion",
+                       "description":  "Eje izquierdo: PAM Total (P+A+M). Eje derecho: Tiempo en segundos. Ordenado por mejor tiempo.",
+                       "gridPos":  {
+                                       "h":  12,
+                                       "w":  24,
+                                       "x":  0,
+                                       "y":  20
+                                   },
+                       "datasource":  {
+                                          "type":  "mssql",
+                                          "uid":  "cfbk8svo6jw8wb"
+                                      },
+                       "targets":  [
+                                       {
+                                           "refId":  "A",
+                                           "format":  "table",
+                                           "rawQuery":  true,
+                                           "rawSql":  "SELECT Equipo_Nombre + \u0027 (\u0027 + CAST(Id_carro AS VARCHAR) + \u0027)\u0027 AS Carro, (Potencia + Aerodinamica + Manejo) AS [PAM Total], CAST(Tiempo_segundos AS DECIMAL(10,2)) AS [Tiempo (s)] FROM VW_Grafana_PAM_Tiempo WHERE Id_simulacion = $simulacion ORDER BY Tiempo_segundos"
+                                       }
+                                   ],
+                       "options":  {
+                                       "orientation":  "horizontal",
+                                       "xTickLabelRotation":  0,
+                                       "showValue":  "always",
+                                       "stacking":  "none",
+                                       "groupWidth":  0.7,
+                                       "barWidth":  0.85,
+                                       "legend":  {
+                                                      "displayMode":  "list",
+                                                      "placement":  "right",
+                                                      "showLegend":  true
+                                                  },
+                                       "tooltip":  {
+                                                       "mode":  "multi",
+                                                       "sort":  "desc"
+                                                   }
+                                   },
+                       "fieldConfig":  {
+                                           "defaults":  {
+                                                            "color":  {
+                                                                          "mode":  "palette-classic"
+                                                                      },
+                                                            "unit":  "none",
+                                                            "decimals":  1
+                                                        },
+                                           "overrides":  [
+                                                             {
+                                                                 "matcher":  {
+                                                                                 "id":  "byName",
+                                                                                 "options":  "PAM Total"
+                                                                             },
+                                                                 "properties":  [
+                                                                                    {
+                                                                                        "id":  "color",
+                                                                                        "value":  {
+                                                                                                      "fixedColor":  "#73BF69",
+                                                                                                      "mode":  "fixed"
+                                                                                                  }
+                                                                                    },
+                                                                                    {
+                                                                                        "id":  "custom.axisPlacement",
+                                                                                        "value":  "left"
+                                                                                    },
+                                                                                    {
+                                                                                        "id":  "custom.axisLabel",
+                                                                                        "value":  "PAM Total"
+                                                                                    }
+                                                                                ]
+                                                             },
+                                                             {
+                                                                 "matcher":  {
+                                                                                 "id":  "byName",
+                                                                                 "options":  "Tiempo (s)"
+                                                                             },
+                                                                 "properties":  [
+                                                                                    {
+                                                                                        "id":  "color",
+                                                                                        "value":  {
+                                                                                                      "fixedColor":  "#F2495C",
+                                                                                                      "mode":  "fixed"
+                                                                                                  }
+                                                                                    },
+                                                                                    {
+                                                                                        "id":  "custom.axisPlacement",
+                                                                                        "value":  "right"
+                                                                                    },
+                                                                                    {
+                                                                                        "id":  "custom.axisLabel",
+                                                                                        "value":  "Tiempo (segundos)"
+                                                                                    }
+                                                                                ]
+                                                             }
+                                                         ]
+                                       }
+                   }
+               ]
+}
