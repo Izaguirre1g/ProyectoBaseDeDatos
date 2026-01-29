@@ -349,8 +349,18 @@ const carrosService = {
             
             const nuevoCarro = insertResult.recordset[0];
             
-            // Si hay conductor, actualizar su equipo
+            // Si hay conductor, registrar en CONDUCTOR_CHASIS y actualizar su equipo
             if (idConductor) {
+                // Insertar en CONDUCTOR_CHASIS (histórico)
+                await transaction.request()
+                    .input('idCarro', sql.Int, nuevoCarro.Id_carro)
+                    .input('idConductor', sql.Int, idConductor)
+                    .query(`
+                        INSERT INTO CONDUCTOR_CHASIS (Id_carro, Id_usuario)
+                        VALUES (@idCarro, @idConductor)
+                    `);
+                
+                // Actualizar equipo del conductor
                 await transaction.request()
                     .input('idConductor', sql.Int, idConductor)
                     .input('idEquipo', sql.Int, idEquipo)
@@ -518,6 +528,195 @@ const carrosService = {
                     u.Nombre_usuario
             `);
         return result.recordset;
+    },
+
+    /**
+     * ============================================
+     * MÉTODO: getConductoresDelEquipo()
+     * Obtener todos los conductores del equipo
+     * ============================================
+     * Retorna conductores con rol 'Conductor' del equipo especificado
+     */
+    async getConductoresDelEquipo(idEquipo) {
+        const pool = await getConnection();
+        const result = await pool.request()
+            .input('idEquipo', sql.Int, idEquipo)
+            .query(`
+                SELECT 
+                    u.Id_usuario,
+                    u.Nombre_usuario,
+                    u.Correo_usuario,
+                    u.Habilidad,
+                    u.Id_equipo,
+                    e.Nombre as Equipo
+                FROM USUARIO u
+                INNER JOIN ROL r ON u.Id_rol = r.Id_rol
+                LEFT JOIN EQUIPO e ON u.Id_equipo = e.Id_equipo
+                WHERE r.Nombre = 'Conductor'
+                AND u.Id_equipo = @idEquipo
+                ORDER BY u.Nombre_usuario
+            `);
+        return result.recordset;
+    },
+
+    /**
+     * ============================================
+     * MÉTODO: cambiarPiloto()
+     * Cambiar piloto de un carro usando tabla CONDUCTOR_CHASIS
+     * ============================================
+     * Guarda el histórico en CONDUCTOR_CHASIS
+     * - Si idConductor es null, limpia el piloto actual
+     */
+    async cambiarPiloto(idCarro, idConductor) {
+        const pool = await getConnection();
+        const transaction = pool.transaction();
+        
+        try {
+            await transaction.begin();
+            
+            // Obtener conductor actual del carro
+            const carroActual = await transaction.request()
+                .input('idCarro', sql.Int, idCarro)
+                .query('SELECT Id_conductor, Id_equipo FROM CARRO WHERE Id_carro = @idCarro');
+            
+            if (carroActual.recordset.length === 0) {
+                await transaction.rollback();
+                return {
+                    success: false,
+                    mensaje: 'Carro no encontrado'
+                };
+            }
+            
+            const { Id_conductor: conductorActual, Id_equipo: idEquipo } = carroActual.recordset[0];
+            
+            // Si hay nuevo conductor, verificar que pertenezca al equipo
+            if (idConductor) {
+                const conductorCheck = await transaction.request()
+                    .input('idConductor', sql.Int, idConductor)
+                    .input('idEquipo', sql.Int, idEquipo)
+                    .query(`
+                        SELECT u.Id_usuario 
+                        FROM USUARIO u
+                        WHERE u.Id_usuario = @idConductor 
+                        AND u.Id_equipo = @idEquipo
+                    `);
+                
+                if (conductorCheck.recordset.length === 0) {
+                    await transaction.rollback();
+                    return {
+                        success: false,
+                        mensaje: 'El conductor no pertenece a este equipo'
+                    };
+                }
+            }
+            
+            // Insertar en CONDUCTOR_CHASIS (histórico)
+            if (idConductor) {
+                await transaction.request()
+                    .input('idCarro', sql.Int, idCarro)
+                    .input('idConductor', sql.Int, idConductor)
+                    .query(`
+                        INSERT INTO CONDUCTOR_CHASIS (Id_carro, Id_usuario)
+                        VALUES (@idCarro, @idConductor)
+                    `);
+                
+                // Asignar equipo al nuevo conductor
+                await transaction.request()
+                    .input('idConductor', sql.Int, idConductor)
+                    .input('idEquipo', sql.Int, idEquipo)
+                    .query('UPDATE USUARIO SET Id_equipo = @idEquipo WHERE Id_usuario = @idConductor');
+            }
+            
+            // Si había un conductor anterior y se está cambiando, verificar si debe quedar sin equipo
+            if (conductorActual && conductorActual !== idConductor) {
+                // Verificar si el conductor anterior tiene otros carros en este equipo
+                const otrosCarrosResult = await transaction.request()
+                    .input('idConductor', sql.Int, conductorActual)
+                    .input('idEquipo', sql.Int, idEquipo)
+                    .input('idCarroActual', sql.Int, idCarro)
+                    .query(`
+                        SELECT COUNT(*) as total
+                        FROM CARRO
+                        WHERE Id_conductor = @idConductor 
+                        AND Id_equipo = @idEquipo
+                        AND Id_carro != @idCarroActual
+                    `);
+                
+                // Si no tiene más carros en este equipo, quitarle el equipo
+                if (otrosCarrosResult.recordset[0].total === 0) {
+                    await transaction.request()
+                        .input('idConductor', sql.Int, conductorActual)
+                        .query('UPDATE USUARIO SET Id_equipo = NULL WHERE Id_usuario = @idConductor');
+                }
+            }
+            
+            // Actualizar el conductor en CARRO
+            await transaction.request()
+                .input('idCarro', sql.Int, idCarro)
+                .input('idConductor', sql.Int, idConductor)
+                .query(`
+                    UPDATE CARRO
+                    SET Id_conductor = @idConductor
+                    WHERE Id_carro = @idCarro
+                `);
+            
+            await transaction.commit();
+            
+            const carroActualizado = await this.getById(idCarro);
+            
+            return {
+                success: true,
+                mensaje: idConductor ? 'Piloto asignado exitosamente' : 'Piloto removido exitosamente',
+                carro: carroActualizado
+            };
+        } catch (error) {
+            await transaction.rollback();
+            console.error('Error al cambiar piloto:', error);
+            throw new Error(error.message || 'Error al cambiar piloto');
+        }
+    },
+
+    /**
+     * ============================================
+     * MÉTODO: limpiarPilotoAlCambiarEquipo()
+     * Limpia el piloto cuando un usuario cambia de equipo
+     * ============================================
+     */
+    async limpiarPilotoAlCambiarEquipo(idUsuario, idEquipoAnterior) {
+        const pool = await getConnection();
+        const transaction = pool.transaction();
+        
+        try {
+            await transaction.begin();
+            
+            // Obtener carros del equipo anterior asignados a este usuario
+            const carrosResult = await transaction.request()
+                .input('idUsuario', sql.Int, idUsuario)
+                .input('idEquipo', sql.Int, idEquipoAnterior)
+                .query(`
+                    SELECT Id_carro
+                    FROM CARRO
+                    WHERE Id_conductor = @idUsuario AND Id_equipo = @idEquipo
+                `);
+            
+            // Limpiar conductor en cada carro
+            for (const carro of carrosResult.recordset) {
+                await transaction.request()
+                    .input('idCarro', sql.Int, carro.Id_carro)
+                    .query('UPDATE CARRO SET Id_conductor = NULL WHERE Id_carro = @idCarro');
+            }
+            
+            await transaction.commit();
+            
+            return {
+                success: true,
+                mensaje: `Pilotos removidos de ${carrosResult.recordset.length} carro(s)`
+            };
+        } catch (error) {
+            await transaction.rollback();
+            console.error('Error al limpiar pilotos:', error);
+            throw new Error(error.message || 'Error al limpiar pilotos');
+        }
     }
 };
 

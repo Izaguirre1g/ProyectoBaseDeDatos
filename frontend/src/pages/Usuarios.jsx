@@ -33,7 +33,7 @@ import {
     Spinner,
     Center,
 } from '@chakra-ui/react';
-import { Plus, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Pencil } from 'lucide-react';
 import { usuariosService } from '../services/usuarios.service';
 import { equiposService } from '../services/equipos.service';
 import { useAuth } from '../context/AuthContext';
@@ -236,29 +236,6 @@ function Usuarios() {
         }
     };
 
-    const handleDelete = async (id) => {
-        if (confirm('¿Estás seguro de eliminar este usuario?')) {
-            try {
-                await usuariosService.delete(id);
-                toast({
-                    title: 'Usuario eliminado',
-                    status: 'success',
-                    duration: 3000,
-                });
-                // Recargar lista de usuarios
-                await loadData();
-            } catch (error) {
-                console.error('Error al eliminar usuario:', error);
-                toast({
-                    title: 'Error al eliminar usuario',
-                    description: error.response?.data?.error || error.message || 'Error desconocido',
-                    status: 'error',
-                    duration: 5000,
-                });
-            }
-        }
-    };
-
     const handleSubmit = async () => {
         try {
             // Validar campos requeridos
@@ -430,7 +407,7 @@ function Usuarios() {
                                                 )}
                                             </Td>
                                             <Td borderColor="brand.700">
-                                                <HStack spacing={2}>
+                                                <Flex justify="center">
                                                     <IconButton
                                                         icon={<Pencil size={16} />}
                                                         variant="ghost"
@@ -438,15 +415,7 @@ function Usuarios() {
                                                         aria-label="Editar"
                                                         onClick={() => handleEdit(usuario)}
                                                     />
-                                                    <IconButton
-                                                        icon={<Trash2 size={16} />}
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        colorScheme="red"
-                                                        aria-label="Eliminar"
-                                                        onClick={() => handleDelete(usuario.Id_usuario)}
-                                                    />
-                                                </HStack>
+                                                </Flex>
                                             </Td>
                                         </Tr>
                                     ))}
@@ -504,22 +473,24 @@ function Usuarios() {
                                     <option value="Driver">Conductor</option>
                                 </Select>
                             </FormControl>
-                            <FormControl isRequired={formData.rol === 'Driver'} isDisabled={formData.rol === 'Admin'}>
-                                <FormLabel color="gray.400" fontSize="sm">
-                                    Habilidad (0-100) {formData.rol === 'Driver' && <Text as="span" color="red.400">*</Text>}
-                                </FormLabel>
-                                <Input 
-                                    type="number"
-                                    min="0"
-                                    max="100"
-                                    value={formData.habilidad}
-                                    onChange={(e) => handleFormChange('habilidad', e.target.value)}
-                                    placeholder={formData.rol === 'Driver' ? 'Requerido para conductores' : formData.rol === 'Admin' ? 'No aplicable para administradores' : 'Opcional'}
-                                />
-                                <Text fontSize="xs" color="gray.500" mt={1}>
-                                    {formData.rol === 'Admin' ? 'Los administradores no tienen habilidad asignada' : formData.rol === 'Driver' ? 'Obligatorio para conductores' : 'Opcional para otros roles'}
-                                </Text>
-                            </FormControl>
+                            {formData.rol === 'Driver' && (
+                                <FormControl isRequired>
+                                    <FormLabel color="gray.400" fontSize="sm">
+                                        Habilidad (0-100) <Text as="span" color="red.400">*</Text>
+                                    </FormLabel>
+                                    <Input 
+                                        type="number"
+                                        min="0"
+                                        max="100"
+                                        value={formData.habilidad}
+                                        onChange={(e) => handleFormChange('habilidad', e.target.value)}
+                                        placeholder="Requerido para conductores"
+                                    />
+                                    <Text fontSize="xs" color="gray.500" mt={1}>
+                                        Obligatorio para conductores
+                                    </Text>
+                                </FormControl>
+                            )}
                             <FormControl isDisabled={formData.rol === 'Admin'}>
                                 <FormLabel color="gray.400" fontSize="sm">Equipo (opcional)</FormLabel>
                                 <Select 

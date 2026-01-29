@@ -2,6 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const carrosService = require('../services/carros.service');
+const { verificarRol } = require('../middleware/roles');
 
 /**
  * GET /api/carros
@@ -55,6 +56,21 @@ router.get('/conductores-disponibles/:idEquipo', async (req, res) => {
     } catch (error) {
         console.error('Error al obtener conductores disponibles:', error);
         res.status(500).json({ error: 'Error al obtener conductores disponibles' });
+    }
+});
+
+/**
+ * GET /api/carros/conductores-equipo/:idEquipo
+ * Obtener todos los conductores del equipo
+ */
+router.get('/conductores-equipo/:idEquipo', async (req, res) => {
+    try {
+        const { idEquipo } = req.params;
+        const conductores = await carrosService.getConductoresDelEquipo(parseInt(idEquipo));
+        res.json(conductores);
+    } catch (error) {
+        console.error('Error al obtener conductores del equipo:', error);
+        res.status(500).json({ error: 'Error al obtener conductores del equipo' });
     }
 });
 
@@ -270,6 +286,40 @@ router.put('/:id/conductor', async (req, res) => {
     } catch (error) {
         console.error('Error al asignar conductor:', error);
         res.status(500).json({ error: 'Error al asignar conductor' });
+    }
+});
+
+/**
+ * PUT /api/carros/:id/cambiar-piloto
+ * Cambiar piloto de un carro usando tabla CONDUCTOR_CHASIS
+ * Solo: Administrador, Ingeniero
+ */
+router.put('/:id/cambiar-piloto', verificarRol(['Administrador', 'Ingeniero']), async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { idConductor } = req.body;
+        
+        // Validar que idConductor sea null (remover) o un número válido
+        if (idConductor !== null && (isNaN(idConductor) || idConductor < 1)) {
+            return res.status(400).json({ error: 'idConductor inválido' });
+        }
+        
+        const resultado = await carrosService.cambiarPiloto(
+            parseInt(id),
+            idConductor ? parseInt(idConductor) : null
+        );
+        
+        if (resultado.success) {
+            res.json(resultado);
+        } else {
+            res.status(400).json(resultado);
+        }
+    } catch (error) {
+        console.error('Error al cambiar piloto:', error);
+        res.status(500).json({ 
+            error: 'Error al cambiar piloto',
+            detalle: error.message 
+        });
     }
 });
 

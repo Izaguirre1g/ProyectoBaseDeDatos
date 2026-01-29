@@ -18,6 +18,7 @@ import {
     ModalHeader,
     ModalBody,
     ModalCloseButton,
+    ModalFooter,
     useDisclosure,
     SimpleGrid,
     Flex,
@@ -27,6 +28,8 @@ import {
     Center,
     IconButton,
     Divider,
+    FormControl,
+    FormLabel,
 } from '@chakra-ui/react';
 import { ArrowLeft, Check, Zap, Wind, Target, AlertCircle, Trash2 } from 'lucide-react';
 import { carrosService } from '../services/carros.service';
@@ -93,6 +96,7 @@ function ArmadoCarro() {
     const navigate = useNavigate();
     const toast = useToast();
     const { isOpen, onOpen, onClose } = useDisclosure();
+    const { isOpen: isOpenPiloto, onOpen: onOpenPiloto, onClose: onClosePiloto } = useDisclosure();
     
     const [carro, setCarro] = useState(null);
     const [partes, setPartes] = useState([]); // Partes instaladas en el carro
@@ -102,6 +106,10 @@ function ArmadoCarro() {
     const [instalando, setInstalando] = useState(false);
     const [slotActivo, setSlotActivo] = useState(null);
     const [hoveredSlot, setHoveredSlot] = useState(null);
+    const [conductoresDisponibles, setConductoresDisponibles] = useState([]);
+    const [loadingConductores, setLoadingConductores] = useState(false);
+    const [cambingPiloto, setCambingPiloto] = useState(false);
+    const [nuevoPiloto, setNuevoPiloto] = useState(null);
 
     useEffect(() => {
         cargarDatos();
@@ -113,6 +121,7 @@ function ArmadoCarro() {
             
             // Obtener carro con partes instaladas
             const carroData = await carrosService.getById(carroId);
+            console.log('Carro cargado:', carroData);
             setCarro(carroData);
             setPartes(carroData.partes || []);
             
@@ -125,15 +134,17 @@ function ArmadoCarro() {
             
             // Obtener inventario del equipo
             const inventarioData = await carrosService.getInventario(carroId);
+            console.log('Inventario cargado:', inventarioData);
             setInventario(inventarioData);
             
         } catch (error) {
             console.error('Error cargando datos:', error);
+            console.error('Detalles:', error.response?.data || error.message || 'Error desconocido');
             toast({
                 title: 'Error al cargar carro',
-                description: error.message,
+                description: error.response?.data?.error || error.message || 'Error al cargar los datos',
                 status: 'error',
-                duration: 3000,
+                duration: 5000,
             });
         } finally {
             setLoading(false);
@@ -192,7 +203,7 @@ function ArmadoCarro() {
             }
             
             toast({
-                title: '✅ Parte instalada',
+                title: 'Parte instalada',
                 description: resultado.mensaje,
                 status: 'success',
                 duration: 3000,
@@ -249,7 +260,7 @@ function ArmadoCarro() {
             const resultado = await carrosService.finalizarCarro(carroId);
             
             toast({
-                title: '🏎️ ¡Carro finalizado!',
+                title: '¡Carro finalizado!',
                 description: resultado.mensaje,
                 status: 'success',
                 duration: 5000,
@@ -264,6 +275,68 @@ function ArmadoCarro() {
                 status: 'warning',
                 duration: 4000,
             });
+        }
+    };
+
+    const handleAbrirModalPiloto = async () => {
+        setLoadingConductores(true);
+        try {
+            if (carro?.Id_equipo) {
+                const conductores = await carrosService.getConductoresDelEquipo(carro.Id_equipo);
+                setConductoresDisponibles(conductores);
+            }
+            setNuevoPiloto(carro?.Id_conductor || '');
+            onOpenPiloto();
+        } catch (error) {
+            console.error('Error al cargar conductores:', error);
+            toast({
+                title: 'Error',
+                description: 'No se pudieron cargar los pilotos disponibles',
+                status: 'error',
+                duration: 3000,
+            });
+        } finally {
+            setLoadingConductores(false);
+        }
+    };
+
+    const handleCambiarPiloto = async () => {
+        if (!carro) return;
+        
+        setCambingPiloto(true);
+        try {
+            const resultado = await carrosService.cambiarPiloto(
+                carroId,
+                nuevoPiloto ? parseInt(nuevoPiloto) : null
+            );
+            
+            if (resultado.success) {
+                toast({
+                    title: 'Piloto actualizado',
+                    description: resultado.mensaje,
+                    status: 'success',
+                    duration: 3000,
+                });
+                onClosePiloto();
+                await cargarDatos();
+            } else {
+                toast({
+                    title: 'Error',
+                    description: resultado.mensaje,
+                    status: 'error',
+                    duration: 3000,
+                });
+            }
+        } catch (error) {
+            console.error('Error al cambiar piloto:', error);
+            toast({
+                title: 'Error al cambiar piloto',
+                description: error.message,
+                status: 'error',
+                duration: 3000,
+            });
+        } finally {
+            setCambingPiloto(false);
         }
     };
 
@@ -299,22 +372,31 @@ function ArmadoCarro() {
                     onClick={() => navigate('/equipos')}
                     aria-label="Volver"
                 />
-                <Box>
+                <Box flex={1}>
                     <Heading size="lg" color="white">
                         {carro.Equipo || 'Carro'} #{carro.Id_carro}
                     </Heading>
-                    <Text color="gray.400">
-                        {carro.Conductor || 'Sin conductor asignado'}
-                    </Text>
+                    <HStack spacing={2} mt={1}>
+                        <Text color="gray.400" fontSize="sm">
+                            {carro.Conductor || 'Sin piloto asignado'}
+                        </Text>
+                        <Button 
+                            size="xs"
+                            variant="ghost"
+                            colorScheme="blue"
+                            onClick={handleAbrirModalPiloto}
+                        >
+                            Cambiar
+                        </Button>
+                    </HStack>
                 </Box>
                 <Badge 
                     colorScheme={isFinalizado ? 'green' : isComplete ? 'blue' : 'orange'} 
                     fontSize="sm"
                     px={3}
                     py={1}
-                    ml="auto"
                 >
-                    {isFinalizado ? '✅ Finalizado' : isComplete ? 'Completo - Listo para finalizar' : `${partsCount}/5 partes`}
+                    {isFinalizado ? 'Finalizado' : isComplete ? 'Completo - Listo para finalizar' : `${partsCount}/5 partes`}
                 </Badge>
                 {isComplete && !isFinalizado && (
                     <Button 
@@ -784,6 +866,72 @@ function ArmadoCarro() {
                         </VStack>
                         )}
                     </ModalBody>
+                </ModalContent>
+            </Modal>
+
+            {/* Modal para cambiar piloto */}
+            <Modal isOpen={isOpenPiloto} onClose={onClosePiloto} size="md" isCentered>
+                <ModalOverlay bg="blackAlpha.800"/>
+                <ModalContent bg="brand.800" borderColor="brand.700">
+                    <ModalHeader color="white">Cambiar Piloto</ModalHeader>
+                    <ModalCloseButton/>
+                    <ModalBody pb={6}>
+                        <VStack spacing={4} align="stretch">
+                            {loadingConductores ? (
+                                <Center py={6}>
+                                    <Spinner color="accent.500" />
+                                </Center>
+                            ) : (
+                                <>
+                                    <FormControl>
+                                        <FormLabel color="gray.300">Selecciona un piloto</FormLabel>
+                                        {conductoresDisponibles.length > 0 ? (
+                                            <select 
+                                                value={nuevoPiloto || ''}
+                                                onChange={(e) => setNuevoPiloto(e.target.value || null)}
+                                                style={{
+                                                    width: '100%',
+                                                    padding: '8px 12px',
+                                                    backgroundColor: '#15202b',
+                                                    color: '#fff',
+                                                    border: '1px solid #333',
+                                                    borderRadius: '6px',
+                                                    fontFamily: 'inherit'
+                                                }}
+                                            >
+                                                <option value="">Sin piloto</option>
+                                                {conductoresDisponibles.map((c) => (
+                                                    <option key={c.Id_usuario} value={c.Id_usuario}>
+                                                        {c.Nombre_usuario || c.Correo_usuario}
+                                                        {c.Habilidad !== null && ` (Habilidad: ${c.Habilidad})`}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        ) : (
+                                            <Text color="yellow.400" fontSize="sm">
+                                                No hay pilotos disponibles en el equipo
+                                            </Text>
+                                        )}
+                                        <Text fontSize="xs" color="gray.500" mt={2}>
+                                            El piloto actual es: {carro?.Conductor || 'Sin asignar'}
+                                        </Text>
+                                    </FormControl>
+                                </>
+                            )}
+                        </VStack>
+                    </ModalBody>
+                    <ModalFooter>
+                        <Button variant="ghost" mr={3} onClick={onClosePiloto}>
+                            Cancelar
+                        </Button>
+                        <Button 
+                            colorScheme="blue" 
+                            onClick={handleCambiarPiloto}
+                            isLoading={cambingPiloto}
+                        >
+                            Guardar Cambios
+                        </Button>
+                    </ModalFooter>
                 </ModalContent>
             </Modal>
         </Container>

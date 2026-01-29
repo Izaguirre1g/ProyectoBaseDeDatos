@@ -66,7 +66,7 @@ app.use(session({
         httpOnly: true,      // Protege contra XSS
         secure: false,       // false para desarrollo con HTTP
         sameSite: false,     // Desactivado para permitir cookies entre IPs de red local
-        maxAge: parseInt(process.env.SESSION_MAX_AGE) || 120000 // 2 minutos
+        maxAge: parseInt(process.env.SESSION_MAX_AGE) || 500000 // 2 minutos
     }
 }));
 

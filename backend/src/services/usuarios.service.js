@@ -201,7 +201,11 @@ const usuariosService = {
             }
         }
 
-        console.log('Update query:', { id, nombre, email, idRol, idEquipo });
+        // Obtener equipo anterior del usuario para limpiar pilotos si cambió de equipo
+        const usuarioActual = await this.getById(id);
+        const equipoAnterior = usuarioActual?.Id_equipo;
+        
+        console.log('Update query:', { id, nombre, email, idRol, idEquipo, equipoAnterior });
 
         const request = pool.request()
             .input('id', sql.Int, id)
@@ -232,6 +236,17 @@ const usuariosService = {
                     Habilidad = @habilidad
                 WHERE Id_usuario = @id
             `);
+        
+        // Si el usuario cambió de equipo y tenía uno anterior, limpiar sus pilotos
+        if (equipoAnterior && (idEquipo !== equipoAnterior)) {
+            try {
+                const carrosService = require('./carros.service');
+                await carrosService.limpiarPilotoAlCambiarEquipo(id, equipoAnterior);
+            } catch (error) {
+                console.error('Error al limpiar pilotos al cambiar equipo:', error);
+                // No lanzar error, continuar
+            }
+        }
         
         // Si se proporciona nueva contraseña, actualizarla
         if (password && password.trim()) {

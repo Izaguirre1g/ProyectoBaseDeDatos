@@ -55,6 +55,7 @@ function Carros() {
                         
                         return {
                             id: c.Id_carro,
+                            equipoId: c.Id_equipo,
                             numero: c.Id_carro,
                             modelo: c.Equipo,
                             conductor: c.Conductor || 'Sin asignar',
@@ -67,6 +68,7 @@ function Carros() {
                         console.error(`Error al obtener partes del carro ${c.Id_carro}:`, error);
                         return {
                             id: c.Id_carro,
+                            equipoId: c.Id_equipo,
                             numero: c.Id_carro,
                             modelo: c.Equipo,
                             conductor: c.Conductor || 'Sin asignar',
@@ -138,7 +140,7 @@ function Carros() {
                                 boxShadow: 'lg'
                             }}
                             transition="all 0.2s"
-                            onClick={() => navigate(`/carros/${carro.id}`)}
+                            onClick={() => navigate(`/equipos/${carro.equipoId}/carros/${carro.id}`)}
                         >
                             <CardBody>
                                 <VStack align="stretch" spacing={4}>

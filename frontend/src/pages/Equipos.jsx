@@ -513,22 +513,11 @@ function Equipos() {
     const handleCrearCarro = async () => {
         if (!selectedEquipo) return;
         
-        // Validar que se haya seleccionado un conductor
-        if (!nuevoCarro.idConductor) {
-            toast({
-                title: 'Conductor requerido',
-                description: 'Debes seleccionar un piloto para el carro',
-                status: 'warning',
-                duration: 3000,
-            });
-            return;
-        }
-        
         setCreandoCarro(true);
         try {
             const resultado = await carrosService.crearCarro(
                 selectedEquipo.id,
-                parseInt(nuevoCarro.idConductor)
+                nuevoCarro.idConductor ? parseInt(nuevoCarro.idConductor) : null
             );
             
             if (resultado.success) {
@@ -1221,12 +1210,12 @@ function Equipos() {
                             <Divider borderColor="brand.600" />
                             
                             <FormControl>
-                                <FormLabel color="gray.300">Conductor <Text as="span" color="red.400">*</Text></FormLabel>
+                                <FormLabel color="gray.300">Piloto <Text as="span" color="gray.500">(Opcional)</Text></FormLabel>
                                 {loadingConductores ? (
                                     <Spinner size="sm" color="accent.500" />
                                 ) : conductoresDisponibles.length > 0 ? (
                                     <Select
-                                        placeholder="Selecciona un conductor o deja sin asignar"
+                                        placeholder="Selecciona un piloto o deja sin asignar"
                                         value={nuevoCarro.idConductor}
                                         onChange={(e) => setNuevoCarro({...nuevoCarro, idConductor: e.target.value})}
                                         bg="brand.900"
@@ -1243,11 +1232,11 @@ function Equipos() {
                                     </Select>
                                 ) : (
                                     <Text color="yellow.400" fontSize="sm">
-                                        No hay conductores disponibles. Puedes crear el carro sin conductor.
+                                        No hay pilotos disponibles. Puedes crear el carro sin piloto.
                                     </Text>
                                 )}
                                 <Text fontSize="xs" color="gray.500" mt={1}>
-                                    Se debe seleccionar un conductor del equipo para asignarlo al carro. Si no hay conductores disponibles, contacte al administrador para que le asigne conductores.
+                                    Puedes seleccionar un piloto del equipo o crearlo sin piloto. Podrás cambiar o asignar el piloto después.
                                 </Text>
                             </FormControl>
                             
@@ -1258,7 +1247,7 @@ function Equipos() {
                                         <HStack>
                                             <Icon as={Users} color="green.400" boxSize={4} />
                                             <Text fontSize="sm" color="green.400">
-                                                Hay conductores del equipo disponibles para asignar
+                                                Hay pilotos del equipo disponibles para asignar
                                             </Text>
                                         </HStack>
                                     </CardBody>
@@ -1274,7 +1263,6 @@ function Equipos() {
                             colorScheme="green" 
                             onClick={handleCrearCarro}
                             isLoading={creandoCarro}
-                            isDisabled={!nuevoCarro.idConductor}
                             leftIcon={<Plus size={16} />}
                         >
                             Crear Carro

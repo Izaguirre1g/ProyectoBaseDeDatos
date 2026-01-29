@@ -147,6 +147,27 @@ export const carrosService = {
     },
 
     /**
+     * Obtener todos los conductores del equipo
+     * @param {number} idEquipo - ID del equipo
+     */
+    async getConductoresDelEquipo(idEquipo) {
+        const response = await api.get(`/carros/conductores-equipo/${idEquipo}`);
+        return response.data;
+    },
+
+    /**
+     * Cambiar piloto de un carro usando tabla CONDUCTOR_CHASIS
+     * @param {number} carroId - ID del carro
+     * @param {number|null} idConductor - ID del conductor (null para remover)
+     */
+    async cambiarPiloto(carroId, idConductor) {
+        const response = await api.put(`/carros/${carroId}/cambiar-piloto`, {
+            idConductor
+        });
+        return response.data;
+    },
+
+    /**
      * Eliminar un carro
      * @param {number} carroId - ID del carro a eliminar
      */
