@@ -1,244 +1,383 @@
-# 🏎️ F1 Database - Sistema de Gestión de Fórmula 1
+# F1 Database - Sistema de Gestion de Formula 1
 
-Proyecto integrador para el curso **CE-3101 Bases de Datos** (modalidad verano intensivo).
+Este proyecto integrador corresponde al curso CE-3101 Bases de Datos en modalidad de verano intensivo. El proposito es que el estudiantado aplique de forma practica los contenidos centrales del curso en un sistema realista: modelado conceptual y logico, integridad referencial, consultas, transacciones y la implementacion de reglas de negocio.
 
-Sistema para administrar equipos, carros, partes, conductores, patrocinadores y simulaciones de carreras de Fórmula 1.
+## Tecnologias
 
-## 📋 Tecnologías
+| Capa | Tecnologia |
+|------|------------|
+| Frontend | React 18, Vite, Chakra UI v2, Lucide React |
+| Backend | Node.js, Express, Argon2id |
+| Base de Datos | Microsoft SQL Server |
+| Visualizacion | Grafana |
 
-| Componente | Tecnología |
-|------------|------------|
-| Base de datos | Microsoft SQL Server |
-| Backend (API) | Node.js + Express |
-| Frontend | React + Vite |
-| Visualización | Grafana |
+## Requisitos Previos
 
----
+- **Node.js** v18 o superior
+- **npm** v9 o superior
+- **Microsoft SQL Server** (local o remoto)
+- **Git**
 
-## 🔧 Requisitos Previos
+## Estructura del Proyecto
 
-Antes de comenzar, asegúrate de tener instalado:
-
-### 1. Node.js (v18 o superior)
-Descarga e instala desde: https://nodejs.org/
-
-Verifica la instalación:
-```bash
-node --version   # Debe mostrar v18.x.x o superior
-npm --version    # Debe mostrar 9.x.x o superior
+```
+ProyectoBaseDeDatos/
+├── backend/           # API REST con Express
+│   ├── src/
+│   │   ├── app.js
+│   │   ├── config/
+│   │   ├── controllers/
+│   │   ├── middleware/
+│   │   ├── routes/
+│   │   ├── services/
+│   │   └── utils/
+│   └── package.json
+├── frontend/          # SPA con React + Vite
+│   ├── src/
+│   │   ├── components/
+│   │   ├── context/
+│   │   ├── pages/
+│   │   ├── services/
+│   │   └── theme.js
+│   └── package.json
+├── database/          # Scripts SQL
+│   ├── schema/
+│   ├── seeds/
+│   └── stored-procedures/
+└── docs/              # Documentacion
+    └── diagrams/
 ```
 
-### 2. Microsoft SQL Server
-Opciones:
-- **SQL Server Express** (gratis): https://www.microsoft.com/sql-server/sql-server-downloads
-- **SQL Server Developer** (gratis para desarrollo)
-- **Azure SQL** (en la nube)
+## Instalacion
 
-### 3. Git (opcional pero recomendado)
-Descarga desde: https://git-scm.com/
-
----
-
-## 🚀 Instalación
-
-### Paso 1: Clonar o descargar el proyecto
+### 1. Clonar el repositorio
 
 ```bash
 git clone <url-del-repositorio>
 cd ProyectoBaseDeDatos
 ```
 
-### Paso 2: Instalar dependencias del Backend
+### 2. Instalar dependencias del Backend
 
 ```bash
 cd backend
 npm install
 ```
 
-### Paso 3: Configurar variables de entorno del Backend
-
-Crea un archivo `.env` en la carpeta `backend/` basándote en el ejemplo:
-
-```bash
-# En Windows (PowerShell)
-Copy-Item .env.example .env
-
-# En Linux/Mac
-cp .env.example .env
-```
-
-Edita el archivo `.env` con tus credenciales de SQL Server:
-
-```env
-PORT=3000
-NODE_ENV=development
-
-DB_SERVER=localhost
-DB_DATABASE=F1Database
-DB_USER=sa
-DB_PASSWORD=tu_password_aqui
-DB_PORT=1433
-
-SESSION_SECRET=una_clave_secreta_larga_y_segura
-SESSION_MAX_AGE=3600000
-
-FRONTEND_URL=http://localhost:5173
-```
-
-### Paso 4: Instalar dependencias del Frontend
+### 3. Instalar dependencias del Frontend
 
 ```bash
 cd ../frontend
 npm install
 ```
 
----
+### 4. Configurar variables de entorno
 
-## ▶️ Ejecutar el Proyecto
+Crear archivo `.env` en la carpeta `backend/`:
 
-Necesitas **dos terminales** abiertas simultáneamente:
+```env
+# Servidor
+PORT=3000
+NODE_ENV=development
 
-### Terminal 1: Backend (API)
+# Base de Datos SQL Server
+DB_SERVER=localhost
+DB_NAME=DB_F1_Garage_Manager
+DB_USER=tu_usuario
+DB_PASSWORD=tu_password
+DB_PORT=1433
 
+# Sesiones
+SESSION_SECRET=tu_clave_secreta_muy_segura
+```
+
+## Ejecucion
+
+### Desarrollo
+
+Abrir dos terminales:
+
+**Terminal 1 - Backend:**
 ```bash
 cd backend
 npm run dev
 ```
+El servidor se ejecutara en `http://localhost:3000`
 
-Salida esperada:
-```
-🏎️  Servidor F1 Database corriendo en http://localhost:3000
-📊 Ambiente: development
-```
-
-### Terminal 2: Frontend (React)
-
+**Terminal 2 - Frontend:**
 ```bash
 cd frontend
 npm run dev
 ```
+La aplicacion se ejecutara en `http://localhost:5173`
 
-Salida esperada:
+### Produccion
+
+**Backend:**
+```bash
+cd backend
+npm start
 ```
-VITE v7.x.x  ready in 300 ms
-➜  Local:   http://localhost:5173/
+
+**Frontend:**
+```bash
+cd frontend
+npm run build
+npm run preview
 ```
 
-### Acceder a la aplicación
+## Usuarios de Prueba
 
-Abre tu navegador en: **http://localhost:5173**
-
----
-
-## 👤 Usuarios de Prueba (sin base de datos)
-
-| Email | Contraseña | Rol |
+| Email | Contrasena | Rol |
 |-------|------------|-----|
 | admin@f1.com | 123456 | Admin |
 | engineer@f1.com | 123456 | Engineer |
 | driver@f1.com | 123456 | Driver |
 
----
+## Roles y Permisos
 
-## 📁 Estructura del Proyecto
+- **Admin**: Acceso total al sistema, gestion de usuarios y equipos
+- **Engineer**: Gestion de partes, configuracion de carros, compras
+- **Driver**: Vista de perfil, estadisticas personales
 
-```
-ProyectoBaseDeDatos/
-├── backend/                    # API Node.js + Express
-│   ├── src/
-│   │   ├── config/            # Configuración de BD y sesiones
-│   │   ├── controllers/       # Lógica de endpoints
-│   │   ├── middleware/        # Auth, roles, validación
-│   │   ├── routes/            # Definición de rutas
-│   │   ├── services/          # Llamadas a stored procedures
-│   │   └── app.js             # Punto de entrada
-│   ├── .env.example           # Plantilla de variables de entorno
-│   └── package.json
-├── frontend/                   # React + Vite
-│   ├── src/
-│   │   ├── pages/             # Vistas (Login, Dashboard, etc.)
-│   │   ├── components/        # Componentes reutilizables
-│   │   └── App.jsx
-│   └── package.json
-├── database/                   # Scripts SQL Server
-│   ├── schema/                # DDL: tablas, PKs, FKs
-│   ├── stored-procedures/     # Stored procedures
-│   └── seeds/                 # Datos iniciales
-├── docs/                       # Documentación
-│   └── diagrams/              # Diagramas ER, Crow's Foot
-└── README.md
-```
+## Seguridad
 
----
+- Contrasenas hasheadas con **Argon2id** (RFC 9106)
+- Sesiones con cookies **HttpOnly** y **SameSite**
+- Proteccion CORS configurada
+- Ver [SECURITY.md](backend/SECURITY.md) para mas detalles
 
-## 🛠️ Comandos Útiles
+## Scripts Disponibles
 
 ### Backend
-| Comando | Descripción |
+
+| Comando | Descripcion |
 |---------|-------------|
-| `npm run dev` | Inicia servidor con hot-reload (nodemon) |
-| `npm start` | Inicia servidor en modo producción |
+| `npm run dev` | Inicia servidor con nodemon (hot-reload) |
+| `npm start` | Inicia servidor en produccion |
+| `npm run generate-hashes` | Genera hashes de contrasenas de prueba |
 
 ### Frontend
-| Comando | Descripción |
+
+| Comando | Descripcion |
 |---------|-------------|
 | `npm run dev` | Inicia servidor de desarrollo Vite |
-| `npm run build` | Genera build de producción |
-| `npm run preview` | Previsualiza build de producción |
+| `npm run build` | Compila para produccion |
+| `npm run preview` | Vista previa del build |
+| `npm run lint` | Ejecuta ESLint |
 
----
+## Configuracion en Red Local (Multiples Computadoras)
 
-## 🔌 Endpoints de la API
+Para permitir que otras computadoras en la misma red accedan a la aplicacion, sigue estos pasos:
 
-### Autenticación
-| Método | Endpoint | Descripción |
-|--------|----------|-------------|
-| POST | `/api/auth/login` | Iniciar sesión |
-| POST | `/api/auth/logout` | Cerrar sesión |
-| GET | `/api/auth/me` | Verificar sesión activa |
+### Paso 1: Identificar tu direccion IP local
 
----
+Abre PowerShell y ejecuta:
 
-## ❓ Solución de Problemas
-
-### Error: "npm no se reconoce como comando"
-Asegúrate de que Node.js está instalado y en el PATH del sistema.
-
-### Error: "Ejecución de scripts deshabilitada" (Windows PowerShell)
-Ejecuta como administrador:
 ```powershell
-Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+ipconfig
 ```
 
-### Error: "CORS" en el navegador
-Verifica que el backend esté corriendo en el puerto 3000 y que `FRONTEND_URL` en `.env` sea `http://localhost:5173`.
+Busca "IPv4 Address" bajo tu conexion de red (Ethernet o WiFi). Por ejemplo: `192.168.1.15`
 
-### Error: "Cannot connect to SQL Server"
-1. Verifica que SQL Server esté corriendo
-2. Revisa las credenciales en `.env`
-3. Asegúrate de que el puerto 1433 esté habilitado
+### Paso 2: Iniciar el servidor
 
----
+Los servidores ya estan configurados para escuchar en todas las interfaces. Solo inicia normalmente:
 
-## 📅 Entregables
+```bash
+# Terminal 1 - Backend
+cd backend
+npm run dev
 
-| Fecha | Entregable | Puntos |
-|-------|------------|--------|
-| 23 dic 2025 | Modelo ER + reglas de negocio | 15 |
-| 6 ene 2026 | Crow's Foot + schema SQL + vistas base | 20 |
-| 13 ene 2026 | Integración completa + auth + compras + armado | 20 |
-| 27 ene 2026 | Sistema completo + simulación + Grafana | 45 |
+# Terminal 2 - Frontend
+cd frontend
+npm run dev
+```
 
----
+Deberías ver mensajes como:
+```
+Servidor F1 Database corriendo en http://0.0.0.0:3000
+Acceso desde red: http://192.168.1.15:3000
+```
 
-## 👥 Equipo
+### Paso 3: Configurar Firewall de Windows
 
-- [Nombre del estudiante 1]
-- [Nombre del estudiante 2]
-- [Nombre del estudiante 3]
+El Firewall de Windows puede bloquear las conexiones. Configuralo asi:
 
----
+#### Opcion A: Permitir automaticamente (Recomendado)
 
-## 📄 Licencia
+Cuando inicies el servidor por primera vez, Windows mostrara una ventana. Selecciona:
+- "Redes privadas"
+- Haz clic en "Permitir acceso"
 
-Este proyecto es para uso académico del curso CE-3101 - TEC Costa Rica.
+#### Opcion B: Configurar manualmente
+
+1. Abre "Windows Defender Firewall with Advanced Security":
+   - Presiona tecla Windows y escribe "firewall"
+
+2. Haz clic en "Inbound Rules" (Reglas de entrada)
+
+3. Haz clic en "New Rule" (Nueva regla)
+
+4. Para el Backend:
+   - Tipo de regla: "Port"
+   - Protocolo y puerto: "TCP", puerto "3000"
+   - Accion: "Allow the connection"
+   - Perfil: Marca "Private"
+   - Nombre: "F1 Database Backend"
+   - Haz clic en "Finish"
+
+5. Repite para el Frontend (puerto "5173"):
+   - Nombre: "F1 Database Frontend"
+
+### Paso 4: Acceder desde otra computadora
+
+En otra computadora conectada a la misma red, abre el navegador e ingresa:
+
+```
+http://192.168.1.15:5173
+```
+
+Reemplaza "192.168.1.15" con tu IP local.
+
+### Troubleshooting
+
+- **No se puede conectar**: Verifica que ambas computadoras esten en la misma red y que el firewall permita los puertos 3000 y 5173
+- **Pagina en blanco**: Asegúrate de que el Backend y Frontend estan corriendo
+- **Error de autenticacion**: Verifica que la BD este correctamente configurada en el archivo `.env`
+
+## Configuracion de Grafana (Dashboards de Simulaciones)
+
+El proyecto incluye dashboards de Grafana para visualizar estadisticas de simulaciones. Los dashboards estan embebidos en la pagina de Simulaciones del frontend.
+
+### Requisitos
+
+- **Docker Desktop** instalado y corriendo
+- Puerto **3001** disponible
+
+### Paso 1: Crear el contenedor de Grafana
+
+Ejecutar el siguiente comando en PowerShell:
+
+```powershell
+docker run -d --name grafana -p 3001:3000 `
+  -e "GF_SECURITY_ALLOW_EMBEDDING=true" `
+  -e "GF_SECURITY_COOKIE_SAMESITE=lax" `
+  -e "GF_AUTH_ANONYMOUS_ENABLED=true" `
+  -e "GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer" `
+  -v grafana-storage:/var/lib/grafana `
+  grafana/grafana:latest
+```
+
+El contenedor se iniciara automaticamente. Grafana estara disponible en `http://localhost:3001` o `http://192.168.1.15:3001`
+
+### Paso 2: Instalar el plugin de SQL Server
+
+```powershell
+docker exec grafana grafana-cli plugins install grafana-mssql-datasource
+docker restart grafana
+```
+
+Esperar unos segundos a que Grafana reinicie.
+
+### Paso 3: Configurar el Data Source
+
+1. Abrir Grafana en `http://localhost:3001` o `http://192.168.1.15:3001`
+2. Credenciales por defecto: `admin` / `admin` 
+3. En **Connections** > **Data sources** > **Add data source**
+4. Buscar y seleccionar **Microsoft SQL Server**
+5. Configurar:
+   - **Name**: `SQL Server F1`
+   - **Host**: `host.docker.internal:1433` (para conectar desde Docker a SQL Server local)
+   - **Database**: `DB_F1_Garage_Manager`
+   - **Authentication**: SQL Server Authentication
+   - **User**: usuario de SQL Server
+   - **Password**: password de SQL Server
+6. Click en **Save & Test** - debe mostrar "Database Connection OK"
+
+### Paso 4: Importar los Dashboards
+
+Los dashboards estan en la raiz del proyecto:
+- `grafana-dashboard-v2.json` - Dashboard principal de simulaciones
+- `grafana-carro-dashboard.json` - Dashboard de analisis por carro
+
+Para importarlos via API (reemplazar la contrasena si se cambio):
+
+```powershell
+# Dashboard F1 Simulaciones
+$headers = @{
+    "Authorization" = "Basic " + [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("admin:admin"))
+    "Content-Type" = "application/json"
+}
+$body = Get-Content "grafana-dashboard-v2.json" -Raw
+Invoke-RestMethod -Uri "http://localhost:3001/api/dashboards/db" -Method Post -Headers $headers -Body $body
+
+# Dashboard F1 Analisis por Carro
+$carroBody = Get-Content "grafana-carro-dashboard.json" -Raw
+$carroPayload = @{
+    dashboard = $carroBody | ConvertFrom-Json
+    overwrite = $true
+    folderId = 0
+} | ConvertTo-Json -Depth 20
+Invoke-RestMethod -Uri "http://localhost:3001/api/dashboards/db" -Method Post -Headers $headers -Body $carroPayload
+```
+
+O importalos manualmente:
+1. Ve a **Dashboards** > **New** > **Import**
+2. Click en "Upload JSON file" y selecciona cada archivo
+
+### Paso 5: Verificar Data Source UID
+
+Los dashboards esperan un Data Source con UID `cfbk8svo6jw8wb`. Si el UID es diferente:
+
+1. Ve a **Connections** > **Data sources** > **SQL Server F1**
+2. Copia el UID de la URL (ej: `http://localhost:3001/connections/datasources/edit/TU_UID`)
+3. Edita los archivos JSON y reemplaza `cfbk8svo6jw8wb` por tu UID
+4. Reimporta los dashboards
+
+### Configuracion para Acceso en Red
+
+Para que otras computadoras vean los dashboards embebidos:
+
+1. **Firewall**: Permite el puerto 3001 (igual que hiciste con 3000 y 5173)
+
+2. **Modificar Frontend**: En `frontend/src/pages/Simulaciones.jsx`, cambia:
+   ```javascript
+   const GRAFANA_BASE_URL = 'http://localhost:3001';
+   ```
+   Por tu IP local:
+   ```javascript
+   const GRAFANA_BASE_URL = 'http://192.168.1.15:3001';
+   ```
+
+3. Las otras computadoras podran ver los dashboards embebidos en la pagina de Simulaciones
+
+### Dashboards Disponibles
+
+| Dashboard | URL | Descripcion |
+|-----------|-----|-------------|
+| F1 Simulaciones | `/d/f1sim/f1-simulaciones` | Ranking, historial por carro, PAM vs Tiempo |
+| F1 Analisis por Carro | `/d/f1carro/f1-analisis-por-carro` | Estadisticas detalladas de un carro |
+
+### Comandos Utiles de Docker
+
+```powershell
+# Ver estado del contenedor
+docker ps -a | Select-String grafana
+
+# Iniciar Grafana
+docker start grafana
+
+# Detener Grafana
+docker stop grafana
+
+# Ver logs
+docker logs grafana
+
+# Eliminar contenedor (los datos se mantienen en el volumen)
+docker rm grafana
+```
+
+## Licencia
+
+MIT

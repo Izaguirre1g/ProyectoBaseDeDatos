@@ -1,189 +1,207 @@
 import { useState } from 'react';
-import axios from 'axios';
+import { useNavigate, Link } from 'react-router-dom';
+import {
+    Box,
+    Button,
+    Card,
+    CardBody,
+    Center,
+    FormControl,
+    FormLabel,
+    Heading,
+    Input,
+    InputGroup,
+    InputLeftElement,
+    InputRightElement,
+    Text,
+    VStack,
+    Alert,
+    AlertIcon,
+    Divider,
+    HStack,
+    Badge,
+    IconButton,
+} from '@chakra-ui/react';
+import { Mail, Lock, Eye, EyeOff, User } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 function Login() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [mensaje, setMensaje] = useState('');
-    const [usuario, setUsuario] = useState(null);
+    const [showPassword, setShowPassword] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
+    
+    const { login } = useAuth();
+    const navigate = useNavigate();
 
-    const handleLogin = async (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        setMensaje('');
+        setLoading(true);
+        setError('');
 
-        try {
-            const response = await axios.post('http://localhost:3000/api/auth/login', {
-                email,
-                password
-            }, {
-                withCredentials: true  // Importante para enviar cookies
-            });
-
-            if (response.data.success) {
-                setUsuario(response.data.usuario);
-                setMensaje(`✅ Bienvenido ${response.data.usuario.nombre}!`);
-            }
-        } catch (error) {
-            setMensaje('❌ ' + (error.response?.data?.error || 'Error al conectar'));
+        const result = await login(email, password);
+        
+        if (result.success) {
+            navigate('/');
+        } else {
+            setError(result.error);
         }
-    };
-
-    const handleLogout = async () => {
-        try {
-            await axios.post('http://localhost:3000/api/auth/logout', {}, {
-                withCredentials: true
-            });
-            setUsuario(null);
-            setMensaje('Sesión cerrada');
-        } catch (error) {
-            setMensaje('Error al cerrar sesión');
-        }
-    };
-
-    const verificarSesion = async () => {
-        try {
-            const response = await axios.get('http://localhost:3000/api/auth/me', {
-                withCredentials: true
-            });
-            if (response.data.loggedIn) {
-                setUsuario(response.data.usuario);
-                setMensaje('✅ Sesión activa');
-            } else {
-                setMensaje('No hay sesión activa');
-            }
-        } catch (error) {
-            setMensaje('Error al verificar sesión');
-        }
+        
+        setLoading(false);
     };
 
     return (
-        <div style={styles.container}>
-            <h1>🏎️ F1 Database - Login</h1>
-            
-            {!usuario ? (
-                <form onSubmit={handleLogin} style={styles.form}>
-                    <div style={styles.inputGroup}>
-                        <label>Email:</label>
-                        <input
-                            type="email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            placeholder="admin@f1.com"
-                            style={styles.input}
-                        />
-                    </div>
-                    
-                    <div style={styles.inputGroup}>
-                        <label>Contraseña:</label>
-                        <input
-                            type="password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            placeholder="123456"
-                            style={styles.input}
-                        />
-                    </div>
-                    
-                    <button type="submit" style={styles.button}>
-                        Iniciar Sesión
-                    </button>
-                </form>
-            ) : (
-                <div style={styles.userInfo}>
-                    <h2>Usuario Autenticado</h2>
-                    <p><strong>Nombre:</strong> {usuario.nombre}</p>
-                    <p><strong>Email:</strong> {usuario.email}</p>
-                    <p><strong>Rol:</strong> {usuario.rol}</p>
-                    <button onClick={handleLogout} style={styles.buttonLogout}>
-                        Cerrar Sesión
-                    </button>
-                </div>
-            )}
-            
-            {mensaje && <p style={styles.mensaje}>{mensaje}</p>}
-            
-            <div style={styles.credenciales}>
-                <h3>Usuarios de prueba:</h3>
-                <p>👤 admin@f1.com / 123456 (Admin)</p>
-                <p>👤 engineer@f1.com / 123456 (Engineer)</p>
-                <p>👤 driver@f1.com / 123456 (Driver)</p>
-            </div>
+        <Center 
+            minH="100vh" 
+            p={4}
+            backgroundImage="url('/images/image2.png')"
+            backgroundSize="cover"
+            backgroundPosition="center"
+            backgroundAttachment="fixed"
+            position="relative"
+            _before={{
+                content: '""',
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                bg: 'rgba(15, 15, 15, 0.7)',
+                zIndex: 1
+            }}
+        >
+            <Card maxW="420px" w="full" bg="brand.800" borderColor="brand.600" zIndex={2} position="relative">
+                <CardBody p={8}>
+                    <VStack spacing={6}>
+                        {/* Header */}
+                        <VStack spacing={2}>
+                            <Heading size="lg" color="white">
+                                F1 Database
+                            </Heading>
+                            <Text color="gray.400" fontSize="sm">
+                                Sistema de Gestion de Formula 1
+                            </Text>
+                        </VStack>
 
-            <button onClick={verificarSesion} style={styles.buttonSecondary}>
-                Verificar Sesión Activa
-            </button>
-        </div>
+                        {/* Form */}
+                        <Box as="form" onSubmit={handleSubmit} w="full">
+                            <VStack spacing={4}>
+                                <FormControl>
+                                    <FormLabel color="gray.400" fontSize="sm">
+                                        Email
+                                    </FormLabel>
+                                    <InputGroup>
+                                        <InputLeftElement pointerEvents="none">
+                                            <Mail size={18} color="#718096" />
+                                        </InputLeftElement>
+                                        <Input
+                                            type="email"
+                                            value={email}
+                                            onChange={(e) => setEmail(e.target.value)}
+                                            placeholder="admin@f1.com"
+                                            required
+                                            disabled={loading}
+                                        />
+                                    </InputGroup>
+                                </FormControl>
+
+                                <FormControl>
+                                    <FormLabel color="gray.400" fontSize="sm">
+                                        Contrasena
+                                    </FormLabel>
+                                    <InputGroup>
+                                        <InputLeftElement pointerEvents="none">
+                                            <Lock size={18} color="#718096" />
+                                        </InputLeftElement>
+                                        <Input
+                                            type={showPassword ? 'text' : 'password'}
+                                            value={password}
+                                            onChange={(e) => setPassword(e.target.value)}
+                                            placeholder="Ingresa tu contraseña"
+                                            required
+                                            disabled={loading}
+                                        />
+                                        <InputRightElement>
+                                            <IconButton
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => setShowPassword(!showPassword)}
+                                                icon={showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                                aria-label={showPassword ? 'Ocultar' : 'Mostrar'}
+                                            />
+                                        </InputRightElement>
+                                    </InputGroup>
+                                </FormControl>
+
+                                {error && (
+                                    <Alert status="error" borderRadius="md" bg="red.900" color="red.200">
+                                        <AlertIcon color="red.400" />
+                                        {error}
+                                    </Alert>
+                                )}
+
+                                <Button
+                                    type="submit"
+                                    w="full"
+                                    size="lg"
+                                    isLoading={loading}
+                                    loadingText="Iniciando sesion..."
+                                    mt={2}
+                                >
+                                    Iniciar Sesion
+                                </Button>
+                            </VStack>
+                        </Box>
+
+                        <Divider borderColor="brand.600" />
+
+                        {/* Test Users */}
+                        <Box w="full" p={4} bg="brand.900" borderRadius="md" borderWidth="1px" borderColor="brand.700">
+                            <Text fontSize="xs" color="gray.500" textTransform="uppercase" fontWeight="600" mb={3}>
+                                Usuarios de prueba
+                            </Text>
+                            <VStack spacing={2} align="stretch">
+                                <HStack justify="space-between">
+                                    <HStack>
+                                        <User size={14} color="#718096" />
+                                        <Text fontSize="sm" color="gray.400">admin@f1.com</Text>
+                                    </HStack>
+                                    <Badge colorScheme="red" variant="subtle">Admin</Badge>
+                                </HStack>
+                                <HStack justify="space-between">
+                                    <HStack>
+                                        <User size={14} color="#718096" />
+                                        <Text fontSize="sm" color="gray.400">engineer@f1.com</Text>
+                                    </HStack>
+                                    <Badge colorScheme="blue" variant="subtle">Engineer</Badge>
+                                </HStack>
+                                <HStack justify="space-between">
+                                    <HStack>
+                                        <User size={14} color="#718096" />
+                                        <Text fontSize="sm" color="gray.400">driver@f1.com</Text>
+                                    </HStack>
+                                    <Badge colorScheme="green" variant="subtle">Driver</Badge>
+                                </HStack>
+                            </VStack>
+                            <Text fontSize="xs" color="gray.600" textAlign="center" mt={3}>
+                                Contrasena: 123456
+                            </Text>
+                        </Box>
+
+                        {/* Register Link */}
+                        <VStack spacing={2} align="center">
+                            <Link to="/register">
+                                <Button variant="ghost" size="sm" color="red.600" _hover={{ color: 'white' }}>
+                                    Regístrate aquí
+                                </Button>
+                            </Link>
+                        </VStack>
+                    </VStack>
+                </CardBody>
+            </Card>
+        </Center>
     );
 }
-
-const styles = {
-    container: {
-        maxWidth: '400px',
-        margin: '50px auto',
-        padding: '20px',
-        fontFamily: 'Arial, sans-serif'
-    },
-    form: {
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '15px'
-    },
-    inputGroup: {
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '5px'
-    },
-    input: {
-        padding: '10px',
-        fontSize: '16px',
-        border: '1px solid #ccc',
-        borderRadius: '4px'
-    },
-    button: {
-        padding: '12px',
-        fontSize: '16px',
-        backgroundColor: '#e10600',
-        color: 'white',
-        border: 'none',
-        borderRadius: '4px',
-        cursor: 'pointer'
-    },
-    buttonLogout: {
-        padding: '10px 20px',
-        backgroundColor: '#333',
-        color: 'white',
-        border: 'none',
-        borderRadius: '4px',
-        cursor: 'pointer'
-    },
-    buttonSecondary: {
-        marginTop: '20px',
-        padding: '10px',
-        backgroundColor: '#666',
-        color: 'white',
-        border: 'none',
-        borderRadius: '4px',
-        cursor: 'pointer',
-        width: '100%'
-    },
-    mensaje: {
-        padding: '10px',
-        backgroundColor: '#f0f0f0',
-        borderRadius: '4px',
-        marginTop: '15px'
-    },
-    userInfo: {
-        padding: '20px',
-        backgroundColor: '#e8f5e9',
-        borderRadius: '8px'
-    },
-    credenciales: {
-        marginTop: '30px',
-        padding: '15px',
-        backgroundColor: '#fff3e0',
-        borderRadius: '8px',
-        fontSize: '14px'
-    }
-};
 
 export default Login;
